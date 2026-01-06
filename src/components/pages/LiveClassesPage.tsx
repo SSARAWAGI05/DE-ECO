@@ -639,17 +639,18 @@ if (!statsError && stats) {
                     <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">Uploaded on {note.date}</p>
                   </div>
                 </div>
-                <button 
-                  onClick={async () => {
-                    // Increment download count
-                    await supabase.rpc('increment_note_downloads', { note_id: note.id });
-                    // Open file
-                    window.open(note.file_url, '_blank');
+                <a
+                  href={note.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    // Fire-and-forget analytics (does not block download)
+                    supabase.rpc('increment_note_downloads', { note_id: note.id });
                   }}
-                  className="bg-black dark:bg-white text-white dark:text-black p-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition"
+                  className="bg-black dark:bg-white text-white dark:text-black p-2 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition inline-flex items-center justify-center"
                 >
                   <Download className="w-4 h-4" />
-                </button>
+                </a>
               </div>
             </div>
           ))}
