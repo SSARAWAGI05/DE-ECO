@@ -13,11 +13,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const themeColors = getThemeColors(isDark, isFocusMode);
 
   useEffect(() => {
-    // Show splash screen for 2 seconds
+    // Show splash screen for 2.2 seconds
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(onFinish, 800); // Wait for exit animation
-    }, 2000);
+    }, 2200);
 
     return () => clearTimeout(timer);
   }, [onFinish]);
@@ -28,39 +28,23 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         <motion.div
           key="splash"
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.6, ease: "easeInOut" } }}
+          exit={{ opacity: 0, transition: { duration: 0.8, ease: "easeInOut" } }}
           className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
           style={{ backgroundColor: themeColors.primary.lightGray }}
         >
-          {/* Logo Container */}
-          <motion.div 
-            className="flex flex-col items-center gap-8"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          >
-            {/* DEECO Logo Image */}
-            <img 
-              src="/logo/De-Eco-logo.png"
-              alt="DE-ECO Logo"
-              className="w-48 md:w-64 object-contain"
-            />
-
-            {/* Premium Minimalist Spinning Circle */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4, duration: 0.8 }}
-            >
-              <div 
-                className="w-8 h-8 rounded-full border-2 animate-spin"
-                style={{ 
-                  borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-                  borderTopColor: themeColors.text.primary 
-                }}
-              />
-            </motion.div>
-          </motion.div>
+          {/* Cinematic Reveal Animation for Logo */}
+          <motion.img 
+            src="/logo/De-Eco-logo.png"
+            alt="DE-ECO Logo"
+            className="w-48 md:w-64 object-contain"
+            initial={{ opacity: 0, scale: 0.85, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ 
+              opacity: { duration: 1.2, ease: "easeOut" },
+              scale: { duration: 1.8, ease: [0.16, 1, 0.3, 1] }, // Very smooth custom easing
+              y: { duration: 1.2, ease: "easeOut" }
+            }}
+          />
         </motion.div>
       )}
     </AnimatePresence>
