@@ -5,10 +5,12 @@ import LoginModal from "./components/LoginModal";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ThemeControls } from "./components/ThemeControls";
 import { supabase } from "./lib/supabaseClient";
+import { SplashScreen } from "./components/SplashScreen";
 
 function App() {
   const [session, setSession] = useState<any>(null);
   const [showLogin, setShowLogin] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   // Load session on mount
   useEffect(() => {
@@ -34,6 +36,7 @@ function App() {
 
   return (
     <ThemeProvider>
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
       <ThemeControls />
       {session ? (
         <AuthenticatedApp onLogout={handleLogout} />
