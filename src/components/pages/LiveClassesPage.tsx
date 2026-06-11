@@ -455,8 +455,8 @@ if (!statsError && stats) {
           {announcements.map((announcement) => (
            <div
             key={announcement.id}
-            className="p-3 sm:p-4 rounded-xl shadow-sm border border-white dark:border-gray-700"
-            style={{ backgroundColor: getPriorityColor(announcement.priority, isDark) }}
+            className="p-3 sm:p-4 rounded-xl shadow-sm border"
+            style={{ backgroundColor: themeColors.background.white, borderColor: themeColors.primary.w2 }}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">

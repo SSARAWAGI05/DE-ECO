@@ -12,15 +12,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const themeColors = getThemeColors(isDark, isFocusMode);
 
   return (
-    <footer
-      className="mx-6 my-10 rounded-3xl border shadow-2xl"
-      style={{
-        backgroundColor: themeColors.primary.black,
-        borderColor: themeColors.primary.black,
-        color: themeColors.text.white,
-      }}
-    >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+    <div className="container mx-auto px-4 sm:px-6 pb-10">
+      <footer
+        className="rounded-3xl border shadow-2xl"
+        style={{
+          backgroundColor: themeColors.primary.black,
+          borderColor: themeColors.primary.black,
+          color: themeColors.text.white,
+        }}
+      >
+        <div className="px-6 sm:px-8 lg:px-10 py-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
 
           {/* Brand */}
@@ -104,5 +105,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
       </div>
     </footer>
+    </div>
   );
 };

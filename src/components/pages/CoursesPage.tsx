@@ -369,7 +369,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                   </h3>
 
                   <div className="flex justify-between items-center text-xs mb-3">
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1" style={{ color: themeColors.text.secondary }}>
                       <Clock className="w-3 h-3" />
                       {course.duration_weeks ? `${course.duration_weeks} weeks` : 'Flexible'}
                     </span>
@@ -466,7 +466,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                 <ChevronLeft />
               </button>
 
-              <span className="flex items-center font-semibold">
+              <span className="flex items-center font-semibold" style={{ color: themeColors.text.primary }}>
                 Page {currentPage + 1} of {totalPages}
               </span>
 
@@ -735,7 +735,7 @@ const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
 
 
             {/* RIGHT - INFO */}
-            <div className="flex flex-col justify-between">
+            <div className="flex flex-col justify-start">
               <div>
                 <h1 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: themeColors.text.primary }}>
                   {course.title}
