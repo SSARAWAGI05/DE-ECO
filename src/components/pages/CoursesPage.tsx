@@ -9,6 +9,8 @@ import {
   Eye,
   Calendar,
   Phone,
+  Search,
+  Filter,
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getThemeColors } from '../../styles/colors';
@@ -46,8 +48,22 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [isComingSoon, setIsComingSoon] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLevel, setSelectedLevel] = useState<string>('all');
+
+  const filteredCourses = courses.filter((c) => {
+    const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          c.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesLevel = selectedLevel === 'all' || c.level === selectedLevel;
+    return matchesSearch && matchesLevel;
+  });
+
   const coursesPerPage = 6;
-  const totalPages = Math.ceil(courses.length / coursesPerPage);
+  const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
+
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchQuery, selectedLevel]);
 
   // Helper function to format deadline
   const formatDeadline = (deadline: string | undefined) => {
@@ -148,7 +164,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
 
   const getCurrentCourses = () => {
     const start = currentPage * coursesPerPage;
-    return courses.slice(start, start + coursesPerPage);
+    return filteredCourses.slice(start, start + coursesPerPage);
   };
 
   const getLevelColor = (level: string | null) => {
@@ -224,6 +240,49 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
             </div>
           </div>
 
+          {/* SEARCH & FILTERS */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-8">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search courses by title or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 rounded-xl border-2 outline-none transition focus:ring-2"
+                style={{ 
+                  backgroundColor: themeColors.background.white,
+                  borderColor: themeColors.primary.black,
+                  color: themeColors.text.primary,
+                }}
+              />
+            </div>
+            
+            <div className="relative">
+              <select
+                value={selectedLevel}
+                onChange={(e) => setSelectedLevel(e.target.value)}
+                className="appearance-none pl-12 pr-10 py-3 rounded-xl border-2 outline-none transition focus:ring-2 cursor-pointer font-semibold"
+                style={{ 
+                  backgroundColor: themeColors.background.white,
+                  borderColor: themeColors.primary.black,
+                  color: themeColors.text.primary,
+                }}
+              >
+                <option value="all">All Levels</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+              <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
           {/* COURSE GRID */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {getCurrentCourses().map(course => (
@@ -234,24 +293,15 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
             >
               {/* IMAGE (no fixed height - image defines height) */}
               <div
-                className="rounded-xl relative cursor-pointer overflow-hidden"
+                className="h-48 rounded-xl relative cursor-pointer overflow-hidden bg-slate-100 flex items-center justify-center"
                 onClick={() => viewCourseDetails(course.id)}
               >
-                {course.thumbnail_url ? (
-                  <img
-                    src={course.thumbnail_url}
-                    alt={course.title}
-                    className="w-full h-auto block"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                  />
-                ) : (
-                  <div
-                    className="w-full flex items-center justify-center"
-                    style={{ backgroundColor: '#6b7280', minHeight: 160 }}
-                  >
-                    <PlayCircle className="w-10 h-10 text-white" />
-                  </div>
-                )}
+                <img
+                  src={course.thumbnail_url || "/logo/De-Eco-logo.png"}
+                  alt={course.title}
+                  className={course.thumbnail_url ? "w-full h-full object-cover" : "w-1/2 h-1/2 object-contain"}
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo/De-Eco-logo.png'; (e.currentTarget as HTMLImageElement).className = "w-1/2 h-1/2 object-contain"; }}
+                />
               </div>
 
               {/* CONTENT - make this grow so buttons sit at bottom */}
@@ -324,32 +374,41 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
             </div>
           ))}
 
+          {filteredCourses.length === 0 && (
+            <div className="col-span-full text-center py-12">
+              <h3 className="text-xl font-bold mb-2" style={{ color: themeColors.text.primary }}>No courses found</h3>
+              <p style={{ color: themeColors.text.secondary }}>Try adjusting your search or filters to find what you're looking for.</p>
+            </div>
+          )}
+
           </div>
 
           {/* PAGINATION */}
-          <div className="flex justify-center gap-3 mt-10">
-            <button
-              disabled={currentPage === 0}
-              onClick={() => setCurrentPage(p => p - 1)}
-              className="p-2 rounded-lg disabled:opacity-50"
-              style={{ backgroundColor: themeColors.accent.blue }}
-            >
-              <ChevronLeft />
-            </button>
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-3 mt-10">
+              <button
+                disabled={currentPage === 0}
+                onClick={() => setCurrentPage(p => p - 1)}
+                className="p-2 rounded-lg disabled:opacity-50"
+                style={{ backgroundColor: themeColors.accent.blue }}
+              >
+                <ChevronLeft />
+              </button>
 
-            <span className="flex items-center font-semibold">
-              Page {currentPage + 1} of {totalPages}
-            </span>
+              <span className="flex items-center font-semibold">
+                Page {currentPage + 1} of {totalPages}
+              </span>
 
-            <button
-              disabled={currentPage === totalPages - 1}
-              onClick={() => setCurrentPage(p => p + 1)}
-              className="p-2 rounded-lg disabled:opacity-50"
-              style={{ backgroundColor: themeColors.accent.blue }}
-            >
-              <ChevronRight />
-            </button>
-          </div>
+              <button
+                disabled={currentPage === totalPages - 1}
+                onClick={() => setCurrentPage(p => p + 1)}
+                className="p-2 rounded-lg disabled:opacity-50"
+                style={{ backgroundColor: themeColors.accent.blue }}
+              >
+                <ChevronRight />
+              </button>
+            </div>
+          )}
         </div>
       </div>
       {isComingSoon && (
@@ -521,21 +580,13 @@ const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* LEFT - IMAGE */}
-            <div className="rounded-xl relative bg-gray-200">
-              {course.thumbnail_url ? (
-                <img
-                  src={course.thumbnail_url}
-                  alt={course.title}
-                  className="w-full h-auto block rounded-xl"
-                />
-              ) : (
-                <div
-                  className="w-full aspect-video flex items-center justify-center rounded-xl"
-                  style={{ backgroundColor: '#6b7280' }}
-                >
-                  <PlayCircle className="w-16 h-16 text-white" />
-                </div>
-              )}
+            <div className="rounded-xl relative bg-slate-100 flex items-center justify-center aspect-video overflow-hidden">
+              <img
+                src={course.thumbnail_url || "/logo/De-Eco-logo.png"}
+                alt={course.title}
+                className={course.thumbnail_url ? "w-full h-full object-cover rounded-xl" : "w-1/2 h-1/2 object-contain"}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo/De-Eco-logo.png'; (e.currentTarget as HTMLImageElement).className = "w-1/2 h-1/2 object-contain"; }}
+              />
             </div>
 
 
