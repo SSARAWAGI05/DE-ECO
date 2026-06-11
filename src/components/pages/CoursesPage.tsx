@@ -277,18 +277,18 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
 
           {/* TABS */}
           <div className="flex justify-center mb-10">
-            <div className="inline-flex rounded-full p-1 border-2 shadow-sm" style={{ backgroundColor: themeColors.background.white, borderColor: themeColors.primary.black }}>
+            <div className="inline-flex rounded-full p-1 border-2 shadow-sm" style={{ backgroundColor: themeColors.primary.w, borderColor: themeColors.primary.w2 }}>
               <button
                 onClick={() => setActiveTab('explore')}
                 className={`px-6 sm:px-10 py-3 rounded-full text-sm font-bold transition-all ${activeTab === 'explore' ? 'shadow-md' : 'opacity-60 hover:opacity-100'}`}
-                style={activeTab === 'explore' ? { backgroundColor: themeColors.primary.black, color: themeColors.text.white } : { color: themeColors.text.primary }}
+                style={activeTab === 'explore' ? { backgroundColor: themeColors.primary.w2, color: themeColors.primary.w } : { color: themeColors.text.primary }}
               >
                 Explore Courses
               </button>
               <button
                 onClick={() => setActiveTab('my-learning')}
                 className={`px-6 sm:px-10 py-3 rounded-full text-sm font-bold transition-all ${activeTab === 'my-learning' ? 'shadow-md' : 'opacity-60 hover:opacity-100'}`}
-                style={activeTab === 'my-learning' ? { backgroundColor: themeColors.primary.black, color: themeColors.text.white } : { color: themeColors.text.primary }}
+                style={activeTab === 'my-learning' ? { backgroundColor: themeColors.primary.w2, color: themeColors.primary.w } : { color: themeColors.text.primary }}
               >
                 My Learning
               </button>
@@ -374,7 +374,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                       {course.duration_weeks ? `${course.duration_weeks} weeks` : 'Flexible'}
                     </span>
                     {enrolledCourseIds.has(course.id) && (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: themeColors.accent.green + '20', color: themeColors.accent.green }}>
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: themeColors.status.success + '20', color: themeColors.status.success }}>
                         <CheckCircle className="w-3 h-3" /> ENROLLED
                       </span>
                     )}
@@ -407,9 +407,9 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                     onClick={() => viewCourseDetails(course.id)}
                     className="flex-1 py-2 rounded-lg font-bold transition hover:scale-105 flex items-center justify-center gap-2"
                     style={{ 
-                      backgroundColor: themeColors.background.white, 
-                      color: themeColors.primary.black,
-                      border: `2px solid ${themeColors.primary.black}`
+                      backgroundColor: themeColors.primary.w, 
+                      color: themeColors.primary.w2,
+                      border: `2px solid ${themeColors.primary.w2}`
                     }}
                   >
                     <Eye className="w-4 h-4" />
@@ -420,8 +420,8 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                       onClick={() => viewCourseDetails(course.id)}
                       className="flex-1 py-2 rounded-lg font-bold transition hover:scale-105 flex items-center justify-center gap-1"
                       style={{ 
-                        backgroundColor: themeColors.accent.green, 
-                        color: themeColors.text.white 
+                        backgroundColor: themeColors.status.success, 
+                        color: '#ffffff' 
                       }}
                     >
                       Resume
@@ -432,8 +432,8 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                       disabled={!isEnrollmentOpen(course.enrollment_deadline)}
                       className="flex-1 py-2 rounded-lg font-bold transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                       style={{ 
-                        backgroundColor: themeColors.primary.black, 
-                        color: themeColors.text.white 
+                        backgroundColor: themeColors.primary.w2, 
+                        color: themeColors.primary.w 
                       }}
                     >
                       <Phone className="w-3 h-3" />
@@ -485,7 +485,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
             <>
               {/* MY LEARNING GRID */}
               {enrolledCoursesList.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed" style={{ borderColor: themeColors.primary.black }}>
+                <div className="text-center py-16 rounded-3xl border-2 border-dashed" style={{ backgroundColor: themeColors.primary.w, borderColor: themeColors.primary.w2 }}>
                   <div className="w-20 h-20 mx-auto bg-slate-100 rounded-full flex items-center justify-center mb-6">
                     <Star className="w-10 h-10 text-slate-400" />
                   </div>
@@ -494,7 +494,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                   <button
                     onClick={() => setActiveTab('explore')}
                     className="px-8 py-3 rounded-xl font-bold transition-all hover:scale-105"
-                    style={{ backgroundColor: themeColors.primary.black, color: themeColors.text.white }}
+                    style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
                   >
                     Explore Now
                   </button>
@@ -517,7 +517,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                           className={course.thumbnail_url ? "w-full h-full object-cover" : "w-1/2 h-1/2 object-contain"}
                           onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo/De-Eco-logo.png'; (e.currentTarget as HTMLImageElement).className = "w-1/2 h-1/2 object-contain"; }}
                         />
-                        <div className="absolute top-3 left-3 bg-white px-3 py-1 rounded-full shadow text-xs font-bold flex items-center gap-2" style={{ color: themeColors.accent.green }}>
+                        <div className="absolute top-3 left-3 bg-white px-3 py-1 rounded-full shadow text-xs font-bold flex items-center gap-2" style={{ color: themeColors.status.success }}>
                           <CheckCircle className="w-4 h-4" /> Enrolled
                         </div>
                       </div>
@@ -535,9 +535,9 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                             onClick={() => viewCourseDetails(course.id)}
                             className="flex-1 py-3 rounded-lg font-bold transition hover:scale-105 flex items-center justify-center gap-2 border-2"
                             style={{ 
-                              backgroundColor: themeColors.background.white, 
-                              color: themeColors.primary.black,
-                              borderColor: themeColors.primary.black
+                              backgroundColor: themeColors.primary.w, 
+                              color: themeColors.primary.w2,
+                              borderColor: themeColors.primary.w2
                             }}
                           >
                             <Eye className="w-4 h-4" />
