@@ -626,8 +626,12 @@ const resetFocusTimer = () => {
 
   {/* Courses Registered */}
   <div
-    className="flex items-center justify-between rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition border border-black/5"
+    className="flex items-center justify-between rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition border border-black/5 cursor-pointer hover:scale-105"
     style={{ backgroundColor: themeColors.accent.blue }}
+    onClick={() => {
+      localStorage.setItem('coursesTab', 'my-learning');
+      onNavigate?.('courses');
+    }}
   >
     <div className="flex items-center gap-3 min-w-0">
       <div className="w-9 h-9 rounded-lg flex items-center justify-center"

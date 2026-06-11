@@ -11,6 +11,7 @@ import {
   Phone,
   Search,
   Filter,
+  CheckCircle,
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getThemeColors } from '../../styles/colors';
@@ -50,6 +51,8 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<'explore' | 'my-learning'>('explore');
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
 
   const filteredCourses = courses.filter((c) => {
     const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -60,6 +63,8 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
 
   const coursesPerPage = 6;
   const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
+  
+  const enrolledCoursesList = courses.filter(c => enrolledCourseIds.has(c.id));
 
   useEffect(() => {
     setCurrentPage(0);
@@ -70,6 +75,12 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
     if (savedCourseId) {
       setSelectedCourseId(savedCourseId);
       localStorage.removeItem('selectedCourseId');
+    }
+
+    const savedTab = localStorage.getItem('coursesTab');
+    if (savedTab === 'my-learning') {
+      setActiveTab('my-learning');
+      localStorage.removeItem('coursesTab');
     }
   }, []);
 
@@ -120,7 +131,23 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
       setLoading(false);
     };
 
+    const fetchEnrollments = async () => {
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) return;
+
+      const { data, error } = await supabase
+        .from('course_enrollments')
+        .select('course_id')
+        .eq('user_id', authData.user.id);
+
+      if (!error && data) {
+        const ids = new Set(data.map((d: any) => d.course_id));
+        setEnrolledCourseIds(ids as Set<string>);
+      }
+    };
+
     fetchCourses();
+    fetchEnrollments();
   }, []);
 
   /* ================= ENROLL ================= */
@@ -248,6 +275,28 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
             </div>
           </div>
 
+          {/* TABS */}
+          <div className="flex justify-center mb-10">
+            <div className="inline-flex rounded-full p-1 border-2 shadow-sm" style={{ backgroundColor: themeColors.background.white, borderColor: themeColors.primary.black }}>
+              <button
+                onClick={() => setActiveTab('explore')}
+                className={`px-6 sm:px-10 py-3 rounded-full text-sm font-bold transition-all ${activeTab === 'explore' ? 'shadow-md' : 'opacity-60 hover:opacity-100'}`}
+                style={activeTab === 'explore' ? { backgroundColor: themeColors.primary.black, color: themeColors.text.white } : { color: themeColors.text.primary }}
+              >
+                Explore Courses
+              </button>
+              <button
+                onClick={() => setActiveTab('my-learning')}
+                className={`px-6 sm:px-10 py-3 rounded-full text-sm font-bold transition-all ${activeTab === 'my-learning' ? 'shadow-md' : 'opacity-60 hover:opacity-100'}`}
+                style={activeTab === 'my-learning' ? { backgroundColor: themeColors.primary.black, color: themeColors.text.white } : { color: themeColors.text.primary }}
+              >
+                My Learning
+              </button>
+            </div>
+          </div>
+
+          {activeTab === 'explore' ? (
+            <>
           {/* SEARCH & FILTERS */}
           <div className="flex flex-col sm:flex-row gap-4 mb-8">
             <div className="relative flex-1">
@@ -324,10 +373,11 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                       <Clock className="w-3 h-3" />
                       {course.duration_weeks ? `${course.duration_weeks} weeks` : 'Flexible'}
                     </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="w-3 h-3" />
-                      {/*Enrolled*/}
-                    </span>
+                    {enrolledCourseIds.has(course.id) && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: themeColors.accent.green + '20', color: themeColors.accent.green }}>
+                        <CheckCircle className="w-3 h-3" /> ENROLLED
+                      </span>
+                    )}
                   </div>
 
                   {/* ENROLLMENT DEADLINE */}
@@ -365,18 +415,31 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                     <Eye className="w-4 h-4" />
                     View Details
                   </button>
-                  <button
-                    onClick={() => enrollInCourse(course.id)}
-                    disabled={!isEnrollmentOpen(course.enrollment_deadline)}
-                    className="flex-1 py-2 rounded-lg font-bold transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-                    style={{ 
-                      backgroundColor: themeColors.primary.black, 
-                      color: themeColors.text.white 
-                    }}
-                  >
-                    <Phone className="w-3 h-3" />
-                    Enroll
-                  </button>
+                  {enrolledCourseIds.has(course.id) ? (
+                    <button
+                      onClick={() => viewCourseDetails(course.id)}
+                      className="flex-1 py-2 rounded-lg font-bold transition hover:scale-105 flex items-center justify-center gap-1"
+                      style={{ 
+                        backgroundColor: themeColors.accent.green, 
+                        color: themeColors.text.white 
+                      }}
+                    >
+                      Resume
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => enrollInCourse(course.id)}
+                      disabled={!isEnrollmentOpen(course.enrollment_deadline)}
+                      className="flex-1 py-2 rounded-lg font-bold transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                      style={{ 
+                        backgroundColor: themeColors.primary.black, 
+                        color: themeColors.text.white 
+                      }}
+                    >
+                      <Phone className="w-3 h-3" />
+                      Enroll
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -417,6 +480,78 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
               </button>
             </div>
           )}
+            </>
+          ) : (
+            <>
+              {/* MY LEARNING GRID */}
+              {enrolledCoursesList.length === 0 ? (
+                <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed" style={{ borderColor: themeColors.primary.black }}>
+                  <div className="w-20 h-20 mx-auto bg-slate-100 rounded-full flex items-center justify-center mb-6">
+                    <Star className="w-10 h-10 text-slate-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold mb-3" style={{ color: themeColors.text.primary }}>No Enrolled Courses Yet</h3>
+                  <p className="text-lg mb-8" style={{ color: themeColors.text.secondary }}>You haven't started your learning journey yet. Explore our courses and find the perfect fit!</p>
+                  <button
+                    onClick={() => setActiveTab('explore')}
+                    className="px-8 py-3 rounded-xl font-bold transition-all hover:scale-105"
+                    style={{ backgroundColor: themeColors.primary.black, color: themeColors.text.white }}
+                  >
+                    Explore Now
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {enrolledCoursesList.map(course => (
+                    <div
+                      key={`enrolled-${course.id}`}
+                      className="rounded-2xl p-4 shadow-lg hover:scale-105 transition flex flex-col border-2"
+                      style={{ backgroundColor: themeColors.background.white, borderColor: themeColors.accent.green }}
+                    >
+                      <div
+                        className="h-48 rounded-xl relative cursor-pointer overflow-hidden bg-slate-100 flex items-center justify-center"
+                        onClick={() => viewCourseDetails(course.id)}
+                      >
+                        <img
+                          src={course.thumbnail_url || "/logo/De-Eco-logo.png"}
+                          alt={course.title}
+                          className={course.thumbnail_url ? "w-full h-full object-cover" : "w-1/2 h-1/2 object-contain"}
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/logo/De-Eco-logo.png'; (e.currentTarget as HTMLImageElement).className = "w-1/2 h-1/2 object-contain"; }}
+                        />
+                        <div className="absolute top-3 left-3 bg-white px-3 py-1 rounded-full shadow text-xs font-bold flex items-center gap-2" style={{ color: themeColors.accent.green }}>
+                          <CheckCircle className="w-4 h-4" /> Enrolled
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex-1 flex flex-col">
+                        <h3 className="font-bold mb-2 text-lg" style={{ color: themeColors.text.primary }}>
+                          {course.title}
+                        </h3>
+                        <p className="text-sm opacity-80 mb-6 line-clamp-2" style={{ color: themeColors.text.secondary }}>
+                          {course.description}
+                        </p>
+
+                        <div className="mt-auto flex gap-2">
+                          <button
+                            onClick={() => viewCourseDetails(course.id)}
+                            className="flex-1 py-3 rounded-lg font-bold transition hover:scale-105 flex items-center justify-center gap-2 border-2"
+                            style={{ 
+                              backgroundColor: themeColors.background.white, 
+                              color: themeColors.primary.black,
+                              borderColor: themeColors.primary.black
+                            }}
+                          >
+                            <Eye className="w-4 h-4" />
+                            View Course
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
         </div>
       </div>
       {isComingSoon && (
