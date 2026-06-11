@@ -1065,7 +1065,7 @@ const resetFocusTimer = () => {
                   >
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      {course.duration_weeks} weeks
+                      {course.duration_weeks ? `${course.duration_weeks} weeks` : 'Flexible'}
                     </span>
 
                     <span
