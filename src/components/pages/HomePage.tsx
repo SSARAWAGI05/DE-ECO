@@ -1032,14 +1032,14 @@ const resetFocusTimer = () => {
                 style={{ backgroundColor: themeColors.background.white }}
               >
                 {/* Course Image */}
-                <div className="h-40 relative overflow-hidden">
+                <div className="h-40 relative overflow-hidden bg-slate-100 flex items-center justify-center">
                   <img
                     src={
                       course.thumbnail_url ||
-                      "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400"
+                      "/logo/De-Eco-logo.png"
                     }
                     alt={course.title}
-                    className="w-full h-full object-cover"
+                    className={course.thumbnail_url ? "w-full h-full object-cover" : "w-1/2 h-1/2 object-contain"}
                   />
                 </div>
 
@@ -1225,14 +1225,14 @@ const resetFocusTimer = () => {
                   onClick={() => window.open(reel.reel_url, "_blank")}
                 >
                   {/* Thumbnail */}
-                  <div className="relative h-44 sm:h-48">
+                  <div className="relative h-44 sm:h-48 bg-slate-100 flex items-center justify-center">
                     <img
                       src={
                         reel.thumbnail_url ||
                         "/logo/De-Eco-logo.png"
                       }
                       alt={reel.title}
-                      className="w-full h-full object-cover"
+                      className={reel.thumbnail_url ? "w-full h-full object-cover" : "w-1/2 h-1/2 object-contain"}
                     />
 
                     {/* Play Overlay */}
