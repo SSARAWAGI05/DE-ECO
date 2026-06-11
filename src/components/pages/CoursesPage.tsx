@@ -44,7 +44,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
-  const [isComingSoon, setIsComingSoon] = useState(true);
+  const [isComingSoon, setIsComingSoon] = useState(false);
 
   const coursesPerPage = 6;
   const totalPages = Math.ceil(courses.length / coursesPerPage);
