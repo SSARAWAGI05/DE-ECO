@@ -65,6 +65,14 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
     setCurrentPage(0);
   }, [searchQuery, selectedLevel]);
 
+  useEffect(() => {
+    const savedCourseId = localStorage.getItem('selectedCourseId');
+    if (savedCourseId) {
+      setSelectedCourseId(savedCourseId);
+      localStorage.removeItem('selectedCourseId');
+    }
+  }, []);
+
   // Helper function to format deadline
   const formatDeadline = (deadline: string | undefined) => {
     if (!deadline) return null;

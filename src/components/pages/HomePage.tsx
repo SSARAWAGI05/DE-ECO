@@ -1003,7 +1003,7 @@ const resetFocusTimer = () => {
                 color: themeColors.text.white,
               }}
             >
-              Coming Soon, Stay Tuned!
+              Explore More Courses
               <ChevronRight size={18} />
             </button>
           </div>
@@ -1077,8 +1077,11 @@ const resetFocusTimer = () => {
                   </div>
 
                   <button
-                    className="w-full py-2 rounded-lg font-bold text-sm transition-transform hover:scale-[1.03] hover:-translate-y-1
-"
+                    onClick={() => {
+                      localStorage.setItem('selectedCourseId', course.id);
+                      onNavigate?.("courses");
+                    }}
+                    className="w-full py-2 rounded-lg font-bold text-sm transition-transform hover:scale-[1.03] hover:-translate-y-1"
                     style={{
                       backgroundColor: themeColors.accent.blue,
                       color: themeColors.text.white,
