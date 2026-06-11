@@ -157,18 +157,17 @@ export const LiveClassesPage: React.FC<LiveClassesPageProps> = ({ onPageChange }
           .eq('user_id', user.id)
           .lt('end_datetime', nowIso);
 
-        // 🔒 CHECK ENROLLMENT
-        const { data: enrollment, error: enrollmentError } = await supabase
-          .from('class_enrollments')
-          .select('id')
-          .eq('user_id', user.id)
-          .limit(1)
+        // 🔒 CHECK ENROLLMENT (Global Active Status)
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_active')
+          .eq('id', user.id)
           .single();
 
-        if (enrollmentError || !enrollment) {
+        if (profileError || !profile || profile.is_active === false) {
           setIsEnrolled(false);
           setLoading(false);
-          return; // ⛔ STOP HERE — don’t load class data
+          return; // ⛔ STOP HERE — don't load class data
         }
 
         setIsEnrolled(true);
