@@ -461,7 +461,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                 disabled={currentPage === 0}
                 onClick={() => setCurrentPage(p => p - 1)}
                 className="p-2 rounded-lg disabled:opacity-50"
-                style={{ backgroundColor: themeColors.accent.blue }}
+                style={{ backgroundColor: themeColors.accent.blue, color: '#ffffff' }}
               >
                 <ChevronLeft />
               </button>
@@ -474,7 +474,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                 disabled={currentPage === totalPages - 1}
                 onClick={() => setCurrentPage(p => p + 1)}
                 className="p-2 rounded-lg disabled:opacity-50"
-                style={{ backgroundColor: themeColors.accent.blue }}
+                style={{ backgroundColor: themeColors.accent.blue, color: '#ffffff' }}
               >
                 <ChevronRight />
               </button>
