@@ -54,7 +54,7 @@ export const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ onLogout }) 
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("first_name, last_name, phone")
+        .select("first_name, last_name, phone, last_visit_date, current_streak")
         .eq("id", user.id)
         .single();
 
@@ -65,6 +65,39 @@ export const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ onLogout }) 
 
       if (!data?.first_name || !data?.last_name || !data?.phone) {
         setProfileIncomplete(true);
+      }
+
+      // Handle Visit Streak Tracking
+      const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
+      let newStreak = data.current_streak || 0;
+      let newLastVisit = data.last_visit_date;
+
+      if (!newLastVisit) {
+        newStreak = 1;
+        newLastVisit = todayStr;
+      } else if (newLastVisit !== todayStr) {
+        const today = new Date(todayStr);
+        const lastVisit = new Date(newLastVisit);
+        
+        const diffTime = today.getTime() - lastVisit.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) {
+          newStreak += 1;
+        } else if (diffDays > 1) {
+          newStreak = 1;
+        } else if (diffDays < 0) {
+          // If somehow last_visit is in the future, fix it
+          newStreak = 1;
+        }
+        newLastVisit = todayStr;
+      }
+
+      if (newLastVisit !== data.last_visit_date || newStreak !== data.current_streak) {
+        await supabase
+          .from("profiles")
+          .update({ last_visit_date: newLastVisit, current_streak: newStreak })
+          .eq("id", user.id);
       }
     };
 

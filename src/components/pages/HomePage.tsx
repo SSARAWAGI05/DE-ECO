@@ -323,39 +323,13 @@ const [todayClasses, setTodayClasses] = useState<{
     if (!user) return;
 
     /* ================= DAY STREAK ================= */
-    const { data: completedTodos } = await supabase
-      .from('todos')
-      .select('created_at')
-      .eq('user_id', user.id)
-      .eq('status', 'done')
-      .order('created_at', { ascending: false });
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('current_streak')
+      .eq('id', user.id)
+      .single();
 
-    if (completedTodos && completedTodos.length > 0) {
-      const completedDays = Array.from(
-        new Set(
-          completedTodos.map(t =>
-            new Date(t.created_at!).toDateString()
-          )
-        )
-      );
-
-      let streak = 0;
-      let currentDate = new Date();
-
-      for (let day of completedDays) {
-        const d = new Date(day);
-        if (d.toDateString() === currentDate.toDateString()) {
-          streak++;
-          currentDate.setDate(currentDate.getDate() - 1);
-        } else {
-          break;
-        }
-      }
-
-      setDayStreak(streak);
-    } else {
-      setDayStreak(0);
-    }
+    setDayStreak(profileData?.current_streak || 0);
 
     /* ================= ACTIVE COURSES ================= */
     const { data: activeCourses } = await supabase
