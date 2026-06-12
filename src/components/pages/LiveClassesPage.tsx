@@ -180,10 +180,7 @@ export const LiveClassesPage: React.FC<LiveClassesPageProps> = ({ onPageChange }
             .from('live_classes')
             .select('*')
             .eq('user_id', user.id)
-            .or(
-              `scheduled_datetime.gte.${now},and(scheduled_datetime.lte.${now},end_datetime.gte.${now})`
-            )
-            .order('scheduled_datetime', { ascending: true });
+            .order('scheduled_datetime', { ascending: false });
 
 
         if (!classesError && classes) {
@@ -222,8 +219,18 @@ export const LiveClassesPage: React.FC<LiveClassesPageProps> = ({ onPageChange }
 
           // Set next class for countdown
           if (classes.length > 0) {
-          setNextClass(classes[0]);
-        }
+            const nowTime = new Date().getTime();
+            // Find the closest upcoming class
+            const upcoming = classes
+              .filter(c => new Date(c.end_datetime).getTime() >= nowTime)
+              .sort((a, b) => new Date(a.scheduled_datetime).getTime() - new Date(b.scheduled_datetime).getTime());
+            
+            if (upcoming.length > 0) {
+              setNextClass(upcoming[0]);
+            } else {
+              setNextClass(null);
+            }
+          }
       }
 
       // Fetch class announcements
@@ -348,7 +355,7 @@ if (!statsError && stats) {
 
   const sidebarItems = [
     { id: 'home' as SidebarSection, label: 'Home', icon: <Home className="w-5 h-5" />, color: themeColors.accent.blue },
-    { id: 'upcoming' as SidebarSection, label: 'Upcoming Classes', icon: <Calendar className="w-5 h-5" />, color: themeColors.accent.yellow },
+    { id: 'upcoming' as SidebarSection, label: 'Classes', icon: <Calendar className="w-5 h-5" />, color: themeColors.accent.yellow },
     { id: 'notes' as SidebarSection, label: 'Class Notes', icon: <BookOpen className="w-5 h-5" />, color: themeColors.accent.red },
     { id: 'recordings' as SidebarSection, label: 'Recordings & Transcripts', icon: <Video className="w-5 h-5" />, color: themeColors.accent.orange },
     { id: 'schedule' as SidebarSection, label: 'Week Schedule', icon: <Clock className="w-5 h-5" />, color: themeColors.accent.blueLight },
@@ -554,7 +561,7 @@ if (!statsError && stats) {
   const renderUpcomingClasses = () => (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       <div className="bg-white dark:bg-black p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-2xl shadow-lg border-2 border-white dark:border-gray-700">
-        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 lg:mb-6">Upcoming Classes</h2>
+        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 lg:mb-6">Classes</h2>
         
         <div className="space-y-4">
           {upcomingClasses.map((cls) => (
