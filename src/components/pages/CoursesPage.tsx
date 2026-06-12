@@ -424,7 +424,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                         color: '#ffffff' 
                       }}
                     >
-                      Resume
+                      Enrolled
                     </button>
                   ) : (
                     <button
