@@ -375,7 +375,7 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                     </span>
                     {enrolledCourseIds.has(course.id) && (
                       <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: themeColors.status.success + '20', color: themeColors.status.success }}>
-                        <CheckCircle className="w-3 h-3" /> ENROLLED
+                        <CheckCircle className="w-3 h-3" /> 
                       </span>
                     )}
                   </div>
