@@ -180,6 +180,7 @@ export const LiveClassesPage: React.FC<LiveClassesPageProps> = ({ onPageChange }
             .from('live_classes')
             .select('*')
             .eq('user_id', user.id)
+            .gte('scheduled_datetime', '2026-06-11T00:00:00.000Z')
             .order('scheduled_datetime', { ascending: false });
 
 
