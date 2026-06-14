@@ -52,7 +52,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const { isDark, isFocusMode } = useTheme();
   const themeColors = getThemeColors(isDark, isFocusMode);
   const [marketPulseReels, setMarketPulseReels] = useState<any[]>([]);
-const [marketPulseLoading, setMarketPulseLoading] = useState(true);
+  const [marketPulseLoading, setMarketPulseLoading] = useState(true);
+
+  // Daily Quote State
+  const [dailyQuote, setDailyQuote] = useState({
+    text: "The beautiful thing about learning is that no one can take it away from you.",
+    author: ""
+  });
 
   // Focus Timer States
   const [focusMinutes, setFocusMinutes] = useState(25);
@@ -258,6 +264,32 @@ const [todayClasses, setTodayClasses] = useState<{
   fetchMarketPulsePreview();
 }, []);
 
+
+  useEffect(() => {
+    const fetchDailyQuote = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('quotes')
+          .select('quote_text, author_name')
+          .order('id', { ascending: true });
+          
+        if (!error && data && data.length > 0) {
+          const todayIndex = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+          const quoteIndex = todayIndex % data.length;
+          const currentQuote = data[quoteIndex];
+          
+          setDailyQuote({
+            text: currentQuote.quote_text,
+            author: currentQuote.author_name || ""
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching quotes:', error);
+      }
+    };
+
+    fetchDailyQuote();
+  }, []);
 
   useEffect(() => {
     if (!loading && userName) {
@@ -553,7 +585,8 @@ const resetFocusTimer = () => {
 
 
                 <p className="text-xs sm:text-base lg:text-lg italic text-center leading-relaxed mb-2" style={{ color: themeColors.text.secondary }}>
-                  "The beautiful thing about learning is that no one can take it away from you."
+                  "{dailyQuote.text}"
+                  {dailyQuote.author && <span className="block mt-1 text-xs opacity-80 not-italic">- {dailyQuote.author}</span>}
                 </p>
               </div>
             </div>
