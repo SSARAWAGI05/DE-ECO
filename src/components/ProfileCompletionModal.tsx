@@ -15,12 +15,13 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isExistingActive, setIsExistingActive] = useState<boolean | null>(null);
 
   useEffect(() => {
     // Prefill if data exists
     supabase
       .from("profiles")
-      .select("first_name, last_name, phone")
+      .select("first_name, last_name, phone, is_active")
       .eq("id", userId)
       .single()
       .then(({ data }) => {
@@ -28,6 +29,9 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
           setFirstName(data.first_name || "");
           setLastName(data.last_name || "");
           setPhone(data.phone || "");
+          if (data.is_active !== undefined) {
+            setIsExistingActive(data.is_active);
+          }
         }
       });
   }, [userId]);
@@ -47,6 +51,7 @@ const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
       last_name: lastName.trim(),
       phone: phone.trim(),
       updated_at: new Date().toISOString(),
+      ...(isExistingActive === null || isExistingActive === undefined ? { is_active: false } : {}),
     });
 
     setLoading(false);
