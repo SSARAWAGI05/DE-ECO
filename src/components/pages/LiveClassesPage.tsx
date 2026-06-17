@@ -187,7 +187,7 @@ export const LiveClassesPage: React.FC<LiveClassesPageProps> = ({ onPageChange }
         if (!classesError && classes) {
           setUpcomingClasses(classes.map(cls => {
             const scheduledDate = new Date(cls.scheduled_datetime); // ✅ Parse timestamptz
-            const endDate = new Date(cls.end_datetime);
+            const endDate = new Date(scheduledDate.getTime() + cls.duration_minutes * 60000);
             
             return {
               id: cls.id,
@@ -221,9 +221,12 @@ export const LiveClassesPage: React.FC<LiveClassesPageProps> = ({ onPageChange }
           // Set next class for countdown
           if (classes.length > 0) {
             const nowTime = new Date().getTime();
-            // Find the closest upcoming class
+            // Find the closest upcoming class by dynamically calculating end time
             const upcoming = classes
-              .filter(c => new Date(c.end_datetime).getTime() >= nowTime)
+              .filter(c => {
+                const actualEnd = new Date(c.scheduled_datetime).getTime() + c.duration_minutes * 60000;
+                return actualEnd >= nowTime;
+              })
               .sort((a, b) => new Date(a.scheduled_datetime).getTime() - new Date(b.scheduled_datetime).getTime());
             
             if (upcoming.length > 0) {
