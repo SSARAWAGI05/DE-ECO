@@ -19,6 +19,29 @@ const LoginModal: React.FC<LoginModalProps> = ({
   const { isDark } = useTheme();
   const [session, setSession] = useState<any>(null);
 
+  // Dummy login credentials state
+  const [dummyEmail, setDummyEmail] = useState("test@test.com");
+  const [dummyPassword, setDummyPassword] = useState("12345");
+  const [dummyError, setDummyError] = useState("");
+
+  const handleDummyLogin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (dummyEmail.trim().toLowerCase() === "test@test.com" && dummyPassword === "12345") {
+      const mockSession = {
+        user: {
+          id: "dummy-user-123",
+          email: "test@test.com",
+          user_metadata: { first_name: "Test", last_name: "Student" }
+        }
+      };
+      localStorage.setItem("deeco_dummy_session", JSON.stringify(mockSession));
+      onLoginSuccess();
+      onClose();
+    } else {
+      setDummyError("Invalid credentials. Please use test@test.com and 12345");
+    }
+  };
+
   // Handle auth state
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -91,11 +114,75 @@ const LoginModal: React.FC<LoginModalProps> = ({
                 </p>
               </div>
 
+              {/* Temporary Demo / Test Credentials Box */}
+              <div className="mb-6 p-4 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/50 border-2 border-indigo-500/40 text-left shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wide flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                    Test Login (develop)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDummyEmail("test@test.com");
+                      setDummyPassword("12345");
+                      handleDummyLogin();
+                    }}
+                    className="text-xs font-black text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 underline decoration-indigo-400 transition-colors"
+                  >
+                    ⚡ Quick 1-Click Login
+                  </button>
+                </div>
+
+                <form onSubmit={handleDummyLogin} className="space-y-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-600 dark:text-gray-300 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={dummyEmail}
+                      onChange={(e) => {
+                        setDummyEmail(e.target.value);
+                        setDummyError("");
+                      }}
+                      placeholder="test@test.com"
+                      className="w-full px-3.5 py-2 text-sm rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-neutral-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-600 dark:text-gray-300 mb-1">Password</label>
+                    <input
+                      type="password"
+                      value={dummyPassword}
+                      onChange={(e) => {
+                        setDummyPassword(e.target.value);
+                        setDummyError("");
+                      }}
+                      placeholder="12345"
+                      className="w-full px-3.5 py-2 text-sm rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-neutral-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                  </div>
+
+                  {dummyError && (
+                    <p className="text-xs font-semibold text-rose-500">{dummyError}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="w-full mt-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                  >
+                    Log In with Test Account
+                  </button>
+                </form>
+              </div>
+
               {/* Divider */}
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
-                <span className="text-xs text-gray-500 uppercase tracking-wide">
-                  Secure Login
+                <span className="text-xs text-gray-400 uppercase tracking-wide">
+                  Or Regular Supabase Auth
                 </span>
                 <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
               </div>

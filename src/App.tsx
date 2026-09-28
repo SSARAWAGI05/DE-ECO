@@ -14,15 +14,28 @@ function App() {
 
   // Load session on mount
   useEffect(() => {
+    const dummy = localStorage.getItem("deeco_dummy_session");
+    if (dummy) {
+      try {
+        setSession(JSON.parse(dummy));
+      } catch (e) {
+        setSession(true);
+      }
+    }
+
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+      if (data?.session) {
+        setSession(data.session);
+      }
     });
 
     // Subscribe to auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      if (session) {
+        setSession(session);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -30,6 +43,7 @@ function App() {
 
   // Logout handler
   const handleLogout = async () => {
+    localStorage.removeItem("deeco_dummy_session");
     await supabase.auth.signOut();
     setSession(null);
   };
