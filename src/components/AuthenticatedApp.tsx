@@ -4,6 +4,7 @@ import { Navigation } from "./Navigation";
 import { HomePage } from "./pages/HomePage";
 import { CoursesPage } from "./pages/CoursesPage";
 import { LiveClassesPage } from "./pages/LiveClassesPage";
+import { ExamsPage } from "./pages/ExamsPage";
 import { AIHubPage } from "./pages/AIHubPage";
 import ContactPage  from "./pages/ContactPage";
 import { AboutUsPage } from "./pages/AboutUsPage";
@@ -115,6 +116,9 @@ export const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ onLogout }) 
 
       case "live-classes":
         return <LiveClassesPage onPageChange={setCurrentPage} />;
+
+      case "exams":
+        return <ExamsPage onPageChange={setCurrentPage} />;
 
       case "ai-hub":
         return <AIHubPage />;
