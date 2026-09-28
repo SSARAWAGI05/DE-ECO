@@ -16,17 +16,17 @@ import {
   GraduationCap,
   MessageSquare,
   Star,
-  ShieldAlert,
   ThumbsUp,
-  Flame,
+  Target,
   UserCheck,
   Search,
   FileText,
   Sparkles,
   HelpCircle,
-  Send,
   Eye,
-  CheckCheck
+  CheckCircle,
+  AlertTriangle,
+  RotateCcw
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getThemeColors } from "../../styles/colors";
@@ -119,7 +119,7 @@ const MOCK_EXAMS: Exam[] = [
     course: "Macroeconomic Theory & Policy",
     instructor: "Rishika",
     status: "live",
-    scheduledDate: "Active Now",
+    scheduledDate: "Active Today",
     scheduledTime: "Window closes in 6 hours",
     durationMinutes: 45,
     totalMarks: 50,
@@ -135,10 +135,10 @@ const MOCK_EXAMS: Exam[] = [
     ],
     instructions: [
       "You have 45 minutes to complete all 6 questions.",
-      "Section A consists of 4 Multiple Choice Questions (5 marks each = 20 marks).",
-      "Section B consists of 2 Descriptive Essay Questions (15 marks each = 30 marks).",
-      "Your descriptive answers will continuously auto-save as drafts in your browser.",
-      "You can navigate freely between questions using the Question Palette.",
+      "Section A: 4 Multiple Choice Questions (5 marks each = 20 marks).",
+      "Section B: 2 Descriptive Essay Questions (15 marks each = 30 marks).",
+      "Your written responses are auto-saved to your local session continuously.",
+      "Navigate smoothly between questions using the Question Palette.",
       "The exam will automatically submit when the timer expires."
     ],
     questions: [
@@ -149,13 +149,13 @@ const MOCK_EXAMS: Exam[] = [
         question: "Which of the following is NOT included in the calculation of Gross Domestic Product (GDP) using the expenditure approach?",
         marks: 5,
         options: [
-          { id: "A", text: "Gross Private Domestic Investment (capital goods & inventory changes)" },
-          { id: "B", text: "Government transfer payments (e.g., social security and unemployment pensions)" },
+          { id: "A", text: "Gross Private Domestic Investment (capital equipment and inventory changes)" },
+          { id: "B", text: "Government transfer payments (e.g., social security and unemployment benefits)" },
           { id: "C", text: "Government consumption expenditures and gross public investment" },
           { id: "D", text: "Net Exports of goods and services (Exports minus Imports)" }
         ],
         correctAnswer: "B",
-        explanation: "Government transfer payments are excluded from GDP because they do not reflect compensation for current productive activities or new output."
+        explanation: "Government transfer payments are excluded from GDP because they do not reflect compensation for current productive economic activities or new output."
       },
       {
         id: "q2",
@@ -179,13 +179,13 @@ const MOCK_EXAMS: Exam[] = [
         question: "When the Central Bank conducts Open Market Operations by purchasing government bonds from commercial banks, what is the primary consequence on the banking system and market interest rates?",
         marks: 5,
         options: [
-          { id: "A", text: "Commercial bank reserves decrease, constraining credit and elevating bond yields" },
+          { id: "A", text: "Commercial bank reserves decrease, constraining credit availability and elevating loan yields" },
           { id: "B", text: "Commercial bank excess reserves rise, credit availability expands, and short-term interest rates fall" },
           { id: "C", text: "The statutory reserve requirement ratio automatically quadruples" },
-          { id: "D", text: "Inflation is instantaneously pegged to zero with no shift in bank balance sheets" }
+          { id: "D", text: "Inflation is instantaneously pegged to zero with no shift in balance sheets" }
         ],
         correctAnswer: "B",
-        explanation: "Purchasing government securities injects fresh liquidity directly into commercial bank reserves, lowering interbank borrowing rates and loan interest rates."
+        explanation: "Purchasing government securities injects liquidity directly into bank reserves, lowering interbank borrowing rates and commercial loan interest rates."
       },
       {
         id: "q4",
@@ -196,11 +196,11 @@ const MOCK_EXAMS: Exam[] = [
         options: [
           { id: "A", text: "Fiscal deficit and the foreign currency exchange rate" },
           { id: "B", text: "The inflation rate and the unemployment rate" },
-          { id: "C", text: "Nominal interest rates and capital account surplus" },
+          { id: "C", text: "Nominal interest rates and capital account balance" },
           { id: "D", text: "The current account deficit and velocity of money" }
         ],
         correctAnswer: "B",
-        explanation: "A.W. Phillips showed that lower unemployment in the short-run puts upward pressure on nominal wages, generating higher price inflation."
+        explanation: "The short-run Phillips curve demonstrates that lower unemployment rates put upward pressure on nominal wages, driving higher price inflation."
       },
       {
         id: "q5",
@@ -224,11 +224,11 @@ const MOCK_EXAMS: Exam[] = [
   },
   {
     id: "exam-micro-structures",
-    title: "Microeconomics & Market Structures Unit Test",
+    title: "Microeconomics & Market Structures Unit Assessment",
     course: "Foundations of Microeconomics",
     instructor: "Rishika",
     status: "upcoming",
-    scheduledDate: "In 2 Days (Wednesday)",
+    scheduledDate: "Wednesday, Oct 1",
     scheduledTime: "10:00 AM - 11:00 AM IST",
     durationMinutes: 60,
     totalMarks: 60,
@@ -243,7 +243,7 @@ const MOCK_EXAMS: Exam[] = [
       "Price Discrimination & Consumer Surplus"
     ],
     instructions: [
-      "Scheduled live exam window opens precisely at 10:00 AM IST.",
+      "Live exam window opens at 10:00 AM IST.",
       "Covers Chapters 3, 4 and 5 of Microeconomic Foundations.",
       "Ensure a reliable internet connection before commencing."
     ],
@@ -251,7 +251,7 @@ const MOCK_EXAMS: Exam[] = [
   },
   {
     id: "exam-intl-trade",
-    title: "International Trade & Forex Mock Diagnostic",
+    title: "International Trade & Forex Diagnostic Test",
     course: "Global Economics & Currency Markets",
     instructor: "Rishika",
     status: "practice",
@@ -264,14 +264,14 @@ const MOCK_EXAMS: Exam[] = [
     descriptiveCount: 1,
     syllabus: [
       "Ricardian Comparative Advantage",
-      "Tariffs, Quotas & Subsidies Analysis",
+      "Tariffs, Quotas & Subsidies Welfare Analysis",
       "Floating vs Fixed Exchange Rate Systems",
       "Balance of Payments: Current vs Capital Account"
     ],
     instructions: [
       "This is an un-proctored diagnostic mock test.",
       "You may take this test as many times as you like to practice your speed.",
-      "Immediate self-scoring and teacher model answers will be provided."
+      "Immediate self-scoring and teacher model answers are provided."
     ],
     questions: []
   }
@@ -368,23 +368,22 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
   const { isDark, isFocusMode } = useTheme();
   const themeColors = getThemeColors(isDark, isFocusMode);
 
-  // Top level tabs: 'catalog' | 'results'
+  // Tab switch
   const [activeTab, setActiveTab] = useState<"catalog" | "results">("catalog");
 
-  // Active exam state (null when browsing, populated when taking test)
+  // Active exam taking portal state
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
 
-  // Instructions modal before starting
+  // Pre-Exam instructions modal
   const [preExamModal, setPreExamModal] = useState<Exam | null>(null);
 
-  // Selected Result for Detailed Report Card Modal
+  // Selected Result for Detailed Scorecard Modal
   const [selectedResult, setSelectedResult] = useState<ExamResult | null>(null);
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "live" | "upcoming" | "practice">("all");
 
-  // Filtered exams
   const filteredExams = MOCK_EXAMS.filter((exam) => {
     const matchesSearch =
       exam.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -395,10 +394,10 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 
   return (
     <div
-      className="min-h-screen pt-28 sm:pt-36 pb-16 transition-colors duration-300"
-      style={{ backgroundColor: themeColors.primary.lightGray }}
+      className="min-h-screen pt-24 sm:pt-28 pb-16 transition-colors duration-200"
+      style={{ backgroundColor: isDark ? "#0d0d0d" : "#fbfbfb" }}
     >
-      {/* If an exam is active, show the full-screen examination portal */}
+      {/* If taking an exam, show the full-screen portal */}
       {activeExam ? (
         <ExamTakingPortal
           exam={activeExam}
@@ -408,141 +407,99 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
             setSelectedResult(result);
             setActiveTab("results");
           }}
-          themeColors={themeColors}
           isDark={isDark}
         />
       ) : (
-        <div className="container mx-auto px-4 sm:px-6">
-          {/* ================= PAGE HEADER ================= */}
-          <div className="text-center mb-10">
-            <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider mb-4 border-2 border-black dark:border-white shadow-sm"
-              style={{ backgroundColor: themeColors.accent.yellow, color: '#000000' }}
-            >
-              <GraduationCap className="w-4 h-4" /> Academic Examination System
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* ================= CLEAN HEADER ================= */}
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase mb-3 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border border-neutral-200/80 dark:border-neutral-700/60">
+              <GraduationCap className="w-3.5 h-3.5 text-neutral-500" />
+              Academic Assessments
             </div>
-            <h1
-              className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 tracking-tight"
-              style={{ color: themeColors.text.primary }}
-            >
-              Assessments & Examinations
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100 mb-3">
+              Examinations & Evaluations
             </h1>
-            <p
-              className="text-base sm:text-lg max-w-2xl mx-auto font-medium"
-              style={{ color: themeColors.text.secondary }}
-            >
-              Timed conceptual tests, rigorous essay examinations, and personalized evaluations by Instructor Rishika.
+            <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 leading-relaxed">
+              Complete timed tests, review detailed question breakdowns, and receive personalized feedback from Instructor Rishika.
             </p>
           </div>
 
-          {/* ================= DE-ECO 4 STATS BAR ================= */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-            {/* Box 1: Scheduled Tests */}
-            <div
-              className="rounded-2xl p-4 sm:p-5 text-center border-2 border-black dark:border-white shadow-md transition hover:scale-[1.02]"
-              style={{ backgroundColor: themeColors.accent.blue }}
-            >
-              <div className="text-2xl sm:text-3xl font-black" style={{ color: themeColors.primary.w2 }}>
+          {/* ================= 4 CLEAN STATS CARDS ================= */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 mb-8">
+            <div className="bg-white dark:bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
+              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 block mb-1">
+                Available Tests
+              </span>
+              <div className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">
                 {MOCK_EXAMS.length}
               </div>
-              <div className="text-xs sm:text-sm font-bold mt-1" style={{ color: themeColors.primary.w2 }}>
-                Available Assessments
-              </div>
+              <span className="text-[11px] text-neutral-400 mt-1 block">Curriculum Assessments</span>
             </div>
 
-            {/* Box 2: Live Test Window */}
-            <div
-              className="rounded-2xl p-4 sm:p-5 text-center border-2 border-black dark:border-white shadow-md transition hover:scale-[1.02]"
-              style={{ backgroundColor: themeColors.accent.yellow }}
-            >
-              <div className="text-2xl sm:text-3xl font-black flex items-center justify-center gap-1.5" style={{ color: '#000000' }}>
-                <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
+            <div className="bg-white dark:bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
+              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 block mb-1">
+                Active Window
+              </span>
+              <div className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 1 Live
               </div>
-              <div className="text-xs sm:text-sm font-bold mt-1" style={{ color: '#000000' }}>
-                Active Mid-Term Window
-              </div>
+              <span className="text-[11px] text-neutral-400 mt-1 block">Mid-Term In Progress</span>
             </div>
 
-            {/* Box 3: Average Score */}
-            <div
-              className="rounded-2xl p-4 sm:p-5 text-center border-2 border-black dark:border-white shadow-md transition hover:scale-[1.02]"
-              style={{ backgroundColor: themeColors.accent.green }}
-            >
-              <div className="text-2xl sm:text-3xl font-black" style={{ color: '#000000' }}>
+            <div className="bg-white dark:bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
+              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 block mb-1">
+                Average Score
+              </span>
+              <div className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">
                 86.0%
               </div>
-              <div className="text-xs sm:text-sm font-bold mt-1" style={{ color: '#000000' }}>
-                Average Student Score
-              </div>
+              <span className="text-[11px] text-neutral-400 mt-1 block">Across Completed Tests</span>
             </div>
 
-            {/* Box 4: Recent Standing */}
-            <div
-              className="rounded-2xl p-4 sm:p-5 text-center border-2 border-black dark:border-white shadow-md transition hover:scale-[1.02]"
-              style={{ backgroundColor: themeColors.accent.red }}
-            >
-              <div className="text-2xl sm:text-3xl font-black" style={{ color: themeColors.primary.w2 }}>
+            <div className="bg-white dark:bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 shadow-xs">
+              <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 block mb-1">
+                Recent Standing
+              </span>
+              <div className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-neutral-100">
                 Grade A+
               </div>
-              <div className="text-xs sm:text-sm font-bold mt-1" style={{ color: themeColors.primary.w2 }}>
-                Recent Standing
-              </div>
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 block">
+                Top Distinction
+              </span>
             </div>
           </div>
 
-          {/* ================= SIGNATURE DE-ECO PILL TABS ================= */}
-          <div className="flex justify-center mb-10">
-            <div
-              className="inline-flex rounded-full p-1.5 border-2 border-black dark:border-white shadow-md"
-              style={{ backgroundColor: themeColors.primary.w }}
-            >
+          {/* ================= MINIMALIST TAB SWITCHER ================= */}
+          <div className="flex justify-center mb-8">
+            <div className="inline-flex p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800">
               <button
                 onClick={() => setActiveTab("catalog")}
-                className={`px-6 sm:px-10 py-3 rounded-full text-sm font-black transition-all flex items-center gap-2 ${
-                  activeTab === "catalog" ? "shadow-md" : "opacity-60 hover:opacity-100"
-                }`}
-                style={
+                className={`px-5 sm:px-7 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center gap-2 ${
                   activeTab === "catalog"
-                    ? { backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }
-                    : { color: themeColors.text.primary }
-                }
+                    ? "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-xs"
+                    : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200"
+                }`}
               >
-                <Calendar className="w-4 h-4" />
+                <Calendar className="w-4 h-4 text-neutral-500" />
                 Upcoming & Live Exams
-                <span
-                  className="ml-1 text-xs px-2 py-0.5 rounded-full font-bold"
-                  style={
-                    activeTab === "catalog"
-                      ? { backgroundColor: themeColors.accent.yellow, color: "#000000" }
-                      : { backgroundColor: themeColors.accent.blue, color: themeColors.primary.w2 }
-                  }
-                >
+                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 font-semibold">
                   {MOCK_EXAMS.length}
                 </span>
               </button>
 
               <button
                 onClick={() => setActiveTab("results")}
-                className={`px-6 sm:px-10 py-3 rounded-full text-sm font-black transition-all flex items-center gap-2 ${
-                  activeTab === "results" ? "shadow-md" : "opacity-60 hover:opacity-100"
-                }`}
-                style={
+                className={`px-5 sm:px-7 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center gap-2 ${
                   activeTab === "results"
-                    ? { backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }
-                    : { color: themeColors.text.primary }
-                }
+                    ? "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 shadow-xs"
+                    : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200"
+                }`}
               >
-                <Award className="w-4 h-4" />
-                Results & Teacher Feedback
-                <span
-                  className="ml-1 text-xs px-2 py-0.5 rounded-full font-bold"
-                  style={
-                    activeTab === "results"
-                      ? { backgroundColor: themeColors.accent.yellow, color: "#000000" }
-                      : { backgroundColor: themeColors.accent.green, color: "#000000" }
-                  }
-                >
+                <Award className="w-4 h-4 text-neutral-500" />
+                Results & Mentor Feedback
+                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-semibold">
                   {MOCK_RESULTS.length}
                 </span>
               </button>
@@ -551,46 +508,39 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 
           {/* ================= TAB 1: UPCOMING & LIVE EXAMS ================= */}
           {activeTab === "catalog" && (
-            <div className="space-y-8">
-              {/* SEARCH & FILTER CONTROLS */}
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                {/* Search Bar */}
-                <div className="relative w-full sm:w-80">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <div className="space-y-6">
+              {/* Filter and Search Bar */}
+              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                {/* Search */}
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
                     type="text"
-                    placeholder="Search exams or courses..."
+                    placeholder="Search assessments..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border-2 border-black dark:border-white font-semibold text-sm outline-none transition shadow-sm"
-                    style={{
-                      backgroundColor: themeColors.background.white,
-                      color: themeColors.text.primary
-                    }}
+                    className="w-full pl-10 pr-3.5 py-2 text-xs sm:text-sm rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-400 transition"
                   />
                 </div>
 
                 {/* Filter Pills */}
-                <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1">
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1">
                   {[
                     { id: "all", label: "All Exams" },
                     { id: "live", label: "Live Active" },
                     { id: "upcoming", label: "Scheduled" },
-                    { id: "practice", label: "Diagnostic Mocks" }
+                    { id: "practice", label: "Practice Tests" }
                   ].map((filter) => {
                     const isSelected = statusFilter === filter.id;
                     return (
                       <button
                         key={filter.id}
                         onClick={() => setStatusFilter(filter.id as any)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold border-2 border-black dark:border-white transition-all shadow-sm ${
-                          isSelected ? "scale-105" : "opacity-75 hover:opacity-100"
-                        }`}
-                        style={
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                           isSelected
-                            ? { backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }
-                            : { backgroundColor: themeColors.background.white, color: themeColors.text.primary }
-                        }
+                            ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-xs"
+                            : "bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 border border-neutral-200/80 dark:border-neutral-800 hover:border-neutral-300"
+                        }`}
                       >
                         {filter.label}
                       </button>
@@ -599,8 +549,8 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                 </div>
               </div>
 
-              {/* EXAM CARDS GRID */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Exam Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {filteredExams.map((exam) => {
                   const isLive = exam.status === "live";
                   const isPractice = exam.status === "practice";
@@ -608,158 +558,127 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                   return (
                     <div
                       key={exam.id}
-                      className="rounded-2xl p-6 sm:p-7 shadow-lg border-2 border-black dark:border-white transition-all hover:scale-[1.01] flex flex-col justify-between"
-                      style={{ backgroundColor: themeColors.background.white }}
+                      className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-6 flex flex-col justify-between shadow-xs hover:border-neutral-300 dark:hover:border-neutral-700 transition-all duration-150"
                     >
-                      {/* Top Header Row */}
                       <div>
-                        <div className="flex items-center justify-between gap-3 mb-3">
-                          <span
-                            className="text-xs font-bold px-3 py-1 rounded-md border border-black/30 dark:border-white/30 uppercase tracking-wide"
-                            style={{ color: themeColors.text.secondary }}
-                          >
+                        {/* Top Meta Line */}
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
                             {exam.course}
                           </span>
 
                           {/* Status Badge */}
                           {isLive && (
-                            <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase border-2 border-black shadow-sm"
-                              style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-                            >
-                              <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
-                              LIVE NOW
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 border border-red-200/60 dark:border-red-900/40">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                              Active Window
                             </span>
                           )}
                           {isPractice && (
-                            <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase border-2 border-black shadow-sm"
-                              style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                            >
-                              PRACTICE MOCK
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900/40">
+                              Practice Mock
                             </span>
                           )}
                           {!isLive && !isPractice && (
-                            <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase border-2 border-black shadow-sm"
-                              style={{ backgroundColor: themeColors.accent.blue, color: "#000000" }}
-                            >
-                              SCHEDULED
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700">
+                              Scheduled
                             </span>
                           )}
                         </div>
 
                         {/* Title */}
-                        <h2
-                          className="text-xl sm:text-2xl font-black mb-2"
-                          style={{ color: themeColors.text.primary }}
-                        >
+                        <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-1.5 leading-snug">
                           {exam.title}
                         </h2>
 
-                        {/* Instructor Info */}
-                        <div className="flex items-center gap-2 text-xs font-semibold mb-5" style={{ color: themeColors.text.secondary }}>
-                          <UserCheck className="w-4 h-4 text-emerald-600" />
-                          <span>Course Instructor: <strong style={{ color: themeColors.text.primary }}>{exam.instructor}</strong></span>
-                        </div>
+                        <p className="text-xs text-neutral-500 mb-4 flex items-center gap-1">
+                          <UserCheck className="w-3.5 h-3.5 text-neutral-400" />
+                          Evaluated by Instructor {exam.instructor}
+                        </p>
 
-                        {/* 4 Neo-Brutalist Spec Blocks */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
-                          <div className="rounded-xl p-3 border-2 border-black/15 dark:border-white/20 bg-gray-50 dark:bg-neutral-800 text-center">
-                            <Clock className="w-4 h-4 mx-auto mb-1 text-gray-500" />
-                            <div className="text-xs text-gray-500 font-medium">Duration</div>
-                            <div className="text-sm font-black" style={{ color: themeColors.text.primary }}>
-                              {exam.durationMinutes} Mins
-                            </div>
+                        {/* Metrics Strip */}
+                        <div className="grid grid-cols-4 gap-2 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800 mb-4 text-center">
+                          <div>
+                            <span className="text-[10px] text-neutral-400 block">Duration</span>
+                            <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                              {exam.durationMinutes}m
+                            </span>
                           </div>
-
-                          <div className="rounded-xl p-3 border-2 border-black/15 dark:border-white/20 bg-gray-50 dark:bg-neutral-800 text-center">
-                            <Award className="w-4 h-4 mx-auto mb-1 text-gray-500" />
-                            <div className="text-xs text-gray-500 font-medium">Total Marks</div>
-                            <div className="text-sm font-black" style={{ color: themeColors.text.primary }}>
-                              {exam.totalMarks} Pts
-                            </div>
+                          <div>
+                            <span className="text-[10px] text-neutral-400 block">Total Marks</span>
+                            <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                              {exam.totalMarks}
+                            </span>
                           </div>
-
-                          <div className="rounded-xl p-3 border-2 border-black/15 dark:border-white/20 bg-gray-50 dark:bg-neutral-800 text-center">
-                            <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-gray-500" />
-                            <div className="text-xs text-gray-500 font-medium">Passing Marks</div>
-                            <div className="text-sm font-black" style={{ color: themeColors.text.primary }}>
-                              {exam.passingMarks} Pts
-                            </div>
+                          <div>
+                            <span className="text-[10px] text-neutral-400 block">Passing</span>
+                            <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                              {exam.passingMarks}
+                            </span>
                           </div>
-
-                          <div className="rounded-xl p-3 border-2 border-black/15 dark:border-white/20 bg-gray-50 dark:bg-neutral-800 text-center">
-                            <FileText className="w-4 h-4 mx-auto mb-1 text-gray-500" />
-                            <div className="text-xs text-gray-500 font-medium">Format</div>
-                            <div className="text-xs font-black" style={{ color: themeColors.text.primary }}>
-                              {exam.mcqCount} MCQ + {exam.descriptiveCount} Essay
-                            </div>
+                          <div>
+                            <span className="text-[10px] text-neutral-400 block">Format</span>
+                            <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                              {exam.mcqCount}M + {exam.descriptiveCount}E
+                            </span>
                           </div>
                         </div>
 
                         {/* Syllabus Chips */}
-                        <div className="mb-6">
-                          <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: themeColors.text.secondary }}>
-                            Topics & Syllabus Tested:
+                        <div className="mb-4">
+                          <div className="text-[11px] font-medium text-neutral-400 mb-1.5">
+                            Tested Topics:
                           </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {exam.syllabus.slice(0, 4).map((topic, i) => (
+                          <div className="flex flex-wrap gap-1">
+                            {exam.syllabus.slice(0, 3).map((item, idx) => (
                               <span
-                                key={i}
-                                className="text-xs font-medium px-2.5 py-1 rounded-lg border border-black/20 dark:border-white/20"
-                                style={{ backgroundColor: themeColors.accent.orangeSection || "#f7f7f7", color: themeColors.text.primary }}
+                                key={idx}
+                                className="text-[11px] text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md"
                               >
-                                {topic}
+                                {item}
                               </span>
                             ))}
-                            {exam.syllabus.length > 4 && (
-                              <span
-                                className="text-xs font-bold px-2 py-1 rounded-lg border border-black/20 dark:border-white/20"
-                                style={{ color: themeColors.text.secondary }}
-                              >
-                                +{exam.syllabus.length - 4} more
+                            {exam.syllabus.length > 3 && (
+                              <span className="text-[11px] text-neutral-400 px-1 py-0.5">
+                                +{exam.syllabus.length - 3} more
                               </span>
                             )}
                           </div>
                         </div>
                       </div>
 
-                      {/* Bottom Action Footer */}
-                      <div className="pt-4 border-t-2 border-black/10 dark:border-white/10 flex items-center justify-between gap-4">
-                        <div className="text-xs font-bold" style={{ color: themeColors.text.secondary }}>
+                      {/* Card Footer */}
+                      <div className="pt-3.5 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between gap-3">
+                        <div className="text-xs text-neutral-500 font-medium">
                           {isLive ? (
-                            <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 font-black">
+                            <span className="text-red-600 dark:text-red-400 font-semibold flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5" /> Closes in 6 hours
                             </span>
                           ) : (
-                            <span>{exam.scheduledDate} • {exam.scheduledTime}</span>
+                            <span>{exam.scheduledDate}</span>
                           )}
                         </div>
 
-                        {/* Action CTA */}
                         {isLive ? (
                           <button
                             onClick={() => setPreExamModal(exam)}
-                            className="px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 border-2 border-black dark:border-white shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
-                            style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+                            className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 text-xs font-medium flex items-center gap-1.5 transition shadow-xs cursor-pointer"
                           >
-                            Take Exam Now <ArrowRight className="w-4 h-4" />
+                            Take Exam <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                         ) : isPractice ? (
                           <button
                             onClick={() => setPreExamModal(exam)}
-                            className="px-5 py-2.5 rounded-xl font-black text-sm flex items-center gap-2 border-2 border-black shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
-                            style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
+                            className="px-4 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-900 dark:text-neutral-100 text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
                           >
-                            Start Practice <ChevronRight className="w-4 h-4" />
+                            Start Practice <ChevronRight className="w-3.5 h-3.5" />
                           </button>
                         ) : (
                           <button
                             disabled
-                            className="px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-gray-300 dark:border-neutral-700 text-gray-400 cursor-not-allowed flex items-center gap-1.5"
+                            className="px-3.5 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-400 text-xs font-medium cursor-not-allowed"
                           >
-                            Starts in 2 Days
+                            Opens in 2 Days
                           </button>
                         )}
                       </div>
@@ -769,13 +688,10 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
               </div>
 
               {filteredExams.length === 0 && (
-                <div className="text-center py-16 rounded-2xl border-2 border-black dark:border-white bg-white dark:bg-black p-8">
-                  <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                  <h3 className="text-xl font-bold mb-1" style={{ color: themeColors.text.primary }}>
-                    No assessments match your filter
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Try switching filters or search keywords to view other examinations.
+                <div className="text-center py-16 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-8">
+                  <BookOpen className="w-8 h-8 mx-auto mb-2 text-neutral-400" />
+                  <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
+                    No assessments match your current filter.
                   </p>
                 </div>
               )}
@@ -784,128 +700,88 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 
           {/* ================= TAB 2: RESULTS & TEACHER FEEDBACK ================= */}
           {activeTab === "results" && (
-            <div className="space-y-6">
-              {/* Highlight Banner */}
-              <div
-                className="rounded-2xl p-6 border-2 border-black dark:border-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4"
-                style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white border-2 border-black flex items-center justify-center shrink-0 shadow-sm">
-                    <Star className="w-6 h-6 text-black fill-yellow-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-black">
-                      Official Instructor Evaluation & Report System
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-800 font-medium">
-                      Instructor Rishika evaluates descriptive questions, provides personalized guidance, and annotates key exam techniques.
-                    </p>
-                  </div>
-                </div>
+            <div className="space-y-4">
+              {/* Highlight Note */}
+              <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 flex items-center gap-3">
+                <Star className="w-5 h-5 text-amber-600 shrink-0" />
+                <p className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
+                  Instructor Rishika reviews every descriptive answer to give you granular scoring, conceptual guidance, and tips for upcoming evaluations.
+                </p>
               </div>
 
-              {/* Results Cards List */}
-              <div className="grid grid-cols-1 gap-5">
+              {/* Results List */}
+              <div className="space-y-3.5">
                 {MOCK_RESULTS.map((res) => {
                   const isGraded = res.status === "graded";
 
                   return (
                     <div
                       key={res.id}
-                      className="rounded-2xl border-2 border-black dark:border-white p-6 sm:p-7 shadow-lg transition-all hover:scale-[1.01] flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
-                      style={{ backgroundColor: themeColors.background.white }}
+                      className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition hover:border-neutral-300 dark:hover:border-neutral-700"
                     >
-                      {/* Left: Info */}
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-3">
-                          <span
-                            className="text-xs font-black uppercase px-2.5 py-0.5 rounded border border-black/30 dark:border-white/30"
-                            style={{ color: themeColors.text.secondary }}
-                          >
+                      <div className="space-y-1.5 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
                             {res.course}
                           </span>
-                          <span className="text-xs font-semibold text-gray-500">
-                            Submitted: {res.submittedAt}
-                          </span>
+                          <span className="text-neutral-300 dark:text-neutral-700">•</span>
+                          <span className="text-xs text-neutral-500">{res.submittedAt}</span>
                         </div>
 
-                        <h3 className="text-xl sm:text-2xl font-black" style={{ color: themeColors.text.primary }}>
+                        <h3 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-neutral-100">
                           {res.examTitle}
                         </h3>
 
-                        {isGraded ? (
-                          <div className="flex items-center gap-3 pt-1">
-                            <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border-2 border-black shadow-sm"
-                              style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Evaluated & Released
+                        <div className="flex items-center gap-3 text-xs text-neutral-500 pt-0.5">
+                          {isGraded ? (
+                            <span className="inline-flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Evaluated by {res.instructor}
                             </span>
-                            <span className="text-xs font-bold" style={{ color: themeColors.text.secondary }}>
-                              Evaluated by <strong style={{ color: themeColors.text.primary }}>{res.instructor}</strong>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Pending Teacher Evaluation
                             </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3 pt-1">
-                            <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border-2 border-black shadow-sm"
-                              style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-                            >
-                              <RefreshCw className="w-3 h-3 animate-spin" /> Under Evaluation
-                            </span>
-                            <span className="text-xs font-bold text-gray-500">
-                              Instructor is grading descriptive essays
-                            </span>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
 
-                      {/* Middle: Score Summary (if graded) */}
+                      {/* Score Badge (if graded) */}
                       {isGraded && (
-                        <div
-                          className="flex items-center gap-4 px-6 py-3 rounded-xl border-2 border-black dark:border-white shadow-sm shrink-0"
-                          style={{ backgroundColor: themeColors.accent.orangeSection || "#f7f7f7" }}
-                        >
+                        <div className="flex items-center gap-4 px-4 py-2 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-100 dark:border-neutral-800 shrink-0">
                           <div className="text-right">
-                            <span className="text-xs text-gray-500 font-bold block uppercase">Score</span>
-                            <span className="text-2xl font-black" style={{ color: themeColors.text.primary }}>
+                            <span className="text-[10px] text-neutral-400 block uppercase font-medium">Score</span>
+                            <span className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
                               {res.scoreObtained}
-                              <span className="text-sm font-normal text-gray-500">/{res.totalMarks}</span>
+                              <span className="text-xs font-normal text-neutral-400">/{res.totalMarks}</span>
                             </span>
                           </div>
-                          <div className="w-[2px] h-9 bg-black/20 dark:bg-white/20" />
+                          <div className="w-[1px] h-7 bg-neutral-200 dark:bg-neutral-700" />
                           <div>
-                            <span className="text-xs font-black block" style={{ color: themeColors.text.primary }}>
+                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 block">
                               {res.percentage}%
                             </span>
-                            <span
-                              className="text-xs font-black uppercase px-2 py-0.5 rounded border border-black shadow-xs inline-block"
-                              style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                            >
+                            <span className="text-[10px] font-semibold uppercase text-neutral-500">
                               {res.grade}
                             </span>
                           </div>
                         </div>
                       )}
 
-                      {/* Right: CTA button */}
-                      <div className="shrink-0 w-full md:w-auto">
+                      {/* CTA */}
+                      <div className="shrink-0 w-full sm:w-auto">
                         {isGraded ? (
                           <button
                             onClick={() => setSelectedResult(res)}
-                            className="w-full md:w-auto px-6 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 border-2 border-black dark:border-white shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
-                            style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+                            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-neutral-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 text-xs font-medium flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer"
                           >
-                            <Award className="w-4 h-4 text-yellow-400" />
-                            View Full Report & Feedback
+                            <Award className="w-3.5 h-3.5" /> View Feedback & Scorecard
                           </button>
                         ) : (
                           <button
                             disabled
-                            className="w-full md:w-auto px-5 py-3 rounded-xl font-bold text-xs border-2 border-gray-300 dark:border-neutral-700 text-gray-400 cursor-not-allowed text-center"
+                            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-400 text-xs font-medium cursor-not-allowed"
                           >
-                            Results Releasing Soon
+                            Evaluation in Progress
                           </button>
                         )}
                       </div>
@@ -920,82 +796,70 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 
       {/* ================= PRE-EXAM INSTRUCTIONS MODAL ================= */}
       {preExamModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
-          <div
-            className="rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border-2 border-black dark:border-white space-y-6"
-            style={{ backgroundColor: themeColors.background.white }}
-          >
-            {/* Modal Header */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-lg w-full p-6 shadow-xl border border-neutral-200/80 dark:border-neutral-800 space-y-5">
             <div className="flex items-start justify-between">
               <div>
-                <span
-                  className="text-xs font-black uppercase px-2.5 py-0.5 rounded border border-black shadow-xs"
-                  style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-                >
-                  Candidate Instructions
+                <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">
+                  Exam Guidelines
                 </span>
-                <h3 className="text-xl sm:text-2xl font-black mt-2" style={{ color: themeColors.text.primary }}>
+                <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mt-1">
                   {preExamModal.title}
                 </h3>
-                <p className="text-xs font-bold mt-1" style={{ color: themeColors.text.secondary }}>
+                <p className="text-xs text-neutral-500 mt-0.5">
                   {preExamModal.course} • Instructor {preExamModal.instructor}
                 </p>
               </div>
               <button
                 onClick={() => setPreExamModal(null)}
-                className="p-1.5 rounded-lg border-2 border-black dark:border-white hover:scale-105 transition cursor-pointer"
-                style={{ backgroundColor: themeColors.primary.w, color: themeColors.text.primary }}
+                className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Quick Rules Grid */}
-            <div className="grid grid-cols-3 gap-2.5 text-center">
-              <div className="p-3 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
-                <span className="text-xs text-gray-500 font-bold block">Duration</span>
-                <span className="font-black text-sm" style={{ color: themeColors.text.primary }}>
+            {/* Quick Details */}
+            <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800 text-center">
+              <div>
+                <span className="text-[10px] text-neutral-400 block">Duration</span>
+                <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
                   {preExamModal.durationMinutes} Minutes
                 </span>
               </div>
-              <div className="p-3 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
-                <span className="text-xs text-gray-500 font-bold block">Total Marks</span>
-                <span className="font-black text-sm" style={{ color: themeColors.text.primary }}>
+              <div>
+                <span className="text-[10px] text-neutral-400 block">Total Marks</span>
+                <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
                   {preExamModal.totalMarks} Marks
                 </span>
               </div>
-              <div className="p-3 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
-                <span className="text-xs text-gray-500 font-bold block">Questions</span>
-                <span className="font-black text-sm" style={{ color: themeColors.text.primary }}>
+              <div>
+                <span className="text-[10px] text-neutral-400 block">Questions</span>
+                <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
                   {preExamModal.mcqCount + preExamModal.descriptiveCount} Total
                 </span>
               </div>
             </div>
 
-            {/* Instructions List */}
-            <div
-              className="p-4 rounded-xl border-2 border-black/20 space-y-2 text-xs"
-              style={{ backgroundColor: themeColors.accent.orangeSection || "#f9f9f9" }}
-            >
-              <span className="font-black uppercase tracking-wider block" style={{ color: themeColors.text.primary }}>
-                Examination Protocol & Rules:
+            {/* Checklist */}
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 block">
+                Instructions before you begin:
               </span>
-              <ul className="space-y-1.5 font-medium" style={{ color: themeColors.text.secondary }}>
+              <ul className="space-y-1.5 text-xs text-neutral-600 dark:text-neutral-400">
                 {preExamModal.instructions.map((inst, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                     <span>{inst}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Footer Buttons */}
-            <div className="flex gap-3 pt-2">
+            {/* Modal Actions */}
+            <div className="flex gap-2.5 pt-2">
               <button
                 onClick={() => setPreExamModal(null)}
-                className="flex-1 py-3 rounded-xl font-bold text-sm border-2 border-black dark:border-white transition hover:scale-[1.02] cursor-pointer"
-                style={{ backgroundColor: themeColors.primary.w, color: themeColors.primary.w2 }}
+                className="flex-1 py-2.5 rounded-xl text-xs font-medium border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -1005,10 +869,9 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                   setPreExamModal(null);
                   setActiveExam(examToStart);
                 }}
-                className="flex-1 py-3 rounded-xl font-black text-sm border-2 border-black dark:border-white shadow-md transition hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
-                style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+                className="flex-1 py-2.5 rounded-xl text-xs font-medium bg-neutral-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
-                I am Ready, Start Exam <ArrowRight className="w-4 h-4" />
+                I'm Ready, Start Test <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -1020,7 +883,6 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
         <DetailedReportCardModal
           result={selectedResult}
           onClose={() => setSelectedResult(null)}
-          themeColors={themeColors}
           isDark={isDark}
         />
       )}
@@ -1036,7 +898,6 @@ interface ExamTakingPortalProps {
   exam: Exam;
   onExit: () => void;
   onFinishExam: (result: ExamResult) => void;
-  themeColors: any;
   isDark: boolean;
 }
 
@@ -1044,19 +905,17 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   exam,
   onExit,
   onFinishExam,
-  themeColors,
   isDark
 }) => {
-  // Use questions from the exam, or fallback
   const questions = exam.questions.length > 0 ? exam.questions : MOCK_EXAMS[0].questions;
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
   const [showSubmitModal, setShowSubmitModal] = useState(false);
-  const [lastSaved, setLastSaved] = useState<string>("Draft auto-saved");
+  const [lastSaved, setLastSaved] = useState<string>("Draft saved");
 
-  // Timer countdown in seconds
+  // Timer
   const [secondsLeft, setSecondsLeft] = useState(exam.durationMinutes * 60);
 
   useEffect(() => {
@@ -1082,18 +941,16 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
   const currentQ = questions[currentIdx];
 
-  // Answer handler
   const handleAnswerChange = (val: string) => {
     setAnswers((prev) => ({
       ...prev,
       [currentQ.id]: val
     }));
     setLastSaved(
-      `Saved at ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+      `Saved ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
     );
   };
 
-  // Toggle flag
   const toggleFlag = () => {
     setFlagged((prev) => ({
       ...prev,
@@ -1101,16 +958,13 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
     }));
   };
 
-  // Calculate answered count
   const answeredCount = Object.keys(answers).filter(
     (k) => answers[k] && answers[k].trim() !== ""
   ).length;
 
-  // Final submit handler
   const handleSubmitFinal = () => {
     setShowSubmitModal(false);
 
-    // Auto-grade MCQs
     let mcqScore = 0;
     const compiledAnswers = questions.map((q) => {
       const studentAns = answers[q.id] || "";
@@ -1150,317 +1004,232 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   };
 
   const isLowTime = secondsLeft < 300; // < 5 mins
-
-  // Word count calculation for descriptive essays
   const currentText = answers[currentQ.id] || "";
   const wordCount = currentText.trim() === "" ? 0 : currentText.trim().split(/\s+/).length;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col overflow-hidden font-sans transition-colors duration-300"
-      style={{ backgroundColor: themeColors.primary.lightGray }}
-    >
-      {/* ================= TOP PERSISTENT EXAM NAVBAR ================= */}
-      <header
-        className="border-b-2 border-black dark:border-white px-4 sm:px-8 py-3.5 flex items-center justify-between z-20 shadow-md"
-        style={{ backgroundColor: themeColors.background.white }}
-      >
-        {/* Left: Info */}
+    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-50 dark:bg-[#0c0c0c] text-neutral-900 dark:text-neutral-100 overflow-hidden font-sans">
+      {/* ================= TOP CLEAN EXAM BAR ================= */}
+      <header className="h-16 px-4 sm:px-6 bg-white dark:bg-neutral-900 border-b border-neutral-200/80 dark:border-neutral-800 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl border-2 border-black dark:border-white flex items-center justify-center font-black"
-            style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
+          <button
+            onClick={() => {
+              if (confirm("Are you sure you want to leave the exam? Your current progress will be preserved.")) {
+                onExit();
+              }
+            }}
+            className="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 transition font-medium flex items-center gap-1 cursor-pointer"
           >
-            Q{currentIdx + 1}
-          </div>
+            <ChevronLeft className="w-4 h-4" /> Exit
+          </button>
+          <div className="h-4 w-[1px] bg-neutral-200 dark:bg-neutral-800 hidden sm:block" />
           <div>
-            <h1 className="text-base sm:text-lg font-black leading-tight" style={{ color: themeColors.text.primary }}>
+            <h1 className="text-sm font-semibold truncate max-w-xs sm:max-w-md">
               {exam.title}
             </h1>
-            <p className="text-xs font-semibold" style={{ color: themeColors.text.secondary }}>
-              {exam.course} • Question {currentIdx + 1} of {questions.length}
+            <p className="text-[11px] text-neutral-400">
+              Question {currentIdx + 1} of {questions.length}
             </p>
           </div>
         </div>
 
-        {/* Center: Neo-Brutalist Timer */}
+        {/* Center Timer */}
         <div
-          className="flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl border-2 border-black shadow-sm font-mono font-black text-lg sm:text-xl"
-          style={{
-            backgroundColor: isLowTime ? themeColors.accent.red : themeColors.accent.yellow,
-            color: "#000000"
-          }}
+          className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-mono font-semibold transition ${
+            isLowTime
+              ? "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-900"
+              : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300"
+          }`}
         >
-          <Clock className={`w-5 h-5 ${isLowTime ? "animate-bounce text-red-700" : "text-black"}`} />
+          <Clock className={`w-3.5 h-3.5 ${isLowTime ? "animate-pulse text-red-500" : "text-neutral-400"}`} />
           <span>{formatTimer(secondsLeft)}</span>
         </div>
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-3">
+        {/* Right Submit CTA */}
+        <div>
           <button
             onClick={() => setShowSubmitModal(true)}
-            className="px-5 py-2 rounded-xl font-black text-xs sm:text-sm border-2 border-black dark:border-white shadow-md hover:scale-105 active:scale-95 transition cursor-pointer"
-            style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+            className="px-3.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 text-xs font-medium transition cursor-pointer"
           >
             Submit Exam
           </button>
         </div>
       </header>
 
-      {/* Progress Bar under navbar */}
-      <div className="w-full bg-gray-200 dark:bg-neutral-800 h-1.5 border-b border-black/20">
+      {/* Thin Progress line */}
+      <div className="w-full bg-neutral-200 dark:bg-neutral-800 h-1">
         <div
-          className="h-full transition-all duration-300"
-          style={{
-            width: `${((currentIdx + 1) / questions.length) * 100}%`,
-            backgroundColor: themeColors.primary.w2
-          }}
+          className="h-full bg-neutral-900 dark:bg-white transition-all duration-200"
+          style={{ width: `${((currentIdx + 1) / questions.length) * 100}%` }}
         />
       </div>
 
-      {/* ================= WORKSPACE: 2-COLUMN VIEW ================= */}
-      <div className="flex-1 flex overflow-hidden p-4 sm:p-6 gap-6 max-w-7xl mx-auto w-full">
-        {/* LEFT WORKSPACE: QUESTION & INPUT */}
+      {/* ================= WORKSPACE ================= */}
+      <div className="flex-1 flex overflow-hidden max-w-6xl mx-auto w-full p-4 sm:p-6 gap-6">
+        {/* Main Workstation */}
         <div className="flex-1 flex flex-col justify-between overflow-y-auto pr-1">
-          {/* Main Question Card */}
-          <div
-            className="rounded-2xl p-6 sm:p-8 border-2 border-black dark:border-white shadow-lg space-y-6"
-            style={{ backgroundColor: themeColors.background.white }}
-          >
-            {/* Question Header Meta */}
-            <div className="flex items-center justify-between flex-wrap gap-2 pb-4 border-b-2 border-black/10 dark:border-white/10">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-6 sm:p-8 shadow-xs space-y-6">
+            {/* Meta */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-neutral-100 dark:border-neutral-800 text-xs">
               <div className="flex items-center gap-2">
-                <span
-                  className="text-xs font-black uppercase px-3 py-1 rounded-full border border-black shadow-xs"
-                  style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-                >
+                <span className="font-semibold text-neutral-500">
                   Question {currentQ.number} of {questions.length}
                 </span>
-
-                <span
-                  className="text-xs font-black uppercase px-3 py-1 rounded-full border border-black shadow-xs"
-                  style={{ backgroundColor: themeColors.accent.blue, color: "#000000" }}
-                >
+                <span className="text-neutral-300 dark:text-neutral-700">•</span>
+                <span className="font-medium text-neutral-500">
                   {currentQ.marks} Marks
                 </span>
-
-                <span
-                  className="text-xs font-bold uppercase px-3 py-1 rounded-full border border-black/30 text-gray-600 dark:text-gray-300"
-                >
-                  {currentQ.type === "mcq" ? "Multiple Choice Question" : "Descriptive Essay Response"}
+                <span className="text-neutral-300 dark:text-neutral-700">•</span>
+                <span className="text-neutral-400 capitalize">
+                  {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive Essay"}
                 </span>
               </div>
 
-              {/* Flag for Review button */}
               <button
                 onClick={toggleFlag}
-                className={`px-3 py-1 rounded-xl text-xs font-bold border-2 border-black transition cursor-pointer flex items-center gap-1.5 ${
-                  flagged[currentQ.id] ? "shadow-sm scale-105" : "opacity-80 hover:opacity-100"
+                className={`text-xs font-medium flex items-center gap-1.5 px-2.5 py-1 rounded-md transition cursor-pointer ${
+                  flagged[currentQ.id]
+                    ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200"
+                    : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200"
                 }`}
-                style={{
-                  backgroundColor: flagged[currentQ.id] ? themeColors.accent.yellow : themeColors.primary.w,
-                  color: "#000000"
-                }}
               >
                 <Bookmark className="w-3.5 h-3.5" />
                 {flagged[currentQ.id] ? "Marked for Review" : "Mark for Review"}
               </button>
             </div>
 
-            {/* Question Statement */}
-            <div className="text-lg sm:text-xl font-bold leading-relaxed" style={{ color: themeColors.text.primary }}>
+            {/* Question Text */}
+            <div className="text-base sm:text-lg font-medium text-neutral-900 dark:text-neutral-100 leading-relaxed">
               {currentQ.question}
             </div>
 
-            {/* ================= IF MCQ: 4 OPTION CARDS ================= */}
+            {/* MCQ Options */}
             {currentQ.type === "mcq" && currentQ.options && (
-              <div className="space-y-3 pt-2">
-                {currentQ.options.map((option) => {
-                  const isSelected = answers[currentQ.id] === option.id;
+              <div className="space-y-2.5 pt-2">
+                {currentQ.options.map((opt) => {
+                  const isSelected = answers[currentQ.id] === opt.id;
 
                   return (
                     <div
-                      key={option.id}
-                      onClick={() => handleAnswerChange(option.id)}
-                      className={`rounded-xl p-4 sm:p-5 border-2 border-black dark:border-white transition-all cursor-pointer flex items-center gap-4 select-none ${
-                        isSelected ? "scale-[1.01] shadow-md" : "hover:border-black/60 opacity-90"
+                      key={opt.id}
+                      onClick={() => handleAnswerChange(opt.id)}
+                      className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center gap-3.5 ${
+                        isSelected
+                          ? "border-neutral-900 dark:border-neutral-100 bg-neutral-50 dark:bg-neutral-800/80 shadow-xs"
+                          : "border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
                       }`}
-                      style={{
-                        backgroundColor: isSelected ? themeColors.accent.yellow : themeColors.background.white,
-                        color: isSelected ? "#000000" : themeColors.text.primary
-                      }}
                     >
                       <div
-                        className="w-10 h-10 rounded-xl border-2 border-black font-black flex items-center justify-center shrink-0 text-base"
-                        style={{
-                          backgroundColor: isSelected ? "#000000" : themeColors.primary.w,
-                          color: isSelected ? "#ffffff" : "#000000"
-                        }}
+                        className={`w-6 h-6 rounded-full border text-xs font-semibold flex items-center justify-center shrink-0 transition ${
+                          isSelected
+                            ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 border-transparent"
+                            : "border-neutral-300 dark:border-neutral-700 text-neutral-500"
+                        }`}
                       >
-                        {option.id}
+                        {opt.id}
                       </div>
 
-                      <div className="font-semibold text-sm sm:text-base flex-1">
-                        {option.text}
+                      <div className="text-xs sm:text-sm font-normal text-neutral-800 dark:text-neutral-200 flex-1 leading-normal">
+                        {opt.text}
                       </div>
-
-                      {isSelected && (
-                        <CheckCircle2 className="w-5 h-5 text-black shrink-0 font-bold" />
-                      )}
                     </div>
                   );
                 })}
               </div>
             )}
 
-            {/* ================= IF DESCRIPTIVE: RICH ESSAY TEXTAREA ================= */}
+            {/* Descriptive Answer Box */}
             {currentQ.type === "descriptive" && (
               <div className="space-y-3 pt-2">
-                {/* Guidelines Banner */}
-                <div
-                  className="p-3.5 rounded-xl border-2 border-black/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
-                  style={{ backgroundColor: themeColors.accent.orangeSection || "#fdf7ee" }}
-                >
-                  <span className="font-bold text-gray-800">
-                    ✍️ Suggested length: <strong>{currentQ.recommendedWords || "150 - 250 words"}</strong>
-                  </span>
-                  <span className="font-medium text-gray-600">
-                    Define assumptions, illustrate mechanisms, and cite policy trade-offs.
-                  </span>
+                <div className="text-xs text-neutral-500 flex items-center justify-between">
+                  <span>Suggested length: <strong>{currentQ.recommendedWords || "150 - 250 words"}</strong></span>
+                  <span className="text-neutral-400">Structure with economic definitions and policy implications</span>
                 </div>
 
-                {/* Textarea */}
                 <textarea
                   value={answers[currentQ.id] || ""}
                   onChange={(e) => handleAnswerChange(e.target.value)}
-                  placeholder="Type your structured economic analysis here. Use paragraphs or numbered points for conceptual clarity..."
-                  className="w-full min-h-[280px] p-5 rounded-2xl border-2 border-black dark:border-white text-base font-sans leading-relaxed outline-none focus:ring-4 focus:ring-black/10 resize-y shadow-inner"
-                  style={{
-                    backgroundColor: themeColors.primary.w,
-                    color: themeColors.text.primary
-                  }}
+                  placeholder="Type your essay response here. Define key concepts, illustrate behavior shifts, and evaluate policy mechanisms..."
+                  className="w-full min-h-[260px] p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 text-xs sm:text-sm leading-relaxed focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600 resize-y bg-neutral-50/50 dark:bg-neutral-800/20"
                 />
 
-                {/* Live Stats Bar */}
-                <div className="flex items-center justify-between text-xs font-bold pt-1 text-gray-500">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    {lastSaved}
-                  </span>
-                  <span className="px-3 py-1 rounded-md border border-black/20 bg-gray-50 dark:bg-neutral-800">
-                    {wordCount} Words Written
-                  </span>
+                <div className="flex items-center justify-between text-xs text-neutral-400 pt-1">
+                  <span>{lastSaved}</span>
+                  <span>{wordCount} words</span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Bottom Question Controls Bar */}
-          <div className="pt-4 flex items-center justify-between gap-4">
+          {/* Question Nav Bar */}
+          <div className="pt-4 flex items-center justify-between">
             <button
-              onClick={() => setCurrentIdx((prev) => Math.max(0, prev - 1))}
+              onClick={() => setCurrentIdx((p) => Math.max(0, p - 1))}
               disabled={currentIdx === 0}
-              className="px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-black dark:border-white transition hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
-              style={{ backgroundColor: themeColors.primary.w, color: themeColors.text.primary }}
+              className="px-4 py-2 rounded-xl text-xs font-medium border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-neutral-100 dark:hover:bg-neutral-800 transition cursor-pointer flex items-center gap-1"
             >
-              <ChevronLeft className="w-4 h-4" /> Previous
+              <ChevronLeft className="w-3.5 h-3.5" /> Previous
             </button>
-
-            <div className="text-xs font-bold text-gray-500 hidden sm:block">
-              Auto-saved draft in browser memory
-            </div>
 
             <button
               onClick={() => {
                 if (currentIdx < questions.length - 1) {
-                  setCurrentIdx((prev) => prev + 1);
+                  setCurrentIdx((p) => p + 1);
                 } else {
                   setShowSubmitModal(true);
                 }
               }}
-              className="px-6 py-2.5 rounded-xl font-black text-sm border-2 border-black dark:border-white shadow-md transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1.5"
-              style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+              className="px-4 py-2 rounded-xl text-xs font-medium bg-neutral-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 transition flex items-center gap-1 shadow-xs cursor-pointer"
             >
               {currentIdx === questions.length - 1 ? (
-                <>Finish & Review <Check className="w-4 h-4" /></>
+                <>Finish & Review <Check className="w-3.5 h-3.5" /></>
               ) : (
-                <>Next Question <ChevronRight className="w-4 h-4" /></>
+                <>Next Question <ChevronRight className="w-3.5 h-3.5" /></>
               )}
             </button>
           </div>
         </div>
 
-        {/* RIGHT SIDEBAR: QUESTION PALETTE GRID */}
-        <div className="w-72 hidden lg:flex flex-col gap-5 shrink-0">
-          <div
-            className="rounded-2xl p-5 border-2 border-black dark:border-white shadow-lg space-y-5"
-            style={{ backgroundColor: themeColors.background.white }}
-          >
-            {/* Candidate Card */}
-            <div className="p-3 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800 text-xs font-bold space-y-1">
-              <div className="text-gray-500 uppercase tracking-wider text-[10px]">Active Candidate</div>
-              <div className="text-sm font-black truncate" style={{ color: themeColors.text.primary }}>
-                test@test.com
-              </div>
-              <div className="text-emerald-600 font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Examination Session Active
-              </div>
-            </div>
-
-            {/* Stats Summary */}
-            <div className="grid grid-cols-2 gap-2 text-center text-xs">
-              <div
-                className="p-2.5 rounded-xl border-2 border-black font-bold"
-                style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-              >
-                <span className="block text-lg font-black">{answeredCount}</span>
-                Answered
-              </div>
-              <div
-                className="p-2.5 rounded-xl border-2 border-black font-bold"
-                style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-              >
-                <span className="block text-lg font-black">{Object.keys(flagged).filter(k => flagged[k]).length}</span>
-                Flagged
-              </div>
-            </div>
-
-            {/* Question Palette Number Grid */}
+        {/* Right Palette */}
+        <div className="w-64 hidden lg:flex flex-col gap-4 shrink-0">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 p-5 shadow-xs space-y-4">
             <div>
-              <div className="text-xs font-black uppercase tracking-wider mb-3" style={{ color: themeColors.text.secondary }}>
-                Question Palette:
-              </div>
+              <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider block mb-1">
+                Candidate
+              </span>
+              <p className="text-xs font-medium text-neutral-800 dark:text-neutral-200 truncate">
+                test@test.com
+              </p>
+            </div>
 
-              <div className="grid grid-cols-4 gap-2.5">
+            <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800">
+              <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-2.5">
+                Questions
+              </span>
+
+              <div className="grid grid-cols-4 gap-2">
                 {questions.map((q, idx) => {
                   const isCurrent = idx === currentIdx;
                   const isAnswered = answers[q.id] && answers[q.id].trim() !== "";
                   const isFlagged = flagged[q.id];
 
-                  let bg = themeColors.background.white;
-                  let textColor = themeColors.text.primary;
-                  let borderStyle = "border-2 border-black/30";
+                  let style = "bg-neutral-50 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700";
 
                   if (isAnswered) {
-                    bg = themeColors.accent.green;
-                    textColor = "#000000";
-                    borderStyle = "border-2 border-black";
+                    style = "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
                   } else if (isFlagged) {
-                    bg = themeColors.accent.yellow;
-                    textColor = "#000000";
-                    borderStyle = "border-2 border-black";
+                    style = "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800";
                   }
 
                   if (isCurrent) {
-                    borderStyle = "border-3 border-black ring-2 ring-black dark:ring-white scale-105 shadow-sm";
+                    style += " ring-2 ring-neutral-900 dark:ring-white font-bold";
                   }
 
                   return (
                     <button
                       key={q.id}
                       onClick={() => setCurrentIdx(idx)}
-                      className={`h-11 rounded-xl font-black text-sm flex items-center justify-center transition-all cursor-pointer ${borderStyle}`}
-                      style={{ backgroundColor: bg, color: textColor }}
+                      className={`h-9 rounded-lg border text-xs font-medium flex items-center justify-center transition cursor-pointer ${style}`}
                     >
                       {idx + 1}
                     </button>
@@ -1469,84 +1238,69 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               </div>
             </div>
 
-            {/* Palette Legend */}
-            <div className="pt-3 border-t-2 border-black/10 dark:border-white/10 space-y-2 text-xs font-bold text-gray-600 dark:text-gray-300">
+            {/* Legend */}
+            <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 space-y-1.5 text-[11px] text-neutral-500">
               <div className="flex items-center gap-2">
-                <span
-                  className="w-4 h-4 rounded-md border border-black"
-                  style={{ backgroundColor: themeColors.accent.green }}
-                />
-                <span>Answered</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <span>Answered ({answeredCount})</span>
               </div>
               <div className="flex items-center gap-2">
-                <span
-                  className="w-4 h-4 rounded-md border border-black"
-                  style={{ backgroundColor: themeColors.accent.yellow }}
-                />
-                <span>Marked for Review</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                <span>Marked for review ({Object.keys(flagged).filter(k => flagged[k]).length})</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded-md border-2 border-black/40 bg-white" />
-                <span>Not Attempted</span>
+                <span className="w-2.5 h-2.5 rounded-full bg-neutral-300 dark:bg-neutral-600" />
+                <span>Unanswered ({questions.length - answeredCount})</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ================= PRE-SUBMIT CONFIRMATION MODAL ================= */}
+      {/* Pre-Submit Modal */}
       {showSubmitModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
-          <div
-            className="rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl border-2 border-black dark:border-white space-y-5"
-            style={{ backgroundColor: themeColors.background.white }}
-          >
-            <h3 className="text-xl font-black" style={{ color: themeColors.text.primary }}>
-              Ready to Submit Your Exam?
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-sm w-full p-6 shadow-xl border border-neutral-200 dark:border-neutral-800 space-y-4">
+            <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
+              Submit Assessment?
             </h3>
 
-            <p className="text-xs sm:text-sm font-medium" style={{ color: themeColors.text.secondary }}>
-              Please review your question attempts before final submission. After submitting, your answers will be sent for evaluation.
+            <p className="text-xs text-neutral-500 leading-relaxed">
+              Once submitted, your answers will be finalized and sent for instructor review.
             </p>
 
-            {/* Summary Grid */}
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div
-                className="p-3.5 rounded-xl border-2 border-black font-bold"
-                style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-              >
-                <span className="block text-gray-700">Answered Questions</span>
-                <span className="text-2xl font-black">{answeredCount} of {questions.length}</span>
+            <div className="grid grid-cols-2 gap-2 text-center p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-800">
+              <div>
+                <span className="text-[10px] text-neutral-400 block">Answered</span>
+                <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                  {answeredCount} of {questions.length}
+                </span>
               </div>
-
-              <div
-                className="p-3.5 rounded-xl border-2 border-black font-bold"
-                style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-              >
-                <span className="block text-gray-700">Unanswered</span>
-                <span className="text-2xl font-black">{questions.length - answeredCount} Remaining</span>
+              <div>
+                <span className="text-[10px] text-neutral-400 block">Remaining</span>
+                <span className="text-base font-bold text-neutral-700 dark:text-neutral-300">
+                  {questions.length - answeredCount}
+                </span>
               </div>
             </div>
 
             {questions.length - answeredCount > 0 && (
-              <div className="p-3 rounded-xl border-2 border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-xs font-bold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>You have {questions.length - answeredCount} unanswered questions!</span>
-              </div>
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                You have {questions.length - answeredCount} unanswered questions!
+              </p>
             )}
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2 pt-2">
               <button
                 onClick={() => setShowSubmitModal(false)}
-                className="flex-1 py-3 rounded-xl font-bold text-sm border-2 border-black dark:border-white transition hover:scale-[1.02] cursor-pointer"
-                style={{ backgroundColor: themeColors.primary.w, color: themeColors.primary.w2 }}
+                className="flex-1 py-2 rounded-xl text-xs font-medium border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition cursor-pointer"
               >
                 Back to Test
               </button>
               <button
                 onClick={handleSubmitFinal}
-                className="flex-1 py-3 rounded-xl font-black text-sm border-2 border-black dark:border-white shadow-md transition hover:scale-[1.02] active:scale-95 cursor-pointer"
-                style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+                className="flex-1 py-2 rounded-xl text-xs font-medium bg-neutral-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 transition shadow-xs cursor-pointer"
               >
                 Confirm & Submit
               </button>
@@ -1565,14 +1319,12 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 interface DetailedReportCardModalProps {
   result: ExamResult;
   onClose: () => void;
-  themeColors: any;
   isDark: boolean;
 }
 
 const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
   result,
   onClose,
-  themeColors,
   isDark
 }) => {
   const [filterType, setFilterType] = useState<"all" | "mcq" | "descriptive">("all");
@@ -1583,160 +1335,117 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150">
-      <div
-        className="rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border-2 border-black dark:border-white flex flex-col"
-        style={{ backgroundColor: themeColors.background.white }}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-neutral-200/80 dark:border-neutral-800 flex flex-col">
         {/* Sticky Header */}
-        <div
-          className="sticky top-0 border-b-2 border-black dark:border-white p-5 sm:p-6 flex items-center justify-between z-10 shadow-sm"
-          style={{ backgroundColor: themeColors.background.white }}
-        >
+        <div className="sticky top-0 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xs border-b border-neutral-200/80 dark:border-neutral-800 p-5 flex items-center justify-between z-10">
           <div>
-            <span
-              className="text-xs font-black uppercase px-2.5 py-0.5 rounded border border-black shadow-xs"
-              style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-            >
-              Academic Assessment Report Card
+            <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide">
+              Official Assessment Scorecard
             </span>
-            <h2 className="text-xl sm:text-2xl font-black mt-1" style={{ color: themeColors.text.primary }}>
+            <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-100">
               {result.examTitle}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl border-2 border-black dark:border-white hover:scale-105 transition cursor-pointer"
-            style={{ backgroundColor: themeColors.primary.w, color: themeColors.text.primary }}
+            className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-5 sm:p-8 space-y-8">
+        <div className="p-5 sm:p-7 space-y-6">
           {/* ================= HERO SCORE BANNER ================= */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Massive Score Block */}
-            <div
-              className="md:col-span-1 p-6 rounded-2xl border-2 border-black shadow-lg flex flex-col justify-between"
-              style={{ backgroundColor: themeColors.accent.blue, color: "#000000" }}
-            >
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            {/* Main Score Box */}
+            <div className="p-5 rounded-2xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 flex flex-col justify-between">
               <div>
-                <span className="text-xs font-black uppercase tracking-wider block text-gray-800">
-                  Total Score Obtained
+                <span className="text-[10px] uppercase font-semibold text-neutral-400 block tracking-wider">
+                  Total Score
                 </span>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-5xl font-black">{result.scoreObtained}</span>
-                  <span className="text-2xl font-bold text-gray-700">/{result.totalMarks}</span>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-3xl font-bold">{result.scoreObtained}</span>
+                  <span className="text-sm font-normal text-neutral-400">/{result.totalMarks}</span>
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t-2 border-black/20 flex items-center justify-between text-xs font-black">
-                <span className="px-3 py-1 rounded-full bg-white border border-black">
-                  {result.percentage}% Marks
-                </span>
-                <span
-                  className="px-3 py-1 rounded-full border border-black shadow-xs flex items-center gap-1"
-                  style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                >
-                  <Award className="w-3.5 h-3.5" /> {result.grade}
+              <div className="mt-3 pt-3 border-t border-neutral-800 dark:border-neutral-200 flex items-center justify-between text-xs font-medium">
+                <span>{result.percentage}% Marks</span>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 dark:text-emerald-700 font-semibold text-[11px]">
+                  {result.grade}
                 </span>
               </div>
             </div>
 
-            {/* 6 Quick Metrics */}
-            <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
-                <span className="text-xs text-gray-500 font-bold block">Course</span>
-                <span className="font-black text-sm block truncate" style={{ color: themeColors.text.primary }}>
+            {/* Quick Metrics */}
+            <div className="sm:col-span-2 grid grid-cols-2 gap-2.5">
+              <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-800">
+                <span className="text-[10px] text-neutral-400 block font-medium">Course</span>
+                <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate block mt-0.5">
                   {result.course}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
-                <span className="text-xs text-gray-500 font-bold block">Evaluated By</span>
-                <span className="font-black text-sm flex items-center gap-1.5" style={{ color: themeColors.text.primary }}>
-                  <UserCheck className="w-4 h-4 text-emerald-600" /> {result.instructor}
+              <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-800">
+                <span className="text-[10px] text-neutral-400 block font-medium">Evaluated By</span>
+                <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 flex items-center gap-1 mt-0.5">
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-500" /> {result.instructor}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
-                <span className="text-xs text-gray-500 font-bold block">Time Taken</span>
-                <span className="font-black text-sm flex items-center gap-1" style={{ color: themeColors.text.primary }}>
-                  <Clock className="w-4 h-4 text-indigo-500" /> {result.timeSpentMinutes} Mins
+              <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-800">
+                <span className="text-[10px] text-neutral-400 block font-medium">Time Taken</span>
+                <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 mt-0.5 block">
+                  {result.timeSpentMinutes} Minutes
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
-                <span className="text-xs text-gray-500 font-bold block">MCQ Section</span>
-                <span className="font-black text-sm text-emerald-600">
-                  100% Accuracy
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
-                <span className="text-xs text-gray-500 font-bold block">Descriptive Essays</span>
-                <span className="font-black text-sm text-indigo-600">
-                  18 / 20 Marks
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
-                <span className="text-xs text-gray-500 font-bold block">Final Status</span>
-                <span className="font-black text-sm text-emerald-600">
-                  PASSED
+              <div className="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-100 dark:border-neutral-800">
+                <span className="text-[10px] text-neutral-400 block font-medium">Result Status</span>
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                  Passed (Top Standing)
                 </span>
               </div>
             </div>
           </div>
 
-          {/* ================= INSTRUCTOR RISHIKA'S HIGHLIGHTED FEEDBACK BOX ================= */}
+          {/* ================= INSTRUCTOR RISHIKA'S FEEDBACK ================= */}
           {result.teacherFeedback && (
-            <div
-              className="rounded-2xl p-6 sm:p-7 border-2 border-black shadow-lg space-y-4"
-              style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b-2 border-black/20">
-                <h4 className="font-black text-lg flex items-center gap-2 text-black">
-                  <MessageSquare className="w-5 h-5 text-black" /> Personal Feedback from Instructor Rishika
+            <div className="rounded-2xl p-5 sm:p-6 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="font-bold text-sm text-amber-950 dark:text-amber-100 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-amber-600" />
+                  Personal Feedback from Instructor Rishika
                 </h4>
-                <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-white border border-black">
+                <span className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
                   {result.teacherFeedback.evaluatedAt}
                 </span>
               </div>
 
-              {/* Overall Feedback Commentary Quote */}
-              <div className="p-4 rounded-xl border-2 border-black bg-white text-black font-serif italic text-sm sm:text-base leading-relaxed shadow-sm">
+              <p className="text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 leading-relaxed italic bg-white/70 dark:bg-neutral-900/60 p-3.5 rounded-xl border border-amber-200/40 dark:border-neutral-800">
                 "{result.teacherFeedback.overall}"
-              </div>
+              </p>
 
-              {/* Strengths & Improvements */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                {/* Strengths Card */}
-                <div
-                  className="p-4 rounded-xl border-2 border-black shadow-sm space-y-2"
-                  style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                >
-                  <span className="text-xs font-black uppercase flex items-center gap-1.5 text-black">
-                    <ThumbsUp className="w-4 h-4 text-black" /> Key Strengths Noted:
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Strengths */}
+                <div className="p-3.5 rounded-xl bg-white/80 dark:bg-neutral-900/80 border border-emerald-200/60 dark:border-emerald-900/40 space-y-1.5">
+                  <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 uppercase tracking-wide">
+                    <ThumbsUp className="w-3 h-3" /> Key Strengths:
                   </span>
-                  <ul className="text-xs text-black font-medium space-y-1.5 list-disc list-inside">
+                  <ul className="text-xs text-neutral-700 dark:text-neutral-300 space-y-1 list-disc list-inside">
                     {result.teacherFeedback.strengths.map((s, idx) => (
                       <li key={idx}>{s}</li>
                     ))}
                   </ul>
                 </div>
 
-                {/* Improvements Card */}
-                <div
-                  className="p-4 rounded-xl border-2 border-black shadow-sm space-y-2"
-                  style={{ backgroundColor: themeColors.accent.red, color: "#000000" }}
-                >
-                  <span className="text-xs font-black uppercase flex items-center gap-1.5 text-black">
-                    <Flame className="w-4 h-4 text-black" /> High-Impact Action Items:
+                {/* Improvements */}
+                <div className="p-3.5 rounded-xl bg-white/80 dark:bg-neutral-900/80 border border-amber-200/60 dark:border-amber-900/40 space-y-1.5">
+                  <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1 uppercase tracking-wide">
+                    <Target className="w-3 h-3" /> Action Items:
                   </span>
-                  <ul className="text-xs text-black font-medium space-y-1.5 list-disc list-inside">
+                  <ul className="text-xs text-neutral-700 dark:text-neutral-300 space-y-1 list-disc list-inside">
                     {result.teacherFeedback.improvements.map((imp, idx) => (
                       <li key={idx}>{imp}</li>
                     ))}
@@ -1746,35 +1455,40 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
             </div>
           )}
 
-          {/* ================= QUESTION-BY-QUESTION BREAKDOWN ================= */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <h4 className="font-black text-xl" style={{ color: themeColors.text.primary }}>
-                Question-by-Question Breakdown
+          {/* ================= QUESTION BREAKDOWN ================= */}
+          <div className="space-y-3.5">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-sm text-neutral-900 dark:text-neutral-100">
+                Question Breakdown
               </h4>
 
-              {/* Filter Tabs */}
-              <div className="flex items-center gap-1.5 p-1 rounded-xl border-2 border-black dark:border-white text-xs font-bold bg-white dark:bg-black">
+              <div className="flex items-center gap-1 text-xs">
                 <button
                   onClick={() => setFilterType("all")}
-                  className={`px-3 py-1 rounded-lg transition-all ${
-                    filterType === "all" ? "bg-black text-white dark:bg-white dark:text-black" : "text-gray-500"
+                  className={`px-2.5 py-1 rounded-lg transition ${
+                    filterType === "all"
+                      ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-medium"
+                      : "text-neutral-500 hover:text-neutral-800"
                   }`}
                 >
-                  All Questions
+                  All ({result.answers.length})
                 </button>
                 <button
                   onClick={() => setFilterType("mcq")}
-                  className={`px-3 py-1 rounded-lg transition-all ${
-                    filterType === "mcq" ? "bg-black text-white dark:bg-white dark:text-black" : "text-gray-500"
+                  className={`px-2.5 py-1 rounded-lg transition ${
+                    filterType === "mcq"
+                      ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-medium"
+                      : "text-neutral-500 hover:text-neutral-800"
                   }`}
                 >
                   MCQs
                 </button>
                 <button
                   onClick={() => setFilterType("descriptive")}
-                  className={`px-3 py-1 rounded-lg transition-all ${
-                    filterType === "descriptive" ? "bg-black text-white dark:bg-white dark:text-black" : "text-gray-500"
+                  className={`px-2.5 py-1 rounded-lg transition ${
+                    filterType === "descriptive"
+                      ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-medium"
+                      : "text-neutral-500 hover:text-neutral-800"
                   }`}
                 >
                   Descriptive
@@ -1782,85 +1496,72 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
               </div>
             </div>
 
-            {/* Answer List */}
             {displayedAnswers.map((ans) => (
               <div
                 key={ans.questionId}
-                className="p-5 sm:p-6 rounded-2xl border-2 border-black dark:border-white shadow-md space-y-4"
-                style={{ backgroundColor: themeColors.background.white }}
+                className="p-4 sm:p-5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 space-y-3"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <span
-                      className="text-xs font-black px-2.5 py-0.5 rounded border border-black shadow-xs"
-                      style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-                    >
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300">
                       Q{ans.questionNumber}
                     </span>
-                    <span className="text-xs font-bold uppercase text-gray-500">
+                    <span className="text-xs text-neutral-400 capitalize">
                       {ans.type === "mcq" ? "Multiple Choice" : "Descriptive Essay"}
                     </span>
                   </div>
 
-                  <span
-                    className="text-xs font-black px-3 py-1 rounded-full border border-black shadow-xs"
-                    style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                  >
+                  <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800">
                     {ans.marksAwarded ?? 0} / {ans.marks} Marks
                   </span>
                 </div>
 
-                <p className="font-bold text-sm sm:text-base" style={{ color: themeColors.text.primary }}>
+                <p className="text-xs sm:text-sm font-medium text-neutral-900 dark:text-neutral-100 leading-normal">
                   {ans.question}
                 </p>
 
-                {/* For MCQ */}
+                {/* MCQ specific */}
                 {ans.type === "mcq" && (
-                  <div className="space-y-2 text-xs sm:text-sm">
+                  <div className="space-y-2 text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 font-bold">Your Response:</span>
-                      <span
-                        className="font-black px-2.5 py-0.5 rounded border border-black text-xs"
-                        style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                      >
+                      <span className="text-neutral-400">Your Answer:</span>
+                      <span className="font-semibold text-neutral-900 dark:text-neutral-100">
                         Option {ans.studentAnswer}
                       </span>
                       {ans.isCorrect && (
-                        <span className="text-emerald-700 font-black flex items-center gap-1 text-xs">
-                          <Check className="w-3.5 h-3.5" /> Correct Answer
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" /> Correct
                         </span>
                       )}
                     </div>
 
                     {ans.explanation && (
-                      <div className="p-3.5 rounded-xl border border-black/20 bg-gray-50 dark:bg-neutral-800 text-xs font-medium text-gray-700 dark:text-gray-300">
-                        <strong>Pedagogical Explanation:</strong> {ans.explanation}
-                      </div>
+                      <p className="p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/40 text-neutral-600 dark:text-neutral-400 text-xs leading-relaxed">
+                        <strong className="text-neutral-700 dark:text-neutral-300">Explanation:</strong> {ans.explanation}
+                      </p>
                     )}
                   </div>
                 )}
 
-                {/* For Descriptive */}
+                {/* Descriptive specific */}
                 {ans.type === "descriptive" && (
-                  <div className="space-y-3 text-xs sm:text-sm">
+                  <div className="space-y-2.5 text-xs">
                     <div>
-                      <span className="text-gray-500 text-xs font-bold block mb-1">
-                        Your Submitted Written Essay:
+                      <span className="text-[11px] text-neutral-400 font-medium block mb-1">
+                        Your Written Answer:
                       </span>
-                      <p className="p-4 rounded-xl border border-black/20 bg-gray-50 dark:bg-neutral-800 text-xs leading-relaxed" style={{ color: themeColors.text.primary }}>
+                      <p className="p-3.5 rounded-lg bg-neutral-50 dark:bg-neutral-800/40 text-neutral-800 dark:text-neutral-200 text-xs leading-relaxed">
                         {ans.studentAnswer}
                       </p>
                     </div>
 
                     {ans.teacherComment && (
-                      <div
-                        className="p-4 rounded-xl border-2 border-black text-xs shadow-sm space-y-1"
-                        style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-                      >
-                        <strong className="block font-black uppercase text-black flex items-center gap-1.5">
-                          <MessageSquare className="w-4 h-4 text-black" /> Instructor Rishika's Annotation:
-                        </strong>
-                        <p className="font-serif italic text-black leading-relaxed">
+                      <div className="p-3 rounded-lg bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-900/30 text-xs space-y-1">
+                        <span className="font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                          <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
+                          Instructor Rishika's Annotation:
+                        </span>
+                        <p className="text-neutral-700 dark:text-neutral-300 italic leading-relaxed">
                           "{ans.teacherComment}"
                         </p>
                       </div>
@@ -1871,14 +1572,12 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
             ))}
           </div>
 
-          {/* Modal Footer */}
-          <div className="pt-4 border-t-2 border-black/10 dark:border-white/10 flex justify-end">
+          <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800 flex justify-end">
             <button
               onClick={onClose}
-              className="px-6 py-2.5 rounded-xl font-black text-sm border-2 border-black dark:border-white shadow-md hover:scale-105 active:scale-95 transition cursor-pointer"
-              style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+              className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 text-xs font-medium transition cursor-pointer"
             >
-              Close Report Card
+              Close Scorecard
             </button>
           </div>
         </div>
