@@ -1968,8 +1968,8 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                           <span>Course Instructor: <strong style={{ color: themeColors.text.primary }}>{exam.instructor}</strong></span>
                         </div>
 
-                        {/* 4 Clean Spec Blocks */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
+                        {/* 3 Clean Spec Blocks */}
+                        <div className="grid grid-cols-3 gap-2.5 mb-5">
                           <div className="rounded-xl p-3 bg-gray-50 dark:bg-neutral-800/80 text-center border border-gray-100 dark:border-neutral-700/60">
                             <Clock className="w-4 h-4 mx-auto mb-1 text-gray-500" />
                             <div className="text-xs text-gray-500 font-medium">Duration</div>
@@ -1987,18 +1987,10 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                           </div>
 
                           <div className="rounded-xl p-3 bg-gray-50 dark:bg-neutral-800/80 text-center border border-gray-100 dark:border-neutral-700/60">
-                            <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-gray-500" />
-                            <div className="text-xs text-gray-500 font-medium">Passing Marks</div>
-                            <div className="text-sm font-black" style={{ color: themeColors.text.primary }}>
-                              {exam.passingMarks} Pts
-                            </div>
-                          </div>
-
-                          <div className="rounded-xl p-3 bg-gray-50 dark:bg-neutral-800/80 text-center border border-gray-100 dark:border-neutral-700/60">
                             <FileText className="w-4 h-4 mx-auto mb-1 text-gray-500" />
                             <div className="text-xs text-gray-500 font-medium">Format</div>
-                            <div className="text-xs font-black" style={{ color: themeColors.text.primary }}>
-                              {exam.mcqCount} MCQ + {exam.descriptiveCount} Descriptive
+                            <div className="text-xs font-black truncate" style={{ color: themeColors.text.primary }}>
+                              {exam.mcqCount} MCQ + {exam.descriptiveCount} Desc
                             </div>
                           </div>
                         </div>
@@ -3722,7 +3714,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               {userEmail || 'Enrolled Student'}
             </div>
             <div className="text-[11px] text-slate-400 dark:text-neutral-500 pt-0.5">
-              Passing Benchmark: {exam.passingMarks}/{exam.totalMarks} Marks ({Math.round((exam.passingMarks / exam.totalMarks) * 100)}%)
+              Total Assessment Marks: {exam.totalMarks} Marks
             </div>
           </div>
 
