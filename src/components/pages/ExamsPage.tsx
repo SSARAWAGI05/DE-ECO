@@ -2204,7 +2204,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               <span className="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300">
                 {currentQ.marks} {currentQ.marks === 1 ? "Mark" : "Marks"}
               </span>
-              <span className="hidden sm:inline-block px-2.5 py-0.5 rounded text-[11px] font-medium bg-slate-50 dark:bg-neutral-850 text-slate-500 dark:text-neutral-400 border border-slate-200/60 dark:border-neutral-800">
+              <span className="hidden sm:inline-block px-2.5 py-0.5 rounded text-[11px] font-medium bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 border border-slate-200/60 dark:border-neutral-700">
                 {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive Essay"}
               </span>
             </div>
