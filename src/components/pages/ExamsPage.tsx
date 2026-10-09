@@ -54,7 +54,8 @@ import {
   Save,
   PenTool,
   Edit3,
-  SlidersHorizontal
+  SlidersHorizontal,
+  LayoutGrid
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getThemeColors } from "../../styles/colors";
@@ -3145,6 +3146,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   const [isSavingProgress, setIsSavingProgress] = useState(false);
   const [saveButtonState, setSaveButtonState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [viewMode, setViewMode] = useState<"full" | "questions_only">("full");
+  const [showMobilePalette, setShowMobilePalette] = useState(false);
 
   // Explicit Save Handler (User tapped 'Save Progress')
   const handleExplicitSave = async () => {
@@ -3377,23 +3379,24 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-slate-100 dark:bg-neutral-950 text-slate-900 dark:text-neutral-100 font-sans exam-portal-root select-none">
       {/* ================= 1. PEARSON VUE TOP WORKSTATION APP BAR ================= */}
-      <header className="h-14 border-b border-slate-200 dark:border-neutral-800 px-6 flex items-center justify-between bg-white dark:bg-neutral-900 z-20 shrink-0">
+      <header className="h-14 border-b border-slate-200 dark:border-neutral-800 px-2 sm:px-4 md:px-6 flex items-center justify-between bg-white dark:bg-neutral-900 z-20 shrink-0 gap-1.5 sm:gap-3">
         {/* Left: Exit Button + Exam Identification */}
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={() => setShowBackModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 border border-slate-200/80 dark:border-neutral-700/80 transition cursor-pointer shrink-0 shadow-2xs"
+            className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 border border-slate-200/80 dark:border-neutral-700/80 transition cursor-pointer shrink-0 shadow-2xs"
             title="Exit examination (Pause or Submit)"
           >
-            <ChevronLeft className="w-4 h-4" />
-            <span>Exit Test</span>
+            <ChevronLeft className="w-4 h-4 shrink-0" />
+            <span className="hidden sm:inline">Exit Test</span>
+            <span className="sm:hidden">Exit</span>
           </button>
 
-          <div className="h-4 w-px bg-slate-200 dark:bg-neutral-800 shrink-0 mx-1" />
+          <div className="h-4 w-px bg-slate-200 dark:bg-neutral-800 shrink-0 mx-0.5 sm:mx-1 hidden xs:block" />
 
-          <div className="min-w-0 flex items-center gap-2.5">
-            <h1 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight truncate">
+          <div className="min-w-0 flex items-center gap-2">
+            <h1 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight truncate max-w-[85px] xs:max-w-[130px] sm:max-w-[200px] md:max-w-none">
               {exam.title}
             </h1>
             <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 border border-slate-200/60 dark:border-neutral-700/60 shrink-0">
@@ -3405,21 +3408,21 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
         {/* Center: Monospace Countdown Timer with Pearson VUE Hide/Show toggle */}
         <div className="flex items-center justify-center shrink-0">
           <div
-            className={`flex items-center gap-2 px-3.5 py-1 rounded-full font-mono text-xs font-semibold border transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 rounded-full font-mono text-[11px] sm:text-xs font-semibold border transition-all ${
               isLowTime
                 ? "bg-rose-50 dark:bg-rose-950/50 border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-400 animate-pulse shadow-xs"
                 : "bg-slate-50 dark:bg-neutral-800/90 border-slate-200 dark:border-neutral-700 text-slate-800 dark:text-neutral-200"
             }`}
           >
-            <Clock className={`w-3.5 h-3.5 ${isLowTime ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-neutral-400"}`} />
+            <Clock className={`w-3.5 h-3.5 shrink-0 ${isLowTime ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-neutral-400"}`} />
             
-            <span>{showTimerText || isLowTime ? formatTimer(secondsLeft) : "Timer Hidden"}</span>
+            <span>{showTimerText || isLowTime ? formatTimer(secondsLeft) : "Hidden"}</span>
 
             {!isLowTime && (
               <button
                 type="button"
                 onClick={() => setShowTimerText(!showTimerText)}
-                className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition p-0.5 cursor-pointer ml-0.5"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition p-0.5 cursor-pointer ml-0.5 hidden xs:inline-flex"
                 title={showTimerText ? "Hide timer (reduce stress)" : "Show timer"}
               >
                 {showTimerText ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -3429,7 +3432,19 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
         </div>
 
         {/* Right: Theme Toggle, Save Progress, Pause Test, Submit Examination */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Mobile Question Palette Trigger */}
+          <button
+            type="button"
+            onClick={() => setShowMobilePalette(true)}
+            className="lg:hidden px-2 py-1.5 rounded-lg border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-750 transition flex items-center gap-1 cursor-pointer shadow-2xs"
+            title="Open Question Palette Grid"
+            aria-label="Open Question Palette"
+          >
+            <LayoutGrid className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span className="text-[11px] font-bold">{answeredCount}/{questions.length}</span>
+          </button>
+
           <button
             type="button"
             onClick={toggleTheme}
@@ -3445,7 +3460,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             type="button"
             onClick={handleExplicitSave}
             disabled={isSavingProgress}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs select-none active:scale-95 ${
+            className={`p-1.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs select-none active:scale-95 ${
               saveButtonState === "saved"
                 ? "bg-emerald-600 text-white"
                 : saveButtonState === "saving"
@@ -3461,14 +3476,14 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             ) : (
               <Save className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             )}
-            <span className="hidden sm:inline">
+            <span className="hidden md:inline">
               {saveButtonState === "saving"
                 ? "Saving..."
                 : saveButtonState === "saved"
                 ? "Saved to Cloud"
                 : "Save Progress"}
             </span>
-            <span className="sm:hidden">
+            <span className="hidden sm:inline md:hidden">
               {saveButtonState === "saving" ? "Saving..." : saveButtonState === "saved" ? "Saved" : "Save"}
             </span>
           </button>
@@ -3476,19 +3491,20 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
           <button
             type="button"
             onClick={() => setIsPaused(true)}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-neutral-700 hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition flex items-center gap-1.5 cursor-pointer"
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-neutral-700 hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition flex items-center gap-1.5 cursor-pointer"
             title="Pause exam & freeze timer"
           >
             <Pause className="w-3.5 h-3.5 text-slate-500 dark:text-neutral-400" />
-            <span className="hidden sm:inline">Pause</span>
+            <span className="hidden md:inline">Pause</span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowSubmitModal(true)}
-            className="px-3.5 sm:px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-sm transition active:scale-95 cursor-pointer"
+            className="px-2.5 sm:px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-sm transition active:scale-95 cursor-pointer shrink-0"
           >
-            Submit Examination
+            <span className="hidden sm:inline">Submit Examination</span>
+            <span className="sm:hidden">Submit</span>
           </button>
         </div>
       </header>
@@ -3506,32 +3522,41 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
       {/* ================= 2. MAIN 2-COLUMN WORKSTATION (ZERO DEAD MARGINS) ================= */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         
-        {/* ================= LEFT COLUMN: QUESTION & ANSWER CANVAS (68%) ================= */}
-        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-neutral-900 border-r border-slate-200 dark:border-neutral-800">
+        {/* ================= LEFT COLUMN: QUESTION & ANSWER CANVAS ================= */}
+        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-neutral-900 lg:border-r border-slate-200 dark:border-neutral-800">
           
           {/* Question Subheader Bar */}
-          <div className="px-4 sm:px-8 py-3 border-b border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
-            <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="px-3 sm:px-8 py-2.5 sm:py-3 border-b border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-wrap items-center justify-between gap-2 sm:gap-2.5 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2.5">
               <span className="text-xs font-bold text-slate-900 dark:text-white">
                 Question {currentQ.number} of {questions.length}
               </span>
-              <span className="text-slate-300 dark:text-neutral-700">•</span>
-              <span className="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300">
+              <button
+                type="button"
+                onClick={() => setShowMobilePalette(true)}
+                className="lg:hidden text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 cursor-pointer"
+                title="Open question palette"
+              >
+                <LayoutGrid className="w-3 h-3" />
+                <span>Grid</span>
+              </button>
+              <span className="text-slate-300 dark:text-neutral-700 hidden xs:inline">•</span>
+              <span className="hidden xs:inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300">
                 {currentQ.marks} {currentQ.marks === 1 ? "Mark" : "Marks"}
               </span>
-              <span className="hidden sm:inline-block px-2.5 py-0.5 rounded text-[11px] font-medium bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 border border-slate-200/60 dark:border-neutral-700">
+              <span className="hidden md:inline-block px-2.5 py-0.5 rounded text-[11px] font-medium bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 border border-slate-200/60 dark:border-neutral-700">
                 {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive Response"}
               </span>
             </div>
 
             {/* Mode Switcher + Action Controls */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3">
               {/* TOGGLE: Questions Only vs Questions + Answering */}
               <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-neutral-800 border border-slate-200/80 dark:border-neutral-700/80 shadow-2xs">
                 <button
                   type="button"
                   onClick={() => setViewMode("full")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     viewMode === "full"
                       ? "bg-white dark:bg-neutral-900 text-slate-900 dark:text-white shadow-xs"
                       : "text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white"
@@ -3545,7 +3570,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewMode("questions_only")}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     viewMode === "questions_only"
                       ? "bg-white dark:bg-neutral-900 text-amber-600 dark:text-amber-400 shadow-xs"
                       : "text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white"
@@ -3554,7 +3579,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 >
                   <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span className="hidden sm:inline">Questions Only</span>
-                  <span className="sm:hidden">Questions Only</span>
+                  <span className="sm:hidden">Q-Only</span>
                 </button>
               </div>
 
@@ -3564,14 +3589,14 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   onClick={() => handleAnswerChange("")}
                   className="text-xs font-medium text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"
                 >
-                  Clear response
+                  Clear
                 </button>
               )}
 
               <button
                 type="button"
                 onClick={toggleFlag}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer select-none ${
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer select-none ${
                   flagged[currentQ.id]
                     ? "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shadow-2xs font-semibold"
                     : "text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 border border-transparent"
@@ -3591,7 +3616,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             /* ========================================================================= */
             /* QUESTIONS ONLY: CENTERED FLASHCARD PRESENTATION                           */
             /* ========================================================================= */
-            <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 sm:py-10 custom-scrollbar flex flex-col items-center justify-center min-h-0 bg-slate-100/50 dark:bg-neutral-950/40">
+            <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-4 sm:py-8 custom-scrollbar flex flex-col items-center min-h-0 bg-slate-100/50 dark:bg-neutral-950/40">
               <div className="w-full max-w-2xl my-auto animate-in fade-in zoom-in-95 duration-200">
                 {/* FLASHCARD CARD */}
                 <div className="relative rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200/90 dark:border-neutral-800 shadow-xl dark:shadow-2xl dark:shadow-black/60 overflow-hidden flex flex-col">
@@ -3600,7 +3625,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-indigo-500 to-amber-500" />
 
                   {/* Card Header */}
-                  <div className="p-5 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 dark:border-neutral-800/80 flex items-center justify-between gap-3">
+                  <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 dark:border-neutral-800/80 flex items-center justify-between gap-2.5">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/80 flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-amber-500" />
@@ -3634,13 +3659,13 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   </div>
 
                   {/* Card Body: Question Statement & Reference Options */}
-                  <div className="p-6 sm:p-8 space-y-6">
+                  <div className="p-4 sm:p-8 space-y-4 sm:space-y-6">
                     <div className="space-y-2">
                       <div className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500 flex items-center gap-1.5">
                         <PenTool className="w-3.5 h-3.5 text-amber-500" />
                         <span>Pen & Paper Focus Statement</span>
                       </div>
-                      <div className="text-lg sm:text-xl md:text-2xl font-semibold leading-relaxed text-slate-900 dark:text-neutral-100 tracking-tight select-text">
+                      <div className="text-base sm:text-xl md:text-2xl font-semibold leading-relaxed text-slate-900 dark:text-neutral-100 tracking-tight select-text">
                         {currentQ.question}
                       </div>
                     </div>
@@ -3651,11 +3676,11 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                         <div className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
                           Options Reference:
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
                           {currentQ.options.map((option) => (
                             <div
                               key={option.id}
-                              className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50/80 dark:bg-neutral-800/60 border border-slate-200/80 dark:border-neutral-750 transition-colors"
+                              className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-50/80 dark:bg-neutral-800/60 border border-slate-200/80 dark:border-neutral-750 transition-colors"
                             >
                               <span className="w-7 h-7 rounded-xl bg-white dark:bg-neutral-700 border border-slate-200 dark:border-neutral-600 font-bold text-xs flex items-center justify-center shrink-0 text-slate-800 dark:text-neutral-200 shadow-2xs">
                                 {option.id}
@@ -3671,9 +3696,9 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
                     {/* Descriptive Paper Banner */}
                     {currentQ.type === "descriptive" && (
-                      <div className="p-4 rounded-2xl border border-dashed border-amber-300 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 flex items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800/60">
-                          <PenTool className="w-5 h-5" />
+                      <div className="p-3.5 sm:p-4 rounded-2xl border border-dashed border-amber-300 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 flex items-center gap-3 sm:gap-3.5">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800/60">
+                          <PenTool className="w-4 h-4 sm:w-5 sm:h-5" />
                         </div>
                         <div className="text-xs">
                           <span className="font-bold text-amber-900 dark:text-amber-300 block">
@@ -3688,14 +3713,14 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   </div>
 
                   {/* Card Footer: Flipping Controls & Typing Mode Switch */}
-                  <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-neutral-800/80 bg-slate-50/60 dark:bg-neutral-850/60 flex items-center justify-between gap-3 text-xs">
+                  <div className="p-3.5 sm:p-5 border-t border-slate-100 dark:border-neutral-800/80 bg-slate-50/60 dark:bg-neutral-850/60 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 text-xs">
                     {/* Quick Flip Buttons on Card */}
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => setCurrentIdx((p) => Math.max(0, p - 1))}
                         disabled={currentIdx === 0}
-                        className="p-2 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer flex items-center gap-1 font-semibold"
+                        className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer flex items-center gap-1 font-semibold"
                         title="Previous question (← Arrow)"
                       >
                         <ChevronLeft className="w-4 h-4" />
@@ -3715,7 +3740,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                             setShowSubmitModal(true);
                           }
                         }}
-                        className="p-2 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 transition cursor-pointer flex items-center gap-1 font-semibold"
+                        className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 transition cursor-pointer flex items-center gap-1 font-semibold"
                         title="Next question (→ Arrow)"
                       >
                         <span className="hidden sm:inline">{currentIdx === questions.length - 1 ? "Finish" : "Next Card"}</span>
@@ -3741,17 +3766,17 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             /* ========================================================================= */
             /* FULL WORKSTATION MODE: QUESTION + TYPING / RADIO WORKSPACE                */
             /* ========================================================================= */
-            <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 sm:py-8 custom-scrollbar">
-              <div className="max-w-3xl mx-auto w-full space-y-7">
+            <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-4 sm:py-8 custom-scrollbar">
+              <div className="max-w-3xl mx-auto w-full space-y-5 sm:space-y-7">
                 
                 {/* Question Statement */}
-                <div className="text-lg sm:text-[19px] font-medium leading-relaxed text-slate-900 dark:text-neutral-100 tracking-tight select-text">
+                <div className="text-base sm:text-[19px] font-medium leading-relaxed text-slate-900 dark:text-neutral-100 tracking-tight select-text">
                   {currentQ.question}
                 </div>
 
                 {/* MCQ Options with Tactile Key Badges & Keyboard Shortcuts */}
                 {currentQ.type === "mcq" && currentQ.options && (
-                  <div className="space-y-3 pt-1">
+                  <div className="space-y-2.5 sm:space-y-3 pt-1">
                     {currentQ.options.map((option) => {
                       const isSelected = answers[currentQ.id] === option.id;
 
@@ -3759,7 +3784,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                         <div
                           key={option.id}
                           onClick={() => handleAnswerChange(option.id)}
-                          className={`group flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                          className={`group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border transition-all cursor-pointer select-none ${
                             isSelected
                               ? "border-slate-900 dark:border-white bg-slate-50/90 dark:bg-neutral-800/80 shadow-xs ring-1 ring-slate-900/10 dark:ring-white/20"
                               : "border-slate-200/90 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 hover:bg-slate-50/40 dark:hover:bg-neutral-800/30 bg-white dark:bg-neutral-900"
@@ -3777,7 +3802,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                           </div>
 
                           {/* Option Text */}
-                          <div className={`text-[15px] sm:text-base leading-normal flex-1 ${
+                          <div className={`text-sm sm:text-base leading-normal flex-1 ${
                             isSelected
                               ? "font-semibold text-slate-900 dark:text-white"
                               : "font-normal text-slate-800 dark:text-neutral-200"
@@ -3821,19 +3846,31 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
           )}
 
           {/* Integrated Bottom Dock */}
-          <div className="px-8 py-3.5 border-t border-slate-200/90 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-900/70 flex items-center justify-between shrink-0">
+          <div className="px-3 sm:px-8 py-2.5 sm:py-3.5 border-t border-slate-200/90 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-900/70 flex items-center justify-between shrink-0 gap-2">
             <button
               type="button"
               onClick={() => setCurrentIdx((prev) => Math.max(0, prev - 1))}
               disabled={currentIdx === 0}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-750 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-750 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer shadow-xs shrink-0"
             >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Previous Question</span>
+              <ChevronLeft className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Previous Question</span>
+              <span className="sm:hidden">Prev</span>
             </button>
 
             <div className="flex items-center gap-2 sm:gap-3">
-              <span className="text-xs text-slate-500 dark:text-neutral-400 font-medium">
+              {/* Mobile Question Palette Trigger */}
+              <button
+                type="button"
+                onClick={() => setShowMobilePalette(true)}
+                className="lg:hidden flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-200/80 dark:bg-neutral-800 text-xs font-bold text-slate-800 dark:text-neutral-200 border border-slate-300/60 dark:border-neutral-700/60 cursor-pointer shadow-2xs"
+                title="Open question palette"
+              >
+                <span>{currentIdx + 1} / {questions.length}</span>
+                <LayoutGrid className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+              </button>
+
+              <span className="hidden lg:inline text-xs text-slate-500 dark:text-neutral-400 font-medium">
                 Question {currentIdx + 1} of {questions.length}
               </span>
               <span className="text-slate-300 dark:text-neutral-700 hidden sm:inline">•</span>
@@ -3858,25 +3895,30 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   setShowSubmitModal(true);
                 }
               }}
-              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs active:scale-95 ${
+              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs active:scale-95 shrink-0 ${
                 currentIdx === questions.length - 1
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                   : "bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900"
               }`}
             >
-              <span>{currentIdx === questions.length - 1 ? "Submit Examination" : "Next Question"}</span>
+              <span className="hidden sm:inline">
+                {currentIdx === questions.length - 1 ? "Submit Examination" : "Next Question"}
+              </span>
+              <span className="sm:hidden">
+                {currentIdx === questions.length - 1 ? "Submit" : "Next"}
+              </span>
               {currentIdx === questions.length - 1 ? (
-                <Check className="w-4 h-4" />
+                <Check className="w-4 h-4 shrink-0" />
               ) : (
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4 shrink-0" />
               )}
             </button>
           </div>
 
         </div>
 
-        {/* ================= RIGHT COLUMN: CONTINUOUS WORKSTATION SIDEBAR (32%) ================= */}
-        <div className="w-84 sm:w-88 shrink-0 bg-slate-50 dark:bg-neutral-950 flex flex-col justify-between overflow-y-auto custom-scrollbar border-l border-slate-200/80 dark:border-neutral-800/80">
+        {/* ================= RIGHT COLUMN: CONTINUOUS WORKSTATION SIDEBAR (DESKTOP ONLY) ================= */}
+        <div className="hidden lg:flex w-80 xl:w-88 shrink-0 bg-slate-50 dark:bg-neutral-950 flex-col justify-between overflow-y-auto custom-scrollbar border-l border-slate-200/80 dark:border-neutral-800/80">
           
           {/* Top Half of Sidebar: Progress + Matrix */}
           <div className="flex flex-col">
@@ -3997,6 +4039,143 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
         </div>
 
       </div>
+
+      {/* ================= MOBILE QUESTION PALETTE DRAWER (BOTTOM SHEET) ================= */}
+      {showMobilePalette && (
+        <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div 
+            className="w-full bg-white dark:bg-neutral-900 rounded-t-3xl border-t border-slate-200 dark:border-neutral-800 shadow-2xl flex flex-col max-h-[85vh] animate-in slide-in-from-bottom duration-200"
+          >
+            {/* Drawer Header */}
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <LayoutGrid className="w-4 h-4 text-indigo-500" />
+                  Question Palette & Stats
+                </h3>
+                <p className="text-[11px] text-slate-400 dark:text-neutral-500">
+                  Tap any question number to jump to it
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobilePalette(false)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Drawer Body (Scrollable) */}
+            <div className="p-5 overflow-y-auto space-y-4 custom-scrollbar">
+              {/* Progress overview */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-800 dark:text-neutral-200">Assessment Progress</span>
+                  <span className="font-semibold text-slate-500 dark:text-neutral-400">
+                    {answeredCount} of {questions.length} ({Math.round(questions.length > 0 ? (answeredCount / questions.length) * 100 : 0)}%)
+                  </span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-neutral-800 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-300 rounded-full"
+                    style={{ width: `${questions.length > 0 ? (answeredCount / questions.length) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Quick Metrics */}
+              <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+                <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/60">
+                  <span className="block text-base font-black text-emerald-700 dark:text-emerald-400">{answeredCount}</span>
+                  <span className="text-[10px] font-semibold text-emerald-600/90 dark:text-emerald-400/90 uppercase tracking-wider">Answered</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/60">
+                  <span className="block text-base font-black text-amber-700 dark:text-amber-400">{markedCount}</span>
+                  <span className="text-[10px] font-semibold text-amber-600/90 dark:text-amber-400/90 uppercase tracking-wider">Review</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800">
+                  <span className="block text-base font-black text-slate-500 dark:text-neutral-400">{remainingCount}</span>
+                  <span className="text-[10px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">Remaining</span>
+                </div>
+              </div>
+
+              {/* Questions Grid */}
+              <div className="pt-2">
+                <div className="text-xs font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-2.5">
+                  Questions Grid ({questions.length})
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {questions.map((q, idx) => {
+                    const isCurrent = idx === currentIdx;
+                    const isAnswered = answers[q.id] && answers[q.id].trim() !== "";
+                    const isFlagged = flagged[q.id];
+
+                    let btnClass = "border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300";
+
+                    if (isCurrent) {
+                      btnClass = "bg-slate-900 text-white dark:bg-white dark:text-neutral-900 font-black ring-2 ring-slate-900/20 dark:ring-white/20 shadow-xs";
+                    } else if (isAnswered) {
+                      btnClass = "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold";
+                    }
+
+                    return (
+                      <button
+                        key={q.id}
+                        type="button"
+                        onClick={() => {
+                          setCurrentIdx(idx);
+                          setShowMobilePalette(false);
+                        }}
+                        className={`relative h-11 rounded-xl text-xs transition cursor-pointer flex items-center justify-center select-none active:scale-95 ${btnClass}`}
+                      >
+                        <span>{idx + 1}</span>
+                        {isFlagged && (
+                          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-neutral-900" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="pt-3 border-t border-slate-200/70 dark:border-neutral-800/80 grid grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-neutral-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-slate-900 dark:bg-white" />
+                  <span>Current Question</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+                  <span>Answered</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-amber-500" />
+                  <span>Marked for Review</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-sm border border-slate-300 dark:border-neutral-600 bg-white dark:bg-neutral-900" />
+                  <span>Unattempted</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Drawer Footer */}
+            <div className="p-4 border-t border-slate-100 dark:border-neutral-800 bg-slate-50/60 dark:bg-neutral-850/60 flex items-center justify-between shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMobilePalette(false);
+                  setShowSubmitModal(true);
+                }}
+                className="w-full py-2.5 rounded-xl font-bold text-xs bg-slate-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-black transition text-center cursor-pointer shadow-xs active:scale-95"
+              >
+                Submit Examination ({answeredCount}/{questions.length} Answered)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ================= PRE-SUBMIT CONFIRMATION MODAL ================= */}
       {showSubmitModal && (
