@@ -221,15 +221,6 @@ const [todayClasses, setTodayClasses] = useState<{
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        const dummy = localStorage.getItem("deeco_dummy_session");
-        if (dummy) {
-          try {
-            const parsed = JSON.parse(dummy);
-            setUserName(parsed.user?.user_metadata?.first_name || "Test Student");
-          } catch (e) {
-            setUserName("Test Student");
-          }
-        }
         setLoading(false);
         return;
       }

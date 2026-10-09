@@ -49,7 +49,9 @@ import {
   Minus,
   Sparkles,
   Sun,
-  Moon
+  Moon,
+  Cloud,
+  Save
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getThemeColors } from "../../styles/colors";
@@ -342,12 +344,39 @@ export const downloadReportCard = (
 '        break-inside: avoid;' +
 '        page-break-inside: avoid;' +
 '      }' +
+'      .report-watermark {' +
+'        opacity: 0.07 !important;' +
+'        -webkit-print-color-adjust: exact !important;' +
+'        print-color-adjust: exact !important;' +
+'      }' +
+'    }' +
+'    .report-watermark {' +
+'      position: absolute;' +
+'      top: 50%;' +
+'      left: 50%;' +
+'      transform: translate(-50%, -50%);' +
+'      width: 440px;' +
+'      max-width: 70%;' +
+'      opacity: 0.05;' +
+'      pointer-events: none;' +
+'      z-index: 1;' +
+'      display: flex;' +
+'      align-items: center;' +
+'      justify-content: center;' +
+'    }' +
+'    .report-watermark img {' +
+'      width: 100%;' +
+'      height: auto;' +
+'      object-fit: contain;' +
+'      filter: grayscale(100%);' +
 '    }' +
 '    .header-banner {' +
 '      background: linear-gradient(135deg, #0b1329 0%, #172554 100%);' +
 '      color: #ffffff;' +
 '      padding: 28px 36px;' +
 '      border-bottom: 4px solid #10b981;' +
+'      position: relative;' +
+'      z-index: 2;' +
 '    }' +
 '    .header-top {' +
 '      display: flex;' +
@@ -417,6 +446,8 @@ export const downloadReportCard = (
 '    }' +
 '    .card-content {' +
 '      padding: 28px 36px;' +
+'      position: relative;' +
+'      z-index: 2;' +
 '    }' +
 '    .meta-grid {' +
 '      display: grid;' +
@@ -753,10 +784,13 @@ export const downloadReportCard = (
 '    </div>' +
 '  </div>' +
 '  <div class="report-card-wrapper">' +
+'    <div class="report-watermark">' +
+'      <img src="/logo/De-Eco-logo.png" alt="" onerror="this.src=\'/logo.png\'" />' +
+'    </div>' +
 '    <header class="header-banner">' +
 '      <div class="header-top">' +
 '        <div class="brand-group">' +
-'          <img src="/logo/De-Eco-logo.png" alt="DE-ECO" class="brand-logo-img" onerror="this.style.display=\'none\'" />' +
+'          <img src="/logo/De-Eco-logo.png" alt="DE-ECO" class="brand-logo-img" onerror="this.src=\'/logo.png\'" />' +
 '          <div>' +
 '            <div class="brand-text-name">DE-ECO</div>' +
 '            <div class="brand-text-sub">Academic Assessment & Evaluation</div>' +
@@ -775,9 +809,9 @@ export const downloadReportCard = (
 '    </header>' +
 '    <div class="card-content">' +
 '      <div class="meta-grid">' +
-'        <div class="meta-item"><span class="meta-label">Candidate Name</span><span class="meta-val">' + escapeHtml(candidateName) + '</span></div>' +
+'        <div class="meta-item"><span class="meta-label">Student Name</span><span class="meta-val">' + escapeHtml(candidateName) + '</span></div>' +
 '        <div class="meta-item"><span class="meta-label">' + courseMetaLabel + '</span><span class="meta-val">' + escapeHtml(courseTitle) + '</span></div>' +
-'        <div class="meta-item"><span class="meta-label">Candidate Email</span><span class="meta-val">' + escapeHtml(candidateEmail) + '</span></div>' +
+'        <div class="meta-item"><span class="meta-label">Student Email</span><span class="meta-val">' + escapeHtml(candidateEmail) + '</span></div>' +
 '        <div class="meta-item"><span class="meta-label">Evaluating Faculty</span><span class="meta-val">' + escapeHtml(instructor) + '</span></div>' +
 '        <div class="meta-item"><span class="meta-label">Submission Date</span><span class="meta-val">' + escapeHtml(submittedAt) + '</span></div>' +
 '        <div class="meta-item"><span class="meta-label">Time Spent</span><span class="meta-val">' + (timeSpent <= 0 ? '< 1 Minute' : timeSpent === 1 ? '1 Minute' : timeSpent + ' Minutes') + '</span></div>' +
@@ -838,7 +872,7 @@ export const downloadReportCard = (
               '<div class="q-marks"><span style="color: ' + (marksAwarded >= ans.marks ? '#059669' : marksAwarded > 0 ? '#d97706' : '#dc2626') + '">' + marksAwarded + '</span> / ' + ans.marks + ' Marks</div>' +
             '</div>' +
             '<div class="q-text">' + escapeHtml(ans.question) + '</div>' +
-            '<div class="q-answer-box"><strong>Candidate Response:</strong> ' +
+            '<div class="q-answer-box"><strong>Student Response:</strong> ' +
               (isMcq ? 'Option ' + escapeHtml(ans.studentAnswer || 'Unanswered') + (ans.isCorrect ? ' <span style="color:#059669; font-weight:800;">(Correct)</span>' : ' <span style="color:#dc2626; font-weight:800;">(Incorrect)</span>') : escapeHtml(studentAnsText || '(No response recorded)')) +
               (isMcq && ans.correctAnswer ? '<div style="margin-top: 4px; color: #475569;"><strong>Correct Key:</strong> Option ' + escapeHtml(ans.correctAnswer) + '</div>' : '') +
             '</div>' +
@@ -1119,8 +1153,38 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
           setEnrolledCourseTitles(titles);
         }
 
-        // 2. Fetch student's submitted exams from public.exam_submissions
+        // 2. Fetch student's submitted exams and active sessions from Supabase
         const submittedExamIds = new Set<string>();
+        const dbSessions: Record<string, ExamSessionState> = {};
+
+        // 2a. Fetch active in-progress exam sessions from Supabase exam_sessions table
+        try {
+          const { data: sessionRows } = await supabase
+            .from("exam_sessions")
+            .select("*")
+            .eq("user_id", user.id);
+
+          if (sessionRows && sessionRows.length > 0) {
+            sessionRows.forEach((r: any) => {
+              if (r.exam_id) {
+                dbSessions[r.exam_id] = {
+                  examId: r.exam_id,
+                  secondsLeft: Number(r.seconds_left) || 3600,
+                  answers: r.answers || {},
+                  flagged: r.flagged || {},
+                  currentIdx: Number(r.current_idx) || 0,
+                  lastSavedAt: r.last_saved_at
+                    ? new Date(r.last_saved_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                    : "Saved in Cloud"
+                };
+              }
+            });
+          }
+        } catch (e) {
+          // Dedicated table fallback
+        }
+
+        // 2b. Fetch submissions from public.exam_submissions
         const { data: submissionsData, error: subError } = await supabase
           .from("exam_submissions")
           .select("*")
@@ -1128,7 +1192,43 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
           .order("submitted_at", { ascending: false });
 
         if (!subError && submissionsData) {
-          const mappedResults: ExamResult[] = submissionsData.map((d: any) => ({
+          // Recover any in-progress drafts into dbSessions
+          submissionsData.forEach((d: any) => {
+            if (d.status === "in_progress" && d.exam_id && !dbSessions[d.exam_id]) {
+              const sState = d.teacher_feedback?.sessionState;
+              const rawAnswers = sState?.answers || d.teacher_feedback?.rawAnswers || {};
+              const loadedAnswers: Record<string, string> = { ...rawAnswers };
+              if (Array.isArray(d.answers)) {
+                d.answers.forEach((ans: any) => {
+                  if (ans && ans.questionId && ans.selectedAnswer !== undefined) {
+                    loadedAnswers[ans.questionId] = ans.selectedAnswer;
+                  }
+                });
+              } else if (d.answers && typeof d.answers === "object") {
+                Object.assign(loadedAnswers, d.answers);
+              }
+
+              dbSessions[d.exam_id] = {
+                examId: d.exam_id,
+                secondsLeft: Number(sState?.secondsLeft) || (d.time_spent_minutes ? Math.max(60, 3600 - d.time_spent_minutes * 60) : 3600),
+                answers: loadedAnswers,
+                flagged: sState?.flagged || {},
+                currentIdx: Number(sState?.currentIdx) || 0,
+                lastSavedAt: d.submitted_at
+                  ? new Date(d.submitted_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                  : "Saved in Cloud"
+              };
+            }
+          });
+
+          // Only truly submitted exams (under_evaluation / graded) count as finished
+          const completedSubmissions = submissionsData.filter((d: any) => d.status !== "in_progress");
+
+          completedSubmissions.forEach((s: any) => {
+            if (s.exam_id) submittedExamIds.add(String(s.exam_id));
+          });
+
+          const mappedResults: ExamResult[] = completedSubmissions.map((d: any) => ({
             id: d.id,
             examId: d.exam_id,
             examTitle: d.exam_title,
@@ -1179,8 +1279,16 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
           try {
             localStorage.setItem("deeco_exam_results", JSON.stringify(mappedResults));
           } catch (e) {}
-          submissionsData.forEach((s: any) => {
-            if (s.exam_id) submittedExamIds.add(String(s.exam_id));
+        }
+
+        // Merge DB sessions into local state & storage so any device gets the saved session
+        if (Object.keys(dbSessions).length > 0) {
+          setExamSessions((prev) => {
+            const merged = { ...prev, ...dbSessions };
+            try {
+              localStorage.setItem("de_eco_exam_sessions", JSON.stringify(merged));
+            } catch (e) {}
+            return merged;
           });
         }
 
@@ -1270,8 +1378,118 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
     return matchesSearch && matchesStatus;
   });
 
+  // Helper to persist in-progress exam session to Supabase database for cross-device resuming
+  const saveExamProgressToDb = async (session: ExamSessionState): Promise<boolean> => {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
+      if (!user) return false;
+
+      // 1. Try dedicated public.exam_sessions table
+      try {
+        const { error: sessErr } = await supabase
+          .from("exam_sessions")
+          .upsert(
+            {
+              user_id: user.id,
+              exam_id: session.examId,
+              answers: session.answers,
+              flagged: session.flagged,
+              seconds_left: session.secondsLeft,
+              current_idx: session.currentIdx,
+              last_saved_at: new Date().toISOString()
+            },
+            { onConflict: "user_id,exam_id" }
+          );
+
+        if (!sessErr) {
+          setExamSessions((prev) => {
+            const updated = { ...prev, [session.examId]: session };
+            try {
+              localStorage.setItem("de_eco_exam_sessions", JSON.stringify(updated));
+            } catch (e) {}
+            return updated;
+          });
+          return true;
+        }
+      } catch (e) {
+        // Fallback to exam_submissions
+      }
+
+      // 2. Fallback to public.exam_submissions with status: 'in_progress'
+      const { data: existingDraft } = await supabase
+        .from("exam_submissions")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("exam_id", session.examId)
+        .eq("status", "in_progress")
+        .maybeSingle();
+
+      const subId = existingDraft?.id || generateUUID();
+      const targetExam = examsList.find((e) => e.id === session.examId) || activeExam;
+
+      const answersArray =
+        targetExam?.questions?.map((q) => ({
+          questionId: q.id,
+          questionText: q.question,
+          type: q.type,
+          marks: q.marks,
+          selectedAnswer: session.answers[q.id] || "",
+          correctAnswer: q.type === "mcq" ? q.correctOptionId : ""
+        })) || [];
+
+      const submissionPayload = {
+        id: subId,
+        exam_id: session.examId,
+        user_id: user.id,
+        exam_title: targetExam?.title || "Examination",
+        course_title: targetExam?.course || "",
+        student_email: user.email || currentUserEmail || "",
+        student_name:
+          (user.user_metadata as any)?.full_name ||
+          (user.user_metadata as any)?.name ||
+          user.email?.split("@")[0] ||
+          "Student",
+        instructor_name: targetExam?.instructor || "Rishika",
+        status: "in_progress",
+        submitted_at: new Date().toISOString(),
+        total_marks: targetExam?.totalMarks || 100,
+        score_obtained: null,
+        percentage: null,
+        grade: null,
+        is_passed: false,
+        time_spent_minutes: targetExam
+          ? Math.max(0, Math.round((targetExam.durationMinutes * 60 - session.secondsLeft) / 60))
+          : 0,
+        answers: answersArray,
+        teacher_feedback: {
+          is_draft: true,
+          sessionState: session,
+          rawAnswers: session.answers
+        }
+      };
+
+      const { error: upsertErr } = await supabase
+        .from("exam_submissions")
+        .upsert(submissionPayload);
+
+      setExamSessions((prev) => {
+        const updated = { ...prev, [session.examId]: session };
+        try {
+          localStorage.setItem("de_eco_exam_sessions", JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+
+      return !upsertErr;
+    } catch (err) {
+      console.warn("Could not save exam progress to DB:", err);
+      return false;
+    }
+  };
+
   // Handler when student pauses and exits an exam
-  const handlePauseAndExit = (session: ExamSessionState) => {
+  const handlePauseAndExit = async (session: ExamSessionState) => {
     setExamSessions((prev) => {
       const updated = { ...prev, [session.examId]: session };
       try {
@@ -1282,6 +1500,9 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
       return updated;
     });
     setActiveExam(null);
+
+    // Save progress to cloud database
+    await saveExamProgressToDb(session);
   };
 
   // Handler when student completes an exam:
@@ -1321,13 +1542,30 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
       const user = authData?.user;
 
       if (user) {
+        // Clear active session from exam_sessions table if present
+        try {
+          await supabase
+            .from("exam_sessions")
+            .delete()
+            .eq("user_id", user.id)
+            .eq("exam_id", newResult.examId);
+        } catch (e) {}
+
         const totalAwarded = newResult.answers.reduce(
           (acc, a) => acc + (a.marksAwarded !== undefined ? a.marksAwarded : 0),
           0
         );
         const hasDescriptive = newResult.answers.some((a) => a.type === "descriptive");
 
-        const submissionId = isValidUUID(newResult.id) ? newResult.id : generateUUID();
+        // Check for existing draft row to update instead of duplicate
+        const { data: existingDraft } = await supabase
+          .from("exam_submissions")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("exam_id", newResult.examId)
+          .maybeSingle();
+
+        const submissionId = existingDraft?.id || (isValidUUID(newResult.id) ? newResult.id : generateUUID());
         const examId = isValidUUID(newResult.examId) ? newResult.examId : null;
 
         if (examId) {
@@ -1362,7 +1600,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 
           const { error: insertError } = await supabase
             .from("exam_submissions")
-            .insert(submissionPayload);
+            .upsert(submissionPayload);
 
           if (insertError) {
             console.error("Error inserting exam submission into Supabase:", insertError);
@@ -1443,9 +1681,11 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
           initialSession={examSessions[activeExam.id] || null}
           onExit={() => setActiveExam(null)}
           onPauseAndExit={handlePauseAndExit}
+          onSaveProgress={saveExamProgressToDb}
           onFinishExam={handleFinishExam}
           themeColors={themeColors}
           isDark={isDark}
+          userEmail={currentUserEmail}
         />
       ) : (
         <div className="container mx-auto px-4 sm:px-6">
@@ -1988,7 +2228,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                   className="text-xs font-bold uppercase px-2.5 py-0.5 rounded shadow-xs"
                   style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
                 >
-                  Candidate Instructions
+                  Student Instructions
                 </span>
                 <h3 className="text-xl sm:text-2xl font-black mt-2" style={{ color: themeColors.text.primary }}>
                   {preExamModal.title}
@@ -2792,9 +3032,11 @@ interface ExamTakingPortalProps {
   initialSession?: ExamSessionState | null;
   onExit: () => void;
   onPauseAndExit: (session: ExamSessionState) => void;
+  onSaveProgress?: (session: ExamSessionState) => Promise<boolean>;
   onFinishExam: (result: ExamResult) => void;
   themeColors: any;
   isDark: boolean;
+  userEmail?: string;
 }
 
 const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
@@ -2802,9 +3044,11 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   initialSession,
   onExit,
   onPauseAndExit,
+  onSaveProgress,
   onFinishExam,
   themeColors,
-  isDark
+  isDark,
+  userEmail
 }) => {
   // Use questions from the exam, or empty array
   const questions = exam.questions && exam.questions.length > 0 ? exam.questions : [];
@@ -2820,6 +3064,41 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   const [lastSaved, setLastSaved] = useState<string>(
     initialSession ? `Resumed (${initialSession.lastSavedAt})` : "Draft auto-saved"
   );
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
+  const [saveButtonState, setSaveButtonState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  // Explicit Save Handler (User tapped 'Save Progress')
+  const handleExplicitSave = async () => {
+    if (isSavingProgress) return;
+    setIsSavingProgress(true);
+    setSaveButtonState("saving");
+
+    const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const sessionData: ExamSessionState = {
+      examId: exam.id,
+      secondsLeft,
+      answers,
+      flagged,
+      currentIdx,
+      lastSavedAt: timeStr
+    };
+
+    let saved = false;
+    if (onSaveProgress) {
+      saved = await onSaveProgress(sessionData);
+    }
+
+    setIsSavingProgress(false);
+    if (saved) {
+      setSaveButtonState("saved");
+      setLastSaved(`Saved to Cloud (${timeStr})`);
+      setTimeout(() => setSaveButtonState("idle"), 2500);
+    } else {
+      setSaveButtonState("error");
+      setLastSaved(`Saved locally (${timeStr})`);
+      setTimeout(() => setSaveButtonState("idle"), 2500);
+    }
+  };
 
   // Timer countdown in seconds (from saved session or full duration)
   const [secondsLeft, setSecondsLeft] = useState(
@@ -3070,8 +3349,8 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
           </div>
         </div>
 
-        {/* Right: Theme Toggle, Pause Test, Submit Examination */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        {/* Right: Theme Toggle, Save Progress, Pause Test, Submit Examination */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <button
             type="button"
             onClick={toggleTheme}
@@ -3080,6 +3359,39 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             aria-label="Toggle theme"
           >
             {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          {/* Explicit Save Progress Button */}
+          <button
+            type="button"
+            onClick={handleExplicitSave}
+            disabled={isSavingProgress}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs select-none active:scale-95 ${
+              saveButtonState === "saved"
+                ? "bg-emerald-600 text-white"
+                : saveButtonState === "saving"
+                ? "bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300"
+                : "bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-750"
+            }`}
+            title="Save answers to database (Access from any device)"
+          >
+            {saveButtonState === "saving" ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-500" />
+            ) : saveButtonState === "saved" ? (
+              <Check className="w-3.5 h-3.5 text-white" />
+            ) : (
+              <Save className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            )}
+            <span className="hidden sm:inline">
+              {saveButtonState === "saving"
+                ? "Saving..."
+                : saveButtonState === "saved"
+                ? "Saved to Cloud"
+                : "Save Progress"}
+            </span>
+            <span className="sm:hidden">
+              {saveButtonState === "saving" ? "Saving..." : saveButtonState === "saved" ? "Saved" : "Save"}
+            </span>
           </button>
 
           <button
@@ -3095,7 +3407,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
           <button
             type="button"
             onClick={() => setShowSubmitModal(true)}
-            className="px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-sm transition active:scale-95 cursor-pointer"
+            className="px-3.5 sm:px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-sm transition active:scale-95 cursor-pointer"
           >
             Submit Examination
           </button>
@@ -3252,8 +3564,21 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               <span>Previous Question</span>
             </button>
 
-            <div className="text-xs text-slate-500 dark:text-neutral-400 font-medium">
-              Question {currentIdx + 1} of {questions.length}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-xs text-slate-500 dark:text-neutral-400 font-medium">
+                Question {currentIdx + 1} of {questions.length}
+              </span>
+              <span className="text-slate-300 dark:text-neutral-700 hidden sm:inline">•</span>
+              <button
+                type="button"
+                onClick={handleExplicitSave}
+                disabled={isSavingProgress}
+                className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition cursor-pointer"
+                title="Click to save progress to cloud"
+              >
+                <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                <span>{lastSaved}</span>
+              </button>
             </div>
 
             <button
@@ -3387,14 +3712,14 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
           {/* Bottom Specifications (Anchored) */}
           <div className="p-4 border-t border-slate-200/80 dark:border-neutral-800/80 bg-white/70 dark:bg-neutral-900/60 text-xs text-slate-500 dark:text-neutral-400 space-y-1 mt-auto">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Candidate</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Student</span>
               <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Verified Active
               </span>
             </div>
             <div className="font-bold text-slate-900 dark:text-white text-xs truncate">
-              test@test.com
+              {userEmail || 'Enrolled Student'}
             </div>
             <div className="text-[11px] text-slate-400 dark:text-neutral-500 pt-0.5">
               Passing Benchmark: {exam.passingMarks}/{exam.totalMarks} Marks ({Math.round((exam.passingMarks / exam.totalMarks) * 100)}%)
@@ -3486,8 +3811,8 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 onClick={handlePauseAndExit}
                 className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-black dark:hover:bg-neutral-100 transition cursor-pointer flex items-center justify-center gap-2 shadow-xs"
               >
-                <Pause className="w-3.5 h-3.5" />
-                <span>Pause & Resume Later</span>
+                <Cloud className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" />
+                <span>Save to Cloud & Resume Later</span>
               </button>
 
               <button
@@ -3529,7 +3854,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 Examination Paused
               </h3>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
-                Your countdown timer is paused and all responses are preserved in memory.
+                Your countdown timer is frozen and all responses are backed up to the cloud database.
               </p>
             </div>
 
@@ -3552,9 +3877,10 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               <button
                 type="button"
                 onClick={handlePauseAndExit}
-                className="flex-1 py-2.5 rounded-xl font-semibold text-xs border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl font-semibold text-xs border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer flex items-center justify-center gap-1.5"
               >
-                Pause & Exit to Catalog
+                <Cloud className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Save to Cloud & Exit</span>
               </button>
 
               <button
@@ -3636,9 +3962,14 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
       <div
-        className="rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-gray-200 dark:border-neutral-800 flex flex-col"
+        className="rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-gray-200 dark:border-neutral-800 flex flex-col relative"
         style={{ backgroundColor: themeColors.background.white }}
       >
+        {/* Subtle Watermark */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.04] dark:opacity-[0.03] z-0 overflow-hidden">
+          <img src="/logo/De-Eco-logo.png" alt="" className="w-[60%] max-w-md object-contain grayscale" onError={(e) => { (e.target as any).src = '/logo.png'; }} />
+        </div>
+
         {/* Sticky Header */}
         <div
           className="sticky top-0 border-b border-gray-100 dark:border-neutral-800 p-5 sm:p-6 flex items-center justify-between z-10 shadow-sm"
@@ -3681,7 +4012,7 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
           </div>
         </div>
 
-        <div className="p-5 sm:p-8 space-y-8">
+        <div className="p-5 sm:p-8 space-y-8 relative z-10">
           {/* ================= HERO SCORE BANNER ================= */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Massive Score Block / Under Evaluation Block */}

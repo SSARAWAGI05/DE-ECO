@@ -15,15 +15,6 @@ function App() {
 
   // Load session on mount
   useEffect(() => {
-    const dummy = localStorage.getItem("deeco_dummy_session");
-    if (dummy) {
-      try {
-        setSession(JSON.parse(dummy));
-      } catch (e) {
-        setSession(true);
-      }
-    }
-
     supabase.auth.getSession().then(({ data }) => {
       if (data?.session) {
         setSession(data.session);
