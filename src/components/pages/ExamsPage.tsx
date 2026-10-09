@@ -1990,7 +1990,19 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                             <FileText className="w-4 h-4 mx-auto mb-1 text-gray-500" />
                             <div className="text-xs text-gray-500 font-medium">Format</div>
                             <div className="text-xs font-black truncate" style={{ color: themeColors.text.primary }}>
-                              {exam.mcqCount} MCQ + {exam.descriptiveCount} Desc
+                              {(() => {
+                                const mcq = exam.questions?.length
+                                  ? exam.questions.filter((q) => q.type === 'mcq').length
+                                  : exam.mcqCount;
+                                const desc = exam.questions?.length
+                                  ? exam.questions.filter((q) => q.type === 'descriptive').length
+                                  : exam.descriptiveCount;
+
+                                if (mcq > 0 && desc > 0) return `${mcq} MCQ + ${desc} Descriptive`;
+                                if (mcq > 0) return `${mcq} MCQ`;
+                                if (desc > 0) return `${desc} Descriptive`;
+                                return 'Flexible Format';
+                              })()}
                             </div>
                           </div>
                         </div>
