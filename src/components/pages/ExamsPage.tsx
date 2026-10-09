@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { supabase } from "../../lib/supabaseClient";
 import {
   Clock,
   Calendar,
@@ -79,6 +80,10 @@ export interface Exam {
   id: string;
   title: string;
   course: string;
+  courseId?: string;
+  assignedType?: 'course' | 'student';
+  assignedStudentEmail?: string;
+  assignedStudentName?: string;
   instructor: string;
   status: "live" | "upcoming" | "expired";
   scheduledDate: string;
@@ -139,12 +144,30 @@ export interface ExamSessionState {
 }
 
 /* ========================================================================= */
+/* ============================ UUID HELPERS =============================== */
+/* ========================================================================= */
+
+export const isValidUUID = (id: string): boolean =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
+export const generateUUID = (): string => {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
+/* ========================================================================= */
 /* ============================== MOCK DATA ================================ */
 /* ========================================================================= */
 
 const MOCK_EXAMS: Exam[] = [
   {
-    id: "exam-macro-midterm",
+    id: "a1111111-1111-4111-8111-111111111111",
     title: "Macroeconomics Mid-Term Examination 2026",
     course: "Macroeconomic Theory & Policy",
     instructor: "Rishika",
@@ -278,7 +301,7 @@ const MOCK_EXAMS: Exam[] = [
     questions: []
   },
   {
-    id: "exam-intl-trade",
+    id: "a2222222-2222-4222-8222-222222222222",
     title: "International Trade & Foreign Exchange Examination",
     course: "Global Economics & Currency Markets",
     instructor: "Rishika",
@@ -304,7 +327,7 @@ const MOCK_EXAMS: Exam[] = [
     questions: []
   },
   {
-    id: "exam-stats-probability",
+    id: "a3333333-3333-4333-8333-333333333333",
     title: "Econometric Probability & Distributions Quiz",
     course: "Quantitative Economics & Data Analysis",
     instructor: "Rishika",
@@ -332,8 +355,8 @@ const MOCK_EXAMS: Exam[] = [
 
 const MOCK_RESULTS: ExamResult[] = [
   {
-    id: "res-1",
-    examId: "exam-micro-foundations",
+    id: "b1111111-1111-4111-8111-111111111111",
+    examId: "a1111111-1111-4111-8111-111111111111",
     examTitle: "Foundations of Economics & Market Equilibria",
     course: "Principles of Microeconomics",
     instructor: "Rishika",
@@ -396,8 +419,8 @@ const MOCK_RESULTS: ExamResult[] = [
     ]
   },
   {
-    id: "res-2",
-    examId: "exam-stat-quiz2",
+    id: "b2222222-2222-4222-8222-222222222222",
+    examId: "a2222222-2222-4222-8222-222222222222",
     examTitle: "Applied Economic Statistics - Unit Quiz 2",
     course: "Quantitative Economics & Data Analysis",
     instructor: "Rishika",
@@ -476,8 +499,188 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "live" | "upcoming" | "expired">("all");
 
+  // Current logged in student & active course enrollments
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
+  const [enrolledCourseTitles, setEnrolledCourseTitles] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const fetchUserAndEnrollments = async () => {
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        const user = authData?.user;
+        if (!user) return;
+
+        if (user.email) {
+          setCurrentUserEmail(user.email.toLowerCase().trim());
+        }
+
+        // 1. Fetch course enrollments
+        const { data: enrollments, error: enrollError } = await supabase
+          .from("course_enrollments")
+          .select("course_id, status, courses(id, title)")
+          .eq("user_id", user.id);
+
+        if (!enrollError && enrollments) {
+          const ids = new Set<string>();
+          const titles = new Set<string>();
+          for (const item of enrollments) {
+            if (item.course_id) ids.add(String(item.course_id));
+            const cTitle = (item as any)?.courses?.title;
+            if (cTitle) titles.add(String(cTitle).toLowerCase().trim());
+          }
+          setEnrolledCourseIds(ids);
+          setEnrolledCourseTitles(titles);
+        }
+
+        // 2. Fetch student's submitted exams from public.exam_submissions
+        const submittedExamIds = new Set<string>();
+        const { data: submissionsData, error: subError } = await supabase
+          .from("exam_submissions")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("submitted_at", { ascending: false });
+
+        if (!subError && submissionsData && submissionsData.length > 0) {
+          const mappedResults: ExamResult[] = submissionsData.map((d: any) => ({
+            id: d.id,
+            examId: d.exam_id,
+            examTitle: d.exam_title,
+            course: d.course_title || "",
+            instructor: d.instructor_name || "Rishika",
+            submittedAt: d.submitted_at
+              ? new Date(d.submitted_at).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit"
+                })
+              : "Recently",
+            status: d.status || "under_evaluation",
+            totalMarks: Number(d.total_marks) || 100,
+            scoreObtained:
+              d.score_obtained !== null && d.score_obtained !== undefined
+                ? Number(d.score_obtained)
+                : undefined,
+            percentage:
+              d.percentage !== null && d.percentage !== undefined
+                ? Number(d.percentage)
+                : undefined,
+            grade: d.grade || undefined,
+            isPassed:
+              d.is_passed !== null && d.is_passed !== undefined
+                ? Boolean(d.is_passed)
+                : undefined,
+            timeSpentMinutes: Number(d.time_spent_minutes) || 0,
+            teacherFeedback: d.teacher_feedback || undefined,
+            answers: Array.isArray(d.answers) ? d.answers : []
+          }));
+          setResultsList(mappedResults);
+          try {
+            localStorage.setItem("deeco_exam_results", JSON.stringify(mappedResults));
+          } catch (e) {}
+          submissionsData.forEach((s: any) => {
+            if (s.exam_id) submittedExamIds.add(String(s.exam_id));
+          });
+        }
+
+        // 3. Fetch active live exams from public.exams
+        const { data: examsData, error: examsError } = await supabase
+          .from("exams")
+          .select("*")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
+
+        if (!examsError && examsData && examsData.length > 0) {
+          const mappedExams: Exam[] = examsData
+            .map((d: any) => ({
+              id: d.id,
+              title: d.title,
+              course: d.course_title || "General Examination",
+              courseId: d.course_id || undefined,
+              assignedType: d.assigned_type || "course",
+              assignedStudentEmail: d.assigned_student_email || undefined,
+              assignedStudentName: d.assigned_student_name || undefined,
+              instructor: d.instructor_name || "Rishika",
+              status: d.status || "live",
+              scheduledDate: d.scheduled_date || "Anytime / Self-Paced",
+              scheduledTime: d.scheduled_time || "Flexible",
+              durationMinutes: Number(d.duration_minutes) || 45,
+              totalMarks: Number(d.total_marks) || 100,
+              passingMarks: Number(d.passing_marks) || 40,
+              mcqCount: Number(d.mcq_count) || 0,
+              descriptiveCount: Number(d.descriptive_count) || 0,
+              syllabus: Array.isArray(d.syllabus) ? d.syllabus : [],
+              instructions: Array.isArray(d.instructions) ? d.instructions : [],
+              questions: Array.isArray(d.questions) ? d.questions : []
+            }))
+            // Filter out exams student has already submitted
+            .filter((e: Exam) => !submittedExamIds.has(e.id));
+
+          setExamsList(mappedExams);
+          try {
+            localStorage.setItem("deeco_admin_exams", JSON.stringify(mappedExams));
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.warn("Error fetching user, exams, or enrollments:", err);
+      }
+    };
+
+    fetchUserAndEnrollments();
+
+    // Realtime subscriptions for exams and exam_submissions
+    const subChannel = supabase
+      .channel("student_exam_submissions_channel")
+      .on("postgres_changes", { event: "*", schema: "public", table: "exam_submissions" }, () => {
+        fetchUserAndEnrollments();
+      })
+      .subscribe();
+
+    const examsChannel = supabase
+      .channel("student_exams_channel")
+      .on("postgres_changes", { event: "*", schema: "public", table: "exams" }, () => {
+        fetchUserAndEnrollments();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subChannel);
+      supabase.removeChannel(examsChannel);
+    };
+  }, []);
+
   // Filtered exams for Tab 1
   const filteredExams = examsList.filter((exam) => {
+    // 1. If assigned to a specific student -> ONLY that student sees it
+    if (exam.assignedType === "student") {
+      if (!currentUserEmail || exam.assignedStudentEmail?.toLowerCase().trim() !== currentUserEmail) {
+        return false;
+      }
+    }
+
+    // 2. If assigned to a specific course -> ONLY students enrolled in that course (or open/general exams)
+    if (exam.assignedType === "course" || (!exam.assignedType && exam.course)) {
+      const courseTitleLower = (exam.course || "").toLowerCase().trim();
+      const isGeneralOpenExam =
+        !exam.course ||
+        courseTitleLower.includes("general") ||
+        courseTitleLower.includes("all students") ||
+        exam.courseId === "all";
+
+      // If it's a specific course (not an open exam):
+      // Only show if the logged in student is enrolled in this course!
+      if (!isGeneralOpenExam) {
+        if (currentUserEmail) {
+          const isEnrolledById = Boolean(exam.courseId && enrolledCourseIds.has(exam.courseId));
+          const isEnrolledByTitle = enrolledCourseTitles.has(courseTitleLower);
+          if (!isEnrolledById && !isEnrolledByTitle) {
+            return false;
+          }
+        }
+      }
+    }
+
     const matchesSearch =
       exam.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       exam.course.toLowerCase().includes(searchQuery.toLowerCase());
@@ -504,7 +707,8 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
   // 2. Remove exam from Tab 1 (Upcoming & Live)
   // 3. Add to Tab 2 (Results & Teacher Feedback) with "under_evaluation"
   // 4. Switch to Tab 2
-  const handleFinishExam = (newResult: ExamResult) => {
+  // 5. Persist submission to Supabase public.exam_submissions
+  const handleFinishExam = async (newResult: ExamResult) => {
     setExamSessions((prev) => {
       const updated = { ...prev };
       delete updated[newResult.examId];
@@ -528,6 +732,88 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
     setActiveExam(null);
     setSelectedResult(newResult);
     setActiveTab("results");
+
+    // Persist to Supabase public.exam_submissions
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData?.user;
+
+      if (user) {
+        const totalAwarded = newResult.answers.reduce(
+          (acc, a) => acc + (a.marksAwarded !== undefined ? a.marksAwarded : 0),
+          0
+        );
+        const hasDescriptive = newResult.answers.some((a) => a.type === "descriptive");
+
+        const submissionId = isValidUUID(newResult.id) ? newResult.id : generateUUID();
+        const examId = isValidUUID(newResult.examId) ? newResult.examId : null;
+
+        if (examId) {
+          const submissionPayload = {
+            id: submissionId,
+            exam_id: examId,
+            user_id: user.id,
+            exam_title: newResult.examTitle,
+            course_title: newResult.course,
+            student_email: user.email || currentUserEmail || "",
+            student_name:
+              (user.user_metadata as any)?.full_name ||
+              (user.user_metadata as any)?.name ||
+              user.email?.split("@")[0] ||
+              "Student",
+            instructor_name: newResult.instructor || "Rishika",
+            status: hasDescriptive ? "under_evaluation" : "graded",
+            submitted_at: new Date().toISOString(),
+            total_marks: newResult.totalMarks,
+            score_obtained: hasDescriptive ? null : totalAwarded,
+            percentage: hasDescriptive
+              ? null
+              : Math.round((totalAwarded / (newResult.totalMarks || 1)) * 100),
+            grade: hasDescriptive
+              ? null
+              : totalAwarded >= (newResult.totalMarks * 0.4)
+              ? "Pass"
+              : "Fail",
+            is_passed: hasDescriptive ? null : totalAwarded >= (newResult.totalMarks * 0.4),
+            time_spent_minutes: newResult.timeSpentMinutes || 1,
+            answers: newResult.answers,
+            teacher_feedback: newResult.teacherFeedback || null
+          };
+
+          const { error: insertError } = await supabase
+            .from("exam_submissions")
+            .insert(submissionPayload);
+
+          if (insertError) {
+            console.error("Error inserting exam submission into Supabase:", insertError);
+          } else {
+            // Increment exams_completed in user_class_stats
+            try {
+              const { data: stats } = await supabase
+                .from("user_class_stats")
+                .select("exams_completed, average_exam_score")
+                .eq("user_id", user.id)
+                .maybeSingle();
+
+              if (stats) {
+                const currentCount = Number(stats.exams_completed) || 0;
+                await supabase
+                  .from("user_class_stats")
+                  .update({
+                    exams_completed: currentCount + 1,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq("user_id", user.id);
+              }
+            } catch (statsErr) {
+              console.warn("Could not update user_class_stats:", statsErr);
+            }
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.error("Error in Supabase exam submission persist:", dbErr);
+    }
   };
 
   // Demo simulator to evaluate an un-graded submission
@@ -796,38 +1082,50 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                     >
                       {/* Top Header Row */}
                       <div>
-                        <div className="flex items-center justify-end gap-3 mb-3">
-                          {/* Status Badge */}
-                          {isPausedSession ? (
-                            <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
-                            >
-                              <Pause className="w-3.5 h-3.5 fill-current" />
-                              PAUSED IN PROGRESS
-                            </span>
-                          ) : isLive ? (
-                            <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs"
-                              style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-                            >
-                              <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
-                              LIVE NOW
-                            </span>
-                          ) : isExpired ? (
-                            <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/40"
-                            >
-                              <Clock className="w-3.5 h-3.5" />
-                              EXPIRED TODAY
+                        <div className="flex items-center justify-between gap-3 mb-3">
+                          {exam.assignedType === 'student' ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                              <span>👤</span> 1-on-1 Assigned Exam
                             </span>
                           ) : (
-                            <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs"
-                              style={{ backgroundColor: themeColors.accent.blue, color: "#000000" }}
-                            >
-                              SCHEDULED
+                            <span className="text-xs font-semibold text-gray-500 dark:text-neutral-400 truncate">
+                              {exam.course}
                             </span>
                           )}
+
+                          <div className="flex items-center gap-2">
+                            {/* Status Badge */}
+                            {isPausedSession ? (
+                              <span
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
+                              >
+                                <Pause className="w-3.5 h-3.5 fill-current" />
+                                PAUSED IN PROGRESS
+                              </span>
+                            ) : isLive ? (
+                              <span
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs"
+                                style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
+                              >
+                                <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+                                LIVE NOW
+                              </span>
+                            ) : isExpired ? (
+                              <span
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/40"
+                              >
+                                <Clock className="w-3.5 h-3.5" />
+                                EXPIRED TODAY
+                              </span>
+                            ) : (
+                              <span
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs"
+                                style={{ backgroundColor: themeColors.accent.blue, color: "#000000" }}
+                              >
+                                SCHEDULED
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Title */}
@@ -2075,7 +2373,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
     });
 
     const newResult: ExamResult = {
-      id: "res-new-" + Date.now(),
+      id: generateUUID(),
       examId: exam.id,
       examTitle: exam.title,
       course: exam.course,
