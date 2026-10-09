@@ -24,6 +24,7 @@ import {
   Pause,
   Play,
   Eye,
+  EyeOff,
   Bold,
   Italic,
   Underline,
@@ -430,10 +431,26 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
   const [activeTab, setActiveTab] = useState<"catalog" | "results">("catalog");
 
   // Dynamic exams list for Tab 1 (Upcoming & Live Exams)
-  const [examsList, setExamsList] = useState<Exam[]>(MOCK_EXAMS);
+  const [examsList, setExamsList] = useState<Exam[]>(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("deeco_admin_exams");
+        if (saved) return JSON.parse(saved);
+      }
+    } catch (e) {}
+    return MOCK_EXAMS;
+  });
 
   // Dynamic results list for Tab 2 (Results & Teacher Feedback)
-  const [resultsList, setResultsList] = useState<ExamResult[]>(MOCK_RESULTS);
+  const [resultsList, setResultsList] = useState<ExamResult[]>(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("deeco_exam_results");
+        if (saved) return JSON.parse(saved);
+      }
+    } catch (e) {}
+    return MOCK_RESULTS;
+  });
 
   // Persistent paused/active exam sessions by examId (timer, answers, currentIdx preserved)
   const [examSessions, setExamSessions] = useState<Record<string, ExamSessionState>>(() => {
@@ -499,7 +516,15 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
       return updated;
     });
     setExamsList((prev) => prev.filter((e) => e.id !== newResult.examId));
-    setResultsList((prev) => [newResult, ...prev]);
+    setResultsList((prev) => {
+      const updated = [newResult, ...prev];
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("deeco_exam_results", JSON.stringify(updated));
+        }
+      } catch (e) {}
+      return updated;
+    });
     setActiveExam(null);
     setSelectedResult(newResult);
     setActiveTab("results");
@@ -1886,6 +1911,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showBackModal, setShowBackModal] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [showTimerText, setShowTimerText] = useState(true);
   const [lastSaved, setLastSaved] = useState<string>(
     initialSession ? `Resumed (${initialSession.lastSavedAt})` : "Draft auto-saved"
   );
@@ -1897,7 +1923,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
       : exam.durationMinutes * 60
   );
 
-  // Mark body with in-exam-session class to suppress floating widgets
+  // Suppress floating docks on document.body during examination
   useEffect(() => {
     document.body.classList.add("in-exam-session");
     return () => {
@@ -1905,6 +1931,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
     };
   }, []);
 
+  // Timer countdown
   useEffect(() => {
     if (isPaused || showBackModal || showSubmitModal) return;
 
@@ -1921,6 +1948,8 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
     return () => clearInterval(timer);
   }, [isPaused, showBackModal, showSubmitModal]);
+
+  const currentQ = questions[currentIdx];
 
   const handlePauseAndExit = () => {
     setShowBackModal(false);
@@ -1942,8 +1971,6 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
-  const currentQ = questions[currentIdx];
-
   // Answer handler
   const handleAnswerChange = (val: string) => {
     setAnswers((prev) => ({
@@ -1951,7 +1978,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
       [currentQ.id]: val
     }));
     setLastSaved(
-      `Saved at ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+      `Saved ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
     );
   };
 
@@ -1963,7 +1990,6 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
     }));
   };
 
-  // Calculate answered count
   const answeredCount = Object.keys(answers).filter(
     (k) => answers[k] && answers[k].trim() !== ""
   ).length;
@@ -1971,12 +1997,61 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   const markedCount = Object.keys(flagged).filter((k) => flagged[k]).length;
   const remainingCount = questions.length - answeredCount;
 
+  // Keyboard navigation shortcuts (A, B, C, D, ArrowLeft, ArrowRight, M)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable ||
+          target.getAttribute("contenteditable") === "true")
+      ) {
+        return;
+      }
+
+      if (showSubmitModal || showBackModal || isPaused) return;
+
+      const key = e.key.toUpperCase();
+
+      // MCQ selection via keys A, B, C, D
+      if (currentQ.type === "mcq" && currentQ.options && ["A", "B", "C", "D"].includes(key)) {
+        const matching = currentQ.options.find((o) => o.id === key);
+        if (matching) {
+          e.preventDefault();
+          handleAnswerChange(key);
+        }
+      }
+
+      // Mark for review toggle via 'M'
+      if (key === "M") {
+        e.preventDefault();
+        toggleFlag();
+      }
+
+      // Previous via ArrowLeft
+      if (e.key === "ArrowLeft" && currentIdx > 0) {
+        e.preventDefault();
+        setCurrentIdx((p) => p - 1);
+      }
+
+      // Next via ArrowRight
+      if (e.key === "ArrowRight" && currentIdx < questions.length - 1) {
+        e.preventDefault();
+        setCurrentIdx((p) => p + 1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentIdx, currentQ, showSubmitModal, showBackModal, isPaused, questions.length]);
+
   // Final submit handler
   const handleSubmitFinal = () => {
     setShowSubmitModal(false);
     setShowBackModal(false);
 
-    // Auto-grade MCQs
     let mcqScore = 0;
     const compiledAnswers = questions.map((q) => {
       const studentAns = answers[q.id] || "";
@@ -2018,49 +2093,61 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   const isLowTime = secondsLeft < 300; // < 5 mins
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-slate-50 dark:bg-neutral-950 text-slate-900 dark:text-neutral-100 exam-portal-root select-none transition-colors duration-200">
-      {/* ================= TOP PERSISTENT EXAM NAVBAR ================= */}
-      <header className="h-14 border-b border-slate-200/80 dark:border-neutral-800 px-4 sm:px-6 flex items-center justify-between bg-white dark:bg-neutral-900 z-20 shrink-0">
-        {/* Left: Exit/Back + Exam Title & Subject */}
+    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-slate-100 dark:bg-neutral-950 text-slate-900 dark:text-neutral-100 font-sans exam-portal-root select-none">
+      {/* ================= 1. PEARSON VUE TOP WORKSTATION APP BAR ================= */}
+      <header className="h-14 border-b border-slate-200 dark:border-neutral-800 px-6 flex items-center justify-between bg-white dark:bg-neutral-900 z-20 shrink-0">
+        {/* Left: Exit Button + Exam Identification */}
         <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={() => setShowBackModal(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer shrink-0"
-            title="Exit examination"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 border border-slate-200/80 dark:border-neutral-700/80 transition cursor-pointer shrink-0 shadow-2xs"
+            title="Exit examination (Pause or Submit)"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Exit</span>
+            <span>Exit Test</span>
           </button>
 
-          <div className="h-4 w-px bg-slate-200 dark:bg-neutral-800 shrink-0" />
+          <div className="h-4 w-px bg-slate-200 dark:bg-neutral-800 shrink-0 mx-1" />
 
-          <div className="min-w-0 flex items-center gap-2">
-            <h1 className="text-sm font-semibold text-slate-900 dark:text-neutral-100 truncate">
+          <div className="min-w-0 flex items-center gap-2.5">
+            <h1 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight truncate">
               {exam.title}
             </h1>
-            <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 shrink-0">
+            <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 border border-slate-200/60 dark:border-neutral-700/60 shrink-0">
               {exam.course}
             </span>
           </div>
         </div>
 
-        {/* Center: Sleek Monospace Countdown Timer */}
+        {/* Center: Monospace Countdown Timer with Pearson VUE Hide/Show toggle */}
         <div className="flex items-center justify-center shrink-0">
           <div
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-mono text-xs font-semibold border transition-colors ${
+            className={`flex items-center gap-2 px-3.5 py-1 rounded-full font-mono text-xs font-semibold border transition-all ${
               isLowTime
-                ? "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-400 animate-pulse"
-                : "bg-slate-50 dark:bg-neutral-800/80 border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-200"
+                ? "bg-rose-50 dark:bg-rose-950/50 border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-400 animate-pulse shadow-xs"
+                : "bg-slate-50 dark:bg-neutral-800/90 border-slate-200 dark:border-neutral-700 text-slate-800 dark:text-neutral-200"
             }`}
           >
-            <Clock className={`w-3.5 h-3.5 ${isLowTime ? "text-rose-600" : "text-slate-500 dark:text-neutral-400"}`} />
-            <span>{formatTimer(secondsLeft)}</span>
+            <Clock className={`w-3.5 h-3.5 ${isLowTime ? "text-rose-600 dark:text-rose-400" : "text-slate-500 dark:text-neutral-400"}`} />
+            
+            <span>{showTimerText || isLowTime ? formatTimer(secondsLeft) : "Timer Hidden"}</span>
+
+            {!isLowTime && (
+              <button
+                type="button"
+                onClick={() => setShowTimerText(!showTimerText)}
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition p-0.5 cursor-pointer ml-0.5"
+                title={showTimerText ? "Hide timer (reduce stress)" : "Show timer"}
+              >
+                {showTimerText ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Right: Theme Toggle, Pause Button & Submit Button */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right: Theme Toggle, Pause Test, Submit Examination */}
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           <button
             type="button"
             onClick={toggleTheme}
@@ -2074,7 +2161,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
           <button
             type="button"
             onClick={() => setIsPaused(true)}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-neutral-700 hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition flex items-center gap-1.5 cursor-pointer"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 dark:border-neutral-700 hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition flex items-center gap-1.5 cursor-pointer"
             title="Pause exam & freeze timer"
           >
             <Pause className="w-3.5 h-3.5 text-slate-500 dark:text-neutral-400" />
@@ -2084,15 +2171,15 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
           <button
             type="button"
             onClick={() => setShowSubmitModal(true)}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 transition shadow-xs cursor-pointer active:scale-95"
+            className="px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-sm transition active:scale-95 cursor-pointer"
           >
-            Submit Exam
+            Submit Examination
           </button>
         </div>
       </header>
 
-      {/* Hairline Progress Indicator */}
-      <div className="w-full bg-slate-100 dark:bg-neutral-800 h-0.5 shrink-0">
+      {/* Hairline 2px Progress Line */}
+      <div className="w-full bg-slate-200 dark:bg-neutral-800 h-0.5 shrink-0">
         <div
           className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-300"
           style={{
@@ -2101,23 +2188,24 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
         />
       </div>
 
-      {/* ================= MAIN SPLIT-VIEW WORKSPACE ================= */}
+      {/* ================= 2. MAIN 2-COLUMN WORKSTATION (ZERO DEAD MARGINS) ================= */}
       <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* LEFT CANVAS: QUESTION STATEMENT & ANSWERING WORKSPACE */}
-        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-neutral-900 border-r border-slate-200/80 dark:border-neutral-800">
+        
+        {/* ================= LEFT COLUMN: QUESTION & ANSWER CANVAS (68%) ================= */}
+        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-neutral-900 border-r border-slate-200 dark:border-neutral-800">
           
-          {/* Question Header & Meta Bar */}
-          <div className="px-6 sm:px-8 py-3.5 border-b border-slate-100 dark:border-neutral-800/80 flex items-center justify-between shrink-0 bg-white dark:bg-neutral-900">
+          {/* Question Subheader Bar */}
+          <div className="px-8 py-3.5 border-b border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2.5">
-              <span className="text-xs font-semibold text-slate-900 dark:text-white">
+              <span className="text-xs font-bold text-slate-900 dark:text-white">
                 Question {currentQ.number} of {questions.length}
               </span>
               <span className="text-slate-300 dark:text-neutral-700">•</span>
-              <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400">
+              <span className="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300">
                 {currentQ.marks} {currentQ.marks === 1 ? "Mark" : "Marks"}
               </span>
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-50 dark:bg-neutral-850 text-slate-400 dark:text-neutral-500 border border-slate-200/60 dark:border-neutral-800">
-                {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive"}
+              <span className="hidden sm:inline-block px-2.5 py-0.5 rounded text-[11px] font-medium bg-slate-50 dark:bg-neutral-850 text-slate-500 dark:text-neutral-400 border border-slate-200/60 dark:border-neutral-800">
+                {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive Essay"}
               </span>
             </div>
 
@@ -2126,40 +2214,41 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 <button
                   type="button"
                   onClick={() => handleAnswerChange("")}
-                  className="text-xs text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition cursor-pointer"
+                  className="text-xs font-medium text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"
                 >
-                  Clear selection
+                  Clear response
                 </button>
               )}
 
               <button
                 type="button"
                 onClick={toggleFlag}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition cursor-pointer select-none ${
                   flagged[currentQ.id]
-                    ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50"
+                    ? "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 shadow-2xs font-semibold"
                     : "text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 border border-transparent"
                 }`}
-                title="Mark for later review"
+                title="Mark for later review (Press 'M')"
               >
                 <Bookmark className={`w-3.5 h-3.5 ${flagged[currentQ.id] ? "fill-amber-500 text-amber-500" : ""}`} />
                 <span>{flagged[currentQ.id] ? "Marked for Review" : "Mark for Review"}</span>
+                <span className="hidden lg:inline text-[10px] opacity-40 font-mono">(M)</span>
               </button>
             </div>
           </div>
 
-          {/* Scrollable Question Content & Input Flow */}
-          <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6">
-            <div className="max-w-3xl space-y-6">
+          {/* Answering Canvas (Centered reading column, no dead space) */}
+          <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar">
+            <div className="max-w-3xl mx-auto w-full space-y-7">
               
-              {/* Crisp Question Prompt */}
-              <div className="text-base sm:text-[17px] font-normal leading-relaxed text-slate-900 dark:text-neutral-100 select-text">
+              {/* Question Statement */}
+              <div className="text-lg sm:text-[19px] font-medium leading-relaxed text-slate-900 dark:text-neutral-100 tracking-tight select-text">
                 {currentQ.question}
               </div>
 
-              {/* MCQ Option Rows */}
+              {/* MCQ Options with Tactile Key Badges & Keyboard Shortcuts */}
               {currentQ.type === "mcq" && currentQ.options && (
-                <div className="space-y-2.5 pt-1">
+                <div className="space-y-3 pt-1">
                   {currentQ.options.map((option) => {
                     const isSelected = answers[currentQ.id] === option.id;
 
@@ -2167,42 +2256,42 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                       <div
                         key={option.id}
                         onClick={() => handleAnswerChange(option.id)}
-                        className={`group flex items-start gap-3.5 p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                        className={`group flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer select-none ${
                           isSelected
-                            ? "border-slate-900 dark:border-white bg-slate-50 dark:bg-neutral-800/80 shadow-xs ring-1 ring-slate-900/10 dark:ring-white/10"
-                            : "border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900"
+                            ? "border-slate-900 dark:border-white bg-slate-50/90 dark:bg-neutral-800/80 shadow-xs ring-1 ring-slate-900/10 dark:ring-white/20"
+                            : "border-slate-200/90 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 hover:bg-slate-50/40 dark:hover:bg-neutral-800/30 bg-white dark:bg-neutral-900"
                         }`}
                       >
-                        {/* Badge: A, B, C, D */}
+                        {/* Tactile Keyboard Key Badge */}
                         <div
-                          className={`w-6 h-6 rounded-md font-semibold text-xs flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                          className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 border transition-all ${
                             isSelected
-                              ? "bg-slate-900 text-white dark:bg-white dark:text-neutral-900"
-                              : "bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 group-hover:bg-slate-200 dark:group-hover:bg-neutral-750"
+                              ? "bg-slate-900 text-white dark:bg-white dark:text-neutral-900 border-slate-900 dark:border-white shadow-xs"
+                              : "border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 group-hover:bg-slate-100 dark:group-hover:bg-neutral-750"
                           }`}
                         >
                           {option.id}
                         </div>
 
                         {/* Option Text */}
-                        <div className={`text-sm sm:text-[15px] leading-relaxed flex-1 ${
+                        <div className={`text-[15px] sm:text-base leading-normal flex-1 ${
                           isSelected
-                            ? "font-medium text-slate-900 dark:text-white"
-                            : "font-normal text-slate-700 dark:text-neutral-300"
+                            ? "font-semibold text-slate-900 dark:text-white"
+                            : "font-normal text-slate-800 dark:text-neutral-200"
                         }`}>
                           {option.text}
                         </div>
 
-                        {/* Radio Indicator */}
+                        {/* Radio Selector */}
                         <div
-                          className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-1 transition-all ${
+                          className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-all ${
                             isSelected
                               ? "border-2 border-slate-900 dark:border-white"
                               : "border border-slate-300 dark:border-neutral-600"
                           }`}
                         >
                           {isSelected && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white" />
+                            <div className="w-2 h-2 rounded-full bg-slate-900 dark:bg-white" />
                           )}
                         </div>
                       </div>
@@ -2211,7 +2300,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 </div>
               )}
 
-              {/* Descriptive Word Editor */}
+              {/* Descriptive Essay Word Editor */}
               {currentQ.type === "descriptive" && (
                 <div className="pt-1">
                   <WordAnswerEditor
@@ -2227,19 +2316,19 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             </div>
           </div>
 
-          {/* Integrated Answering Footer Controls */}
-          <div className="px-6 sm:px-8 py-3.5 border-t border-slate-200/80 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
+          {/* Integrated Bottom Dock */}
+          <div className="px-8 py-3.5 border-t border-slate-200/90 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-900/70 flex items-center justify-between shrink-0">
             <button
               type="button"
               onClick={() => setCurrentIdx((prev) => Math.max(0, prev - 1))}
               disabled={currentIdx === 0}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-750 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer shadow-xs"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-750 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer shadow-xs"
             >
               <ChevronLeft className="w-4 h-4" />
-              <span>Previous</span>
+              <span>Previous Question</span>
             </button>
 
-            <div className="text-xs text-slate-400 dark:text-neutral-500 font-medium">
+            <div className="text-xs text-slate-500 dark:text-neutral-400 font-medium">
               Question {currentIdx + 1} of {questions.length}
             </div>
 
@@ -2252,13 +2341,13 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   setShowSubmitModal(true);
                 }
               }}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95 ${
+              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs active:scale-95 ${
                 currentIdx === questions.length - 1
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                   : "bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900"
               }`}
             >
-              <span>{currentIdx === questions.length - 1 ? "Submit Exam" : "Next"}</span>
+              <span>{currentIdx === questions.length - 1 ? "Submit Examination" : "Next Question"}</span>
               {currentIdx === questions.length - 1 ? (
                 <Check className="w-4 h-4" />
               ) : (
@@ -2269,146 +2358,157 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
         </div>
 
-        {/* RIGHT UNIFIED SIDEBAR: PALETTE & METRICS */}
-        <div className="w-80 shrink-0 bg-slate-50/70 dark:bg-neutral-950 flex flex-col overflow-y-auto">
+        {/* ================= RIGHT COLUMN: CONTINUOUS WORKSTATION SIDEBAR (32%) ================= */}
+        <div className="w-84 sm:w-88 shrink-0 bg-slate-50 dark:bg-neutral-950 flex flex-col justify-between overflow-y-auto custom-scrollbar border-l border-slate-200/80 dark:border-neutral-800/80">
           
-          {/* Section 1: Progress Overview */}
-          <div className="p-5 border-b border-slate-200/70 dark:border-neutral-800/80 space-y-3">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-700 dark:text-neutral-300">Exam Progress</span>
-              <span className="font-medium text-slate-500 dark:text-neutral-400">
-                {answeredCount} / {questions.length} ({Math.round(questions.length > 0 ? (answeredCount / questions.length) * 100 : 0)}%)
-              </span>
+          {/* Top Half of Sidebar: Progress + Matrix */}
+          <div className="flex flex-col">
+            
+            {/* 1. Assessment Overview */}
+            <div className="p-5 border-b border-slate-200/80 dark:border-neutral-800/80 space-y-3.5 bg-white/40 dark:bg-neutral-900/30">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-800 dark:text-neutral-200">Assessment Progress</span>
+                <span className="font-semibold text-slate-500 dark:text-neutral-400">
+                  {answeredCount} of {questions.length} ({Math.round(questions.length > 0 ? (answeredCount / questions.length) * 100 : 0)}%)
+                </span>
+              </div>
+
+              <div className="w-full bg-slate-200 dark:bg-neutral-800 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-300 rounded-full"
+                  style={{ width: `${questions.length > 0 ? (answeredCount / questions.length) * 100 : 0}%` }}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+                <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/60">
+                  <span className="block text-base font-black text-emerald-700 dark:text-emerald-400">{answeredCount}</span>
+                  <span className="text-[10px] font-semibold text-emerald-600/90 dark:text-emerald-400/90 uppercase tracking-wider">Answered</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/60">
+                  <span className="block text-base font-black text-amber-700 dark:text-amber-400">{markedCount}</span>
+                  <span className="text-[10px] font-semibold text-amber-600/90 dark:text-amber-400/90 uppercase tracking-wider">Review</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800">
+                  <span className="block text-base font-black text-slate-500 dark:text-neutral-400">{remainingCount}</span>
+                  <span className="text-[10px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">Remaining</span>
+                </div>
+              </div>
             </div>
 
-            <div className="w-full bg-slate-200/80 dark:bg-neutral-800 rounded-full h-1.5 overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-300 rounded-full"
-                style={{ width: `${questions.length > 0 ? (answeredCount / questions.length) * 100 : 0}%` }}
-              />
+            {/* 2. Question Palette Grid */}
+            <div className="p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
+                  Question Palette
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  {questions.length} Questions
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2.5">
+                {questions.map((q, idx) => {
+                  const isCurrent = idx === currentIdx;
+                  const isAnswered = answers[q.id] && answers[q.id].trim() !== "";
+                  const isFlagged = flagged[q.id];
+
+                  let btnClass = "border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:border-slate-300 dark:hover:border-neutral-700";
+
+                  if (isCurrent) {
+                    btnClass = "bg-slate-900 text-white dark:bg-white dark:text-neutral-900 font-black ring-2 ring-slate-900/20 dark:ring-white/20 shadow-xs";
+                  } else if (isAnswered) {
+                    btnClass = "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold";
+                  }
+
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      onClick={() => setCurrentIdx(idx)}
+                      className={`relative h-11 rounded-xl text-xs transition cursor-pointer flex items-center justify-center select-none active:scale-95 ${btnClass}`}
+                    >
+                      <span>{idx + 1}</span>
+                      {isFlagged && (
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white dark:ring-neutral-900" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Palette Legend */}
+              <div className="pt-3 border-t border-slate-200/70 dark:border-neutral-800/80 grid grid-cols-2 gap-2.5 text-[11px] text-slate-600 dark:text-neutral-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-slate-900 dark:bg-white" />
+                  <span>Current Question</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+                  <span>Answered</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-amber-500" />
+                  <span>Marked for Review</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-sm border border-slate-300 dark:border-neutral-600 bg-white dark:bg-neutral-900" />
+                  <span>Unattempted</span>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              <div className="p-2 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 text-center">
-                <span className="block text-sm font-bold text-emerald-700 dark:text-emerald-400">{answeredCount}</span>
-                <span className="text-[10px] font-medium text-emerald-600/80 dark:text-emerald-400/80">Answered</span>
-              </div>
-              <div className="p-2 rounded-lg bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 text-center">
-                <span className="block text-sm font-bold text-amber-700 dark:text-amber-400">{markedCount}</span>
-                <span className="text-[10px] font-medium text-amber-600/80 dark:text-amber-400/80">Review</span>
-              </div>
-              <div className="p-2 rounded-lg bg-white dark:bg-neutral-900 border border-slate-200/60 dark:border-neutral-800 text-center">
-                <span className="block text-sm font-bold text-slate-500 dark:text-neutral-400">{remainingCount}</span>
-                <span className="text-[10px] font-medium text-slate-400 dark:text-neutral-500">Remaining</span>
-              </div>
-            </div>
           </div>
 
-          {/* Section 2: Question Palette Navigator */}
-          <div className="p-5 flex-1 space-y-4">
-            <div className="text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">
-              Question Palette
-            </div>
-
-            <div className="grid grid-cols-4 gap-2">
-              {questions.map((q, idx) => {
-                const isCurrent = idx === currentIdx;
-                const isAnswered = answers[q.id] && answers[q.id].trim() !== "";
-                const isFlagged = flagged[q.id];
-
-                let btnClass = "border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:border-slate-300 dark:hover:border-neutral-700";
-
-                if (isCurrent) {
-                  btnClass = "bg-slate-900 dark:bg-white text-white dark:text-neutral-900 font-bold ring-2 ring-slate-900/20 dark:ring-white/20 shadow-xs";
-                } else if (isAnswered) {
-                  btnClass = "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-semibold";
-                }
-
-                return (
-                  <button
-                    key={q.id}
-                    type="button"
-                    onClick={() => setCurrentIdx(idx)}
-                    className={`relative h-10 rounded-lg text-xs transition cursor-pointer flex items-center justify-center select-none active:scale-95 ${btnClass}`}
-                  >
-                    <span>{idx + 1}</span>
-                    {isFlagged && (
-                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-500 ring-1 ring-white dark:ring-neutral-900" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Palette Legend */}
-            <div className="pt-4 border-t border-slate-200/60 dark:border-neutral-800/80 grid grid-cols-2 gap-2 text-[11px] text-slate-500 dark:text-neutral-400">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded bg-slate-900 dark:bg-white" />
-                <span>Current</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded bg-emerald-500" />
-                <span>Answered</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded bg-amber-500" />
-                <span>Review</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded border border-slate-300 dark:border-neutral-600 bg-white dark:bg-neutral-900" />
-                <span>Unattempted</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Candidate & Exam Info */}
-          <div className="p-4 border-t border-slate-200/70 dark:border-neutral-800/80 bg-white/60 dark:bg-neutral-900/60 text-xs text-slate-500 dark:text-neutral-400 space-y-1">
+          {/* Bottom Specifications (Anchored) */}
+          <div className="p-4 border-t border-slate-200/80 dark:border-neutral-800/80 bg-white/70 dark:bg-neutral-900/60 text-xs text-slate-500 dark:text-neutral-400 space-y-1 mt-auto">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-slate-400 dark:text-neutral-500">Candidate</span>
-              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Candidate</span>
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Online
+                Verified Active
               </span>
             </div>
-            <div className="font-semibold text-slate-800 dark:text-neutral-200 text-xs truncate">
+            <div className="font-bold text-slate-900 dark:text-white text-xs truncate">
               test@test.com
             </div>
-            <div className="text-[11px] text-slate-400 dark:text-neutral-500 pt-1">
-              Pass requirement: {exam.passingMarks}/{exam.totalMarks} Marks
+            <div className="text-[11px] text-slate-400 dark:text-neutral-500 pt-0.5">
+              Passing Benchmark: {exam.passingMarks}/{exam.totalMarks} Marks ({Math.round((exam.passingMarks / exam.totalMarks) * 100)}%)
             </div>
           </div>
 
         </div>
+
       </div>
 
       {/* ================= PRE-SUBMIT CONFIRMATION MODAL ================= */}
       {showSubmitModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="rounded-2xl max-w-md w-full p-6 bg-white dark:bg-neutral-900 shadow-2xl border border-slate-200 dark:border-neutral-800 space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="rounded-3xl max-w-md w-full p-6 sm:p-7 bg-white dark:bg-neutral-900 shadow-2xl border border-slate-200 dark:border-neutral-800 space-y-5">
             <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                 Submit Examination?
               </h3>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 leading-relaxed">
-                Please verify your responses before final submission. Once submitted, your examination will be locked and graded.
+                Please verify your responses before final submission. Once confirmed, your answers will be locked and sent for evaluation.
               </p>
             </div>
 
             {/* Summary Cards */}
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200">
+              <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200">
                 <span className="block font-medium text-emerald-700 dark:text-emerald-300">Answered</span>
-                <span className="text-2xl font-bold mt-0.5 block">{answeredCount} of {questions.length}</span>
+                <span className="text-2xl font-black mt-0.5 block">{answeredCount} of {questions.length}</span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-800 dark:text-neutral-200">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-800 dark:text-neutral-200">
                 <span className="block font-medium text-slate-500 dark:text-neutral-400">Unanswered</span>
-                <span className="text-2xl font-bold mt-0.5 block">{remainingCount} Remaining</span>
+                <span className="text-2xl font-black mt-0.5 block">{remainingCount} Remaining</span>
               </div>
             </div>
 
             {remainingCount > 0 && (
-              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-xs font-medium flex items-center gap-2 border border-amber-200 dark:border-amber-900/50">
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center gap-2 border border-amber-200 dark:border-amber-900/50">
                 <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
                 <span>You have {remainingCount} unanswered questions remaining.</span>
               </div>
@@ -2418,14 +2518,14 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowSubmitModal(false)}
-                className="flex-1 py-2.5 rounded-xl font-medium text-xs border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl font-semibold text-xs border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
               >
-                Back to Exam
+                Return to Exam
               </button>
               <button
                 type="button"
                 onClick={handleSubmitFinal}
-                className="flex-1 py-2.5 rounded-xl font-semibold text-xs bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-sm transition active:scale-95 cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl font-bold text-xs bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-md transition active:scale-95 cursor-pointer"
               >
                 Confirm & Submit
               </button>
@@ -2436,11 +2536,11 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
       {/* ================= LEAVE EXAM (BACK BUTTON) MODAL ================= */}
       {showBackModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="rounded-2xl max-w-sm w-full p-6 bg-white dark:bg-neutral-900 shadow-2xl border border-slate-200 dark:border-neutral-800 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="rounded-3xl max-w-sm w-full p-6 bg-white dark:bg-neutral-900 shadow-2xl border border-slate-200 dark:border-neutral-800 space-y-4">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                   Exit Examination?
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
@@ -2472,10 +2572,10 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   setShowBackModal(false);
                   handleSubmitFinal();
                 }}
-                className="w-full py-2.5 px-4 rounded-xl text-xs font-medium border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer flex items-center justify-center gap-2"
               >
                 <Check className="w-3.5 h-3.5" />
-                <span>Submit & End Now</span>
+                <span>Submit & End Test Now</span>
               </button>
             </div>
 
@@ -2494,31 +2594,31 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
       {/* ================= EXAM PAUSED OVERLAY MODAL ================= */}
       {isPaused && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="rounded-2xl max-w-md w-full p-6 sm:p-7 bg-white dark:bg-neutral-900 shadow-2xl border border-slate-200 dark:border-neutral-800 text-center space-y-5">
-            <div className="w-10 h-10 rounded-full mx-auto flex items-center justify-center bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-300">
-              <Pause className="w-4 h-4 fill-current" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="rounded-3xl max-w-md w-full p-6 sm:p-7 bg-white dark:bg-neutral-900 shadow-2xl border border-slate-200 dark:border-neutral-800 text-center space-y-5">
+            <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-300">
+              <Pause className="w-5 h-5 fill-current" />
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                 Examination Paused
               </h3>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
-                Your timer is paused and all responses have been saved.
+                Your countdown timer is paused and all responses are preserved in memory.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-center">
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-100 dark:border-neutral-700/60">
-                <span className="text-[11px] text-slate-400 font-medium block">Time Remaining</span>
-                <span className="text-lg font-bold font-mono text-slate-800 dark:text-slate-200 mt-0.5 block">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-800 border border-slate-100 dark:border-neutral-700/60">
+                <span className="text-[11px] text-slate-400 font-semibold block uppercase tracking-wider">Frozen Timer</span>
+                <span className="text-xl font-bold font-mono text-slate-800 dark:text-slate-200 mt-0.5 block">
                   {formatTimer(secondsLeft)}
                 </span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-100 dark:border-neutral-700/60">
-                <span className="text-[11px] text-slate-400 font-medium block">Attempted</span>
-                <span className="text-lg font-bold text-slate-800 dark:text-slate-200 mt-0.5 block">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-800 border border-slate-100 dark:border-neutral-700/60">
+                <span className="text-[11px] text-slate-400 font-semibold block uppercase tracking-wider">Attempted</span>
+                <span className="text-xl font-bold text-slate-800 dark:text-slate-200 mt-0.5 block">
                   {answeredCount} / {questions.length}
                 </span>
               </div>
@@ -2528,15 +2628,15 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               <button
                 type="button"
                 onClick={handlePauseAndExit}
-                className="flex-1 py-2 rounded-xl font-medium text-xs border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl font-semibold text-xs border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
               >
-                Pause & Exit
+                Pause & Exit to Catalog
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsPaused(false)}
-                className="flex-1 py-2 rounded-xl font-semibold text-xs bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-sm transition active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 rounded-xl font-bold text-xs bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-md transition active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 Resume Exam
