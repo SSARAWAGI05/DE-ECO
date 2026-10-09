@@ -44,7 +44,9 @@ import {
   Maximize2,
   Minimize2,
   Minus,
-  Sparkles
+  Sparkles,
+  Sun,
+  Moon
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getThemeColors } from "../../styles/colors";
@@ -1876,6 +1878,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 }) => {
   // Use questions from the exam, or fallback
   const questions = exam.questions.length > 0 ? exam.questions : MOCK_EXAMS[0].questions;
+  const { toggleTheme } = useTheme();
 
   const [currentIdx, setCurrentIdx] = useState(initialSession ? initialSession.currentIdx : 0);
   const [answers, setAnswers] = useState<Record<string, string>>(initialSession ? initialSession.answers : {});
@@ -1884,7 +1887,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   const [showBackModal, setShowBackModal] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [lastSaved, setLastSaved] = useState<string>(
-    initialSession ? `Resumed from draft (${initialSession.lastSavedAt})` : "Draft auto-saved"
+    initialSession ? `Resumed (${initialSession.lastSavedAt})` : "Draft auto-saved"
   );
 
   // Timer countdown in seconds (from saved session or full duration)
@@ -1893,6 +1896,14 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
       ? initialSession.secondsLeft
       : exam.durationMinutes * 60
   );
+
+  // Mark body with in-exam-session class to suppress floating widgets
+  useEffect(() => {
+    document.body.classList.add("in-exam-session");
+    return () => {
+      document.body.classList.remove("in-exam-session");
+    };
+  }, []);
 
   useEffect(() => {
     if (isPaused || showBackModal || showSubmitModal) return;
@@ -1957,6 +1968,9 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
     (k) => answers[k] && answers[k].trim() !== ""
   ).length;
 
+  const markedCount = Object.keys(flagged).filter((k) => flagged[k]).length;
+  const remainingCount = questions.length - answeredCount;
+
   // Final submit handler
   const handleSubmitFinal = () => {
     setShowSubmitModal(false);
@@ -2003,385 +2017,231 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
   const isLowTime = secondsLeft < 300; // < 5 mins
 
-  // Word count calculation for descriptive essays
-  const currentText = answers[currentQ.id] || "";
-  const wordCount = currentText.trim() === "" ? 0 : currentText.trim().split(/\s+/).length;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col overflow-hidden font-sans transition-colors duration-300"
-      style={{ backgroundColor: isDark ? "#0f0f0f" : "#f8f9fa" }}
-    >
+    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-slate-50 dark:bg-neutral-950 text-slate-900 dark:text-neutral-100 exam-portal-root select-none transition-colors duration-200">
       {/* ================= TOP PERSISTENT EXAM NAVBAR ================= */}
-      <header
-        className="border-b border-gray-200 dark:border-neutral-800 px-4 sm:px-8 py-3 flex items-center justify-between z-20 shadow-xs"
-        style={{ backgroundColor: themeColors.background.white }}
-      >
-        {/* Left: Back Button + Info */}
-        <div className="flex items-center gap-3 sm:gap-4">
+      <header className="h-14 border-b border-slate-200/80 dark:border-neutral-800 px-4 sm:px-6 flex items-center justify-between bg-white dark:bg-neutral-900 z-20 shrink-0">
+        {/* Left: Exit/Back + Exam Title & Subject */}
+        <div className="flex items-center gap-3 min-w-0">
           <button
+            type="button"
             onClick={() => setShowBackModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-gray-200 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer shrink-0"
-            style={{ color: themeColors.text.primary }}
-            title="Leave examination (Pause or End Test)"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer shrink-0"
+            title="Exit examination"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Back</span>
+            <span className="hidden sm:inline">Exit</span>
           </button>
 
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs bg-neutral-900 text-white dark:bg-white dark:text-black shrink-0">
-            {currentIdx + 1}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-bold leading-tight" style={{ color: themeColors.text.primary }}>
-                {exam.title}
-              </h1>
-              <span className="hidden sm:inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-gray-100 dark:bg-neutral-800 text-gray-500">
-                Official Exam
-              </span>
-            </div>
-            <p className="text-xs font-medium text-gray-500 mt-0.5">
-              {exam.course} • Question {currentIdx + 1} of {questions.length}
-            </p>
+          <div className="h-4 w-px bg-slate-200 dark:bg-neutral-800 shrink-0" />
+
+          <div className="min-w-0 flex items-center gap-2">
+            <h1 className="text-sm font-semibold text-slate-900 dark:text-neutral-100 truncate">
+              {exam.title}
+            </h1>
+            <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 shrink-0">
+              {exam.course}
+            </span>
           </div>
         </div>
 
         {/* Center: Sleek Monospace Countdown Timer */}
-        <div
-          className={`flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full font-mono text-sm font-semibold border transition-colors ${
-            isLowTime
-              ? "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-400"
-              : "bg-gray-50 dark:bg-neutral-800 border-gray-200 dark:border-neutral-700 text-gray-800 dark:text-gray-200"
-          }`}
-        >
-          <Clock className={`w-3.5 h-3.5 ${isLowTime ? "text-rose-600 animate-pulse" : "text-gray-500 dark:text-gray-400"}`} />
-          <span>{formatTimer(secondsLeft)}</span>
+        <div className="flex items-center justify-center shrink-0">
+          <div
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-mono text-xs font-semibold border transition-colors ${
+              isLowTime
+                ? "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-400 animate-pulse"
+                : "bg-slate-50 dark:bg-neutral-800/80 border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-200"
+            }`}
+          >
+            <Clock className={`w-3.5 h-3.5 ${isLowTime ? "text-rose-600" : "text-slate-500 dark:text-neutral-400"}`} />
+            <span>{formatTimer(secondsLeft)}</span>
+          </div>
         </div>
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* Right: Theme Toggle, Pause Button & Submit Button */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
-            onClick={() => setIsPaused(true)}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition flex items-center gap-1.5 cursor-pointer shadow-xs text-gray-700 dark:text-gray-300"
-            title="Pause Exam & Freeze Timer"
+            type="button"
+            onClick={toggleTheme}
+            className="p-1.5 rounded-lg text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            aria-label="Toggle theme"
           >
-            <Pause className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsPaused(true)}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200 dark:border-neutral-700 hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition flex items-center gap-1.5 cursor-pointer"
+            title="Pause exam & freeze timer"
+          >
+            <Pause className="w-3.5 h-3.5 text-slate-500 dark:text-neutral-400" />
             <span className="hidden sm:inline">Pause</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setShowSubmitModal(true)}
-            className="px-4 py-1.5 rounded-lg font-bold text-xs sm:text-sm shadow-sm hover:opacity-90 active:scale-95 transition cursor-pointer"
-            style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 transition shadow-xs cursor-pointer active:scale-95"
           >
             Submit Exam
           </button>
         </div>
       </header>
 
-      {/* Progress Bar under navbar */}
-      <div className="w-full bg-gray-200 dark:bg-neutral-800 h-1">
+      {/* Hairline Progress Indicator */}
+      <div className="w-full bg-slate-100 dark:bg-neutral-800 h-0.5 shrink-0">
         <div
-          className="h-full transition-all duration-300"
+          className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-300"
           style={{
-            width: `${((currentIdx + 1) / questions.length) * 100}%`,
-            backgroundColor: themeColors.primary.w2
+            width: `${questions.length > 0 ? (answeredCount / questions.length) * 100 : 0}%`
           }}
         />
       </div>
 
-      {/* ================= WORKSPACE: 2-COLUMN VIEW ================= */}
-      <div className="flex-1 flex overflow-hidden p-4 sm:p-6 gap-6 max-w-7xl mx-auto w-full">
-        {/* LEFT WORKSPACE: QUESTION & INPUT */}
-        <div className="flex-1 flex flex-col justify-between overflow-y-auto pr-1">
-          {/* Main Question Card */}
-          <div
-            className="rounded-2xl p-6 sm:p-8 border border-gray-200/80 dark:border-neutral-800 shadow-sm space-y-5"
-            style={{ backgroundColor: themeColors.background.white }}
-          >
-            {/* Mobile-only Quick Meta (hidden on desktop where it's on the right sidebar) */}
-            <div className="lg:hidden flex items-center justify-between pb-3 border-b border-gray-100 dark:border-neutral-800 text-xs">
-              <span className="font-bold uppercase tracking-wider text-gray-500">
-                Q{currentQ.number} of {questions.length} • {currentQ.marks} Marks
-              </span>
-              <button
-                type="button"
-                onClick={toggleFlag}
-                className="flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400 cursor-pointer"
-              >
-                <Bookmark className={`w-3.5 h-3.5 ${flagged[currentQ.id] ? "fill-amber-500" : ""}`} />
-                <span>{flagged[currentQ.id] ? "Marked" : "Mark"}</span>
-              </button>
-            </div>
-
-            {/* Question Statement */}
-            <div className="text-base sm:text-lg font-semibold leading-relaxed" style={{ color: themeColors.text.primary }}>
-              {currentQ.question}
-            </div>
-
-            {/* ================= IF MCQ: CLEAN ACADEMIC RADIO OPTIONS ================= */}
-            {currentQ.type === "mcq" && currentQ.options && (
-              <div className="space-y-3 pt-2">
-                {currentQ.options.map((option) => {
-                  const isSelected = answers[currentQ.id] === option.id;
-
-                  return (
-                    <div
-                      key={option.id}
-                      onClick={() => handleAnswerChange(option.id)}
-                      className={`rounded-xl p-4 sm:p-4.5 border transition-all cursor-pointer flex items-center gap-3.5 select-none ${
-                        isSelected
-                          ? "border-neutral-900 dark:border-white bg-neutral-50/80 dark:bg-neutral-800/60 shadow-xs ring-1 ring-neutral-900/10 dark:ring-white/20"
-                          : "border-gray-200 dark:border-neutral-800 hover:border-gray-400 dark:hover:border-neutral-600 bg-white dark:bg-neutral-900"
-                      }`}
-                    >
-                      {/* Option Key (A, B, C, D) */}
-                      <div
-                        className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 transition-colors ${
-                          isSelected
-                            ? "bg-neutral-900 text-white dark:bg-white dark:text-black"
-                            : "border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-600 dark:text-gray-400"
-                        }`}
-                      >
-                        {option.id}
-                      </div>
-
-                      {/* Option Text */}
-                      <div className="font-normal text-sm sm:text-base flex-1 leading-normal text-gray-800 dark:text-gray-200">
-                        {option.text}
-                      </div>
-
-                      {/* Clean Radio Circle */}
-                      <div
-                        className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                          isSelected
-                            ? "border-2 border-neutral-900 dark:border-white"
-                            : "border border-gray-300 dark:border-neutral-600"
-                        }`}
-                      >
-                        {isSelected && (
-                          <div className="w-2 h-2 rounded-full bg-neutral-900 dark:bg-white" />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* ================= IF DESCRIPTIVE: MS WORD ESSAY CANVAS ================= */}
-            {currentQ.type === "descriptive" && (
-              <div className="pt-2">
-                <WordAnswerEditor
-                  key={currentQ.id}
-                  value={answers[currentQ.id] || ""}
-                  onChange={(newVal) => handleAnswerChange(newVal)}
-                  lastSavedText={lastSaved}
-                  isDark={isDark}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Mobile-only Navigation Bar (hidden on desktop where sidebar toggle is present) */}
-          <div className="lg:hidden pt-4 flex items-center justify-between gap-4">
-            <button
-              onClick={() => setCurrentIdx((prev) => Math.max(0, prev - 1))}
-              disabled={currentIdx === 0}
-              className="px-4 py-2 rounded-xl font-semibold text-xs border border-gray-200 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
-              style={{ color: themeColors.text.primary }}
-            >
-              <ChevronLeft className="w-4 h-4" /> Previous
-            </button>
-
-            <div className="text-xs font-medium text-gray-500">
-              Q{currentIdx + 1} of {questions.length}
-            </div>
-
-            <button
-              onClick={() => {
-                if (currentIdx < questions.length - 1) {
-                  setCurrentIdx((prev) => prev + 1);
-                } else {
-                  setShowSubmitModal(true);
-                }
-              }}
-              className="px-4 py-2 rounded-xl font-bold text-xs shadow-sm transition hover:opacity-90 active:scale-95 cursor-pointer flex items-center gap-1.5"
-              style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
-            >
-              {currentIdx === questions.length - 1 ? (
-                <>Submit <Check className="w-3.5 h-3.5" /></>
-              ) : (
-                <>Next <ChevronRight className="w-3.5 h-3.5" /></>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* RIGHT SIDEBAR: QUESTION PALETTE GRID & META */}
-        <div className="w-72 hidden lg:flex flex-col gap-4 shrink-0">
-          {/* Active Question Info & Actions Card */}
-          <div
-            className="rounded-2xl p-4 sm:p-5 border border-gray-200/80 dark:border-neutral-800 shadow-sm space-y-3.5"
-            style={{ backgroundColor: themeColors.background.white }}
-          >
-            {/* Question Number & Marks */}
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-xs uppercase tracking-wider text-gray-500 dark:text-neutral-400">
+      {/* ================= MAIN SPLIT-VIEW WORKSPACE ================= */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* LEFT CANVAS: QUESTION STATEMENT & ANSWERING WORKSPACE */}
+        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-neutral-900 border-r border-slate-200/80 dark:border-neutral-800">
+          
+          {/* Question Header & Meta Bar */}
+          <div className="px-6 sm:px-8 py-3.5 border-b border-slate-100 dark:border-neutral-800/80 flex items-center justify-between shrink-0 bg-white dark:bg-neutral-900">
+            <div className="flex items-center gap-2.5">
+              <span className="text-xs font-semibold text-slate-900 dark:text-white">
                 Question {currentQ.number} of {questions.length}
               </span>
-              <span className="font-bold text-xs px-2.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-gray-800 dark:text-neutral-200 border border-gray-200/60 dark:border-neutral-700">
+              <span className="text-slate-300 dark:text-neutral-700">•</span>
+              <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400">
                 {currentQ.marks} {currentQ.marks === 1 ? "Mark" : "Marks"}
               </span>
-            </div>
-
-            {/* Type Tag */}
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-400 dark:text-neutral-500">Format:</span>
-              <span className="font-semibold px-2 py-0.5 rounded text-[11px] bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
-                {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive Essay"}
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-50 dark:bg-neutral-850 text-slate-400 dark:text-neutral-500 border border-slate-200/60 dark:border-neutral-800">
+                {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive"}
               </span>
             </div>
 
-            <div className="w-full h-px bg-gray-100 dark:bg-neutral-800" />
-
-            {/* Actions: Mark for Review & Clear Response */}
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={toggleFlag}
-                className={`w-full py-2 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer flex items-center justify-center gap-2 ${
-                  flagged[currentQ.id]
-                    ? "border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 shadow-xs"
-                    : "border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300"
-                }`}
-              >
-                <Bookmark className={`w-3.5 h-3.5 ${flagged[currentQ.id] ? "fill-amber-500 text-amber-600" : ""}`} />
-                <span>{flagged[currentQ.id] ? "Marked for Review" : "Mark for Review"}</span>
-              </button>
-
+            <div className="flex items-center gap-3">
               {currentQ.type === "mcq" && answers[currentQ.id] && (
                 <button
                   type="button"
                   onClick={() => handleAnswerChange("")}
-                  className="w-full py-1.5 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition cursor-pointer text-center"
+                  className="text-xs text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition cursor-pointer"
                 >
-                  Clear response
+                  Clear selection
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={toggleFlag}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
+                  flagged[currentQ.id]
+                    ? "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50"
+                    : "text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 border border-transparent"
+                }`}
+                title="Mark for later review"
+              >
+                <Bookmark className={`w-3.5 h-3.5 ${flagged[currentQ.id] ? "fill-amber-500 text-amber-500" : ""}`} />
+                <span>{flagged[currentQ.id] ? "Marked for Review" : "Mark for Review"}</span>
+              </button>
             </div>
           </div>
 
-          <div
-            className="rounded-2xl p-5 border border-gray-200/80 dark:border-neutral-800 shadow-sm space-y-4"
-            style={{ backgroundColor: themeColors.background.white }}
-          >
-            {/* Candidate Card */}
-            <div className="p-3 rounded-xl bg-gray-50 dark:bg-neutral-800/70 border border-gray-100 dark:border-neutral-700/60 text-xs space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-400 uppercase tracking-wider text-[10px] font-bold">Candidate</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              </div>
-              <div className="font-bold text-sm truncate" style={{ color: themeColors.text.primary }}>
-                test@test.com
-              </div>
-              <div className="text-gray-500 text-[11px] font-medium pt-0.5">
-                Passing Requirement: {exam.passingMarks}/{exam.totalMarks} Marks
-              </div>
-            </div>
-
-            {/* Status Summary Strip */}
-            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="p-2 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
-                <span className="block text-base font-bold" style={{ color: themeColors.text.primary }}>{answeredCount}</span>
-                <span className="text-[11px] text-gray-500">Answered</span>
-              </div>
-              <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40">
-                <span className="block text-base font-bold text-amber-700 dark:text-amber-400">
-                  {Object.keys(flagged).filter((k) => flagged[k]).length}
-                </span>
-                <span className="text-[11px] text-amber-700 dark:text-amber-400">Review</span>
-              </div>
-              <div className="p-2 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
-                <span className="block text-base font-bold text-gray-400">{questions.length - answeredCount}</span>
-                <span className="text-[11px] text-gray-500">Remaining</span>
-              </div>
-            </div>
-
-            {/* Question Palette Number Grid */}
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wider mb-2.5 text-gray-500">
-                Question Navigator
+          {/* Scrollable Question Content & Input Flow */}
+          <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6">
+            <div className="max-w-3xl space-y-6">
+              
+              {/* Crisp Question Prompt */}
+              <div className="text-base sm:text-[17px] font-normal leading-relaxed text-slate-900 dark:text-neutral-100 select-text">
+                {currentQ.question}
               </div>
 
-              <div className="grid grid-cols-4 gap-2">
-                {questions.map((q, idx) => {
-                  const isCurrent = idx === currentIdx;
-                  const isAnswered = answers[q.id] && answers[q.id].trim() !== "";
-                  const isFlagged = flagged[q.id];
+              {/* MCQ Option Rows */}
+              {currentQ.type === "mcq" && currentQ.options && (
+                <div className="space-y-2.5 pt-1">
+                  {currentQ.options.map((option) => {
+                    const isSelected = answers[currentQ.id] === option.id;
 
-                  let itemStyle = "border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-300";
+                    return (
+                      <div
+                        key={option.id}
+                        onClick={() => handleAnswerChange(option.id)}
+                        className={`group flex items-start gap-3.5 p-3.5 sm:p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                          isSelected
+                            ? "border-slate-900 dark:border-white bg-slate-50 dark:bg-neutral-800/80 shadow-xs ring-1 ring-slate-900/10 dark:ring-white/10"
+                            : "border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900"
+                        }`}
+                      >
+                        {/* Badge: A, B, C, D */}
+                        <div
+                          className={`w-6 h-6 rounded-md font-semibold text-xs flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                            isSelected
+                              ? "bg-slate-900 text-white dark:bg-white dark:text-neutral-900"
+                              : "bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400 group-hover:bg-slate-200 dark:group-hover:bg-neutral-750"
+                          }`}
+                        >
+                          {option.id}
+                        </div>
 
-                  if (isCurrent) {
-                    itemStyle = "bg-neutral-900 text-white dark:bg-white dark:text-black font-bold ring-2 ring-neutral-900 dark:ring-white shadow-xs";
-                  } else if (isAnswered) {
-                    itemStyle = "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-semibold";
-                  }
+                        {/* Option Text */}
+                        <div className={`text-sm sm:text-[15px] leading-relaxed flex-1 ${
+                          isSelected
+                            ? "font-medium text-slate-900 dark:text-white"
+                            : "font-normal text-slate-700 dark:text-neutral-300"
+                        }`}>
+                          {option.text}
+                        </div>
 
-                  return (
-                    <button
-                      key={q.id}
-                      onClick={() => setCurrentIdx(idx)}
-                      className={`relative h-10 rounded-lg text-xs font-semibold flex items-center justify-center transition cursor-pointer hover:scale-105 active:scale-95 ${itemStyle}`}
-                    >
-                      {idx + 1}
-                      {isFlagged && (
-                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-black" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                        {/* Radio Indicator */}
+                        <div
+                          className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-1 transition-all ${
+                            isSelected
+                              ? "border-2 border-slate-900 dark:border-white"
+                              : "border border-slate-300 dark:border-neutral-600"
+                          }`}
+                        >
+                          {isSelected && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white" />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
-            {/* Palette Legend */}
-            <div className="pt-3 border-t border-gray-100 dark:border-neutral-800 grid grid-cols-2 gap-2 text-[11px] text-gray-500">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-neutral-900 dark:bg-white" />
-                <span>Current</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-emerald-500" />
-                <span>Answered</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded bg-amber-500" />
-                <span>Marked</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded border border-gray-300 dark:border-neutral-600" />
-                <span>Unattempted</span>
-              </div>
+              {/* Descriptive Word Editor */}
+              {currentQ.type === "descriptive" && (
+                <div className="pt-1">
+                  <WordAnswerEditor
+                    key={currentQ.id}
+                    value={answers[currentQ.id] || ""}
+                    onChange={(newVal) => handleAnswerChange(newVal)}
+                    lastSavedText={lastSaved}
+                    isDark={isDark}
+                  />
+                </div>
+              )}
+
             </div>
           </div>
 
-          {/* ================= PREVIOUS / NEXT QUESTION TOGGLE ================= */}
-          <div
-            className="rounded-xl p-1 border border-gray-200/80 dark:border-neutral-800 shadow-xs flex items-center select-none"
-            style={{ backgroundColor: themeColors.background.white }}
-          >
+          {/* Integrated Answering Footer Controls */}
+          <div className="px-6 sm:px-8 py-3.5 border-t border-slate-200/80 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/50 flex items-center justify-between shrink-0">
             <button
               type="button"
               onClick={() => setCurrentIdx((prev) => Math.max(0, prev - 1))}
               disabled={currentIdx === 0}
-              className="flex-1 py-2.5 px-3 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 active:scale-98 transition disabled:opacity-25 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-1.5"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-750 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer shadow-xs"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Previous</span>
             </button>
 
-            <div className="w-px h-5 bg-gray-200 dark:bg-neutral-700 shrink-0" />
+            <div className="text-xs text-slate-400 dark:text-neutral-500 font-medium">
+              Question {currentIdx + 1} of {questions.length}
+            </div>
 
             <button
               type="button"
@@ -2392,67 +2252,180 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   setShowSubmitModal(true);
                 }
               }}
-              className="flex-1 py-2.5 px-3 rounded-lg text-xs font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-neutral-800 active:scale-98 transition cursor-pointer flex items-center justify-center gap-1.5"
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer shadow-xs active:scale-95 ${
+                currentIdx === questions.length - 1
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900"
+              }`}
             >
-              <span>{currentIdx === questions.length - 1 ? "Submit" : "Next"}</span>
+              <span>{currentIdx === questions.length - 1 ? "Submit Exam" : "Next"}</span>
               {currentIdx === questions.length - 1 ? (
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <Check className="w-4 h-4" />
               ) : (
                 <ChevronRight className="w-4 h-4" />
               )}
             </button>
           </div>
+
+        </div>
+
+        {/* RIGHT UNIFIED SIDEBAR: PALETTE & METRICS */}
+        <div className="w-80 shrink-0 bg-slate-50/70 dark:bg-neutral-950 flex flex-col overflow-y-auto">
+          
+          {/* Section 1: Progress Overview */}
+          <div className="p-5 border-b border-slate-200/70 dark:border-neutral-800/80 space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-slate-700 dark:text-neutral-300">Exam Progress</span>
+              <span className="font-medium text-slate-500 dark:text-neutral-400">
+                {answeredCount} / {questions.length} ({Math.round(questions.length > 0 ? (answeredCount / questions.length) * 100 : 0)}%)
+              </span>
+            </div>
+
+            <div className="w-full bg-slate-200/80 dark:bg-neutral-800 rounded-full h-1.5 overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 dark:bg-emerald-400 transition-all duration-300 rounded-full"
+                style={{ width: `${questions.length > 0 ? (answeredCount / questions.length) * 100 : 0}%` }}
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              <div className="p-2 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 text-center">
+                <span className="block text-sm font-bold text-emerald-700 dark:text-emerald-400">{answeredCount}</span>
+                <span className="text-[10px] font-medium text-emerald-600/80 dark:text-emerald-400/80">Answered</span>
+              </div>
+              <div className="p-2 rounded-lg bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 text-center">
+                <span className="block text-sm font-bold text-amber-700 dark:text-amber-400">{markedCount}</span>
+                <span className="text-[10px] font-medium text-amber-600/80 dark:text-amber-400/80">Review</span>
+              </div>
+              <div className="p-2 rounded-lg bg-white dark:bg-neutral-900 border border-slate-200/60 dark:border-neutral-800 text-center">
+                <span className="block text-sm font-bold text-slate-500 dark:text-neutral-400">{remainingCount}</span>
+                <span className="text-[10px] font-medium text-slate-400 dark:text-neutral-500">Remaining</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Question Palette Navigator */}
+          <div className="p-5 flex-1 space-y-4">
+            <div className="text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">
+              Question Palette
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+              {questions.map((q, idx) => {
+                const isCurrent = idx === currentIdx;
+                const isAnswered = answers[q.id] && answers[q.id].trim() !== "";
+                const isFlagged = flagged[q.id];
+
+                let btnClass = "border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:border-slate-300 dark:hover:border-neutral-700";
+
+                if (isCurrent) {
+                  btnClass = "bg-slate-900 dark:bg-white text-white dark:text-neutral-900 font-bold ring-2 ring-slate-900/20 dark:ring-white/20 shadow-xs";
+                } else if (isAnswered) {
+                  btnClass = "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-semibold";
+                }
+
+                return (
+                  <button
+                    key={q.id}
+                    type="button"
+                    onClick={() => setCurrentIdx(idx)}
+                    className={`relative h-10 rounded-lg text-xs transition cursor-pointer flex items-center justify-center select-none active:scale-95 ${btnClass}`}
+                  >
+                    <span>{idx + 1}</span>
+                    {isFlagged && (
+                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-500 ring-1 ring-white dark:ring-neutral-900" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Palette Legend */}
+            <div className="pt-4 border-t border-slate-200/60 dark:border-neutral-800/80 grid grid-cols-2 gap-2 text-[11px] text-slate-500 dark:text-neutral-400">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded bg-slate-900 dark:bg-white" />
+                <span>Current</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded bg-emerald-500" />
+                <span>Answered</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded bg-amber-500" />
+                <span>Review</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded border border-slate-300 dark:border-neutral-600 bg-white dark:bg-neutral-900" />
+                <span>Unattempted</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Candidate & Exam Info */}
+          <div className="p-4 border-t border-slate-200/70 dark:border-neutral-800/80 bg-white/60 dark:bg-neutral-900/60 text-xs text-slate-500 dark:text-neutral-400 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-slate-400 dark:text-neutral-500">Candidate</span>
+              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Online
+              </span>
+            </div>
+            <div className="font-semibold text-slate-800 dark:text-neutral-200 text-xs truncate">
+              test@test.com
+            </div>
+            <div className="text-[11px] text-slate-400 dark:text-neutral-500 pt-1">
+              Pass requirement: {exam.passingMarks}/{exam.totalMarks} Marks
+            </div>
+          </div>
+
         </div>
       </div>
 
       {/* ================= PRE-SUBMIT CONFIRMATION MODAL ================= */}
       {showSubmitModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div
-            className="rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-gray-200 dark:border-neutral-800 space-y-5"
-            style={{ backgroundColor: themeColors.background.white }}
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="rounded-2xl max-w-md w-full p-6 bg-white dark:bg-neutral-900 shadow-2xl border border-slate-200 dark:border-neutral-800 space-y-5">
             <div>
-              <h3 className="text-xl font-bold" style={{ color: themeColors.text.primary }}>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Submit Examination?
               </h3>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                Please verify your responses before final submission. Once submitted, your examination will be locked and sent for evaluation.
+              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 leading-relaxed">
+                Please verify your responses before final submission. Once submitted, your examination will be locked and graded.
               </p>
             </div>
 
-            {/* Summary Grid */}
+            {/* Summary Cards */}
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200">
                 <span className="block font-medium text-emerald-700 dark:text-emerald-300">Answered</span>
                 <span className="text-2xl font-bold mt-0.5 block">{answeredCount} of {questions.length}</span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-800 dark:text-gray-200">
-                <span className="block font-medium text-gray-500">Unanswered</span>
-                <span className="text-2xl font-bold mt-0.5 block">{questions.length - answeredCount} Remaining</span>
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-800 dark:text-neutral-200">
+                <span className="block font-medium text-slate-500 dark:text-neutral-400">Unanswered</span>
+                <span className="text-2xl font-bold mt-0.5 block">{remainingCount} Remaining</span>
               </div>
             </div>
 
-            {questions.length - answeredCount > 0 && (
-              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center gap-2 border border-amber-200 dark:border-amber-900/50">
+            {remainingCount > 0 && (
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-xs font-medium flex items-center gap-2 border border-amber-200 dark:border-amber-900/50">
                 <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
-                <span>You have {questions.length - answeredCount} unanswered questions remaining.</span>
+                <span>You have {remainingCount} unanswered questions remaining.</span>
               </div>
             )}
 
             <div className="flex gap-3 pt-2">
               <button
+                type="button"
                 onClick={() => setShowSubmitModal(false)}
-                className="flex-1 py-2.5 rounded-xl font-semibold text-sm border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
-                style={{ color: themeColors.text.primary }}
+                className="flex-1 py-2.5 rounded-xl font-medium text-xs border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
               >
                 Back to Exam
               </button>
               <button
+                type="button"
                 onClick={handleSubmitFinal}
-                className="flex-1 py-2.5 rounded-xl font-bold text-sm shadow-sm transition hover:opacity-90 active:scale-95 cursor-pointer"
-                style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+                className="flex-1 py-2.5 rounded-xl font-semibold text-xs bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-sm transition active:scale-95 cursor-pointer"
               >
                 Confirm & Submit
               </button>
@@ -2463,24 +2436,21 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
       {/* ================= LEAVE EXAM (BACK BUTTON) MODAL ================= */}
       {showBackModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div
-            className="rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-gray-200 dark:border-neutral-800 space-y-4"
-            style={{ backgroundColor: themeColors.background.white }}
-          >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="rounded-2xl max-w-sm w-full p-6 bg-white dark:bg-neutral-900 shadow-2xl border border-slate-200 dark:border-neutral-800 space-y-4">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-bold" style={{ color: themeColors.text.primary }}>
-                  Leave Examination?
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Exit Examination?
                 </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Choose how you would like to exit:
+                <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
+                  Choose how you would like to proceed:
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowBackModal(false)}
-                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer text-gray-400 hover:text-gray-600"
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer text-slate-400 hover:text-slate-600"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -2490,7 +2460,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               <button
                 type="button"
                 onClick={handlePauseAndExit}
-                className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-neutral-900 text-white dark:bg-white dark:text-black hover:opacity-90 active:scale-98 transition cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+                className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-black dark:hover:bg-neutral-100 transition cursor-pointer flex items-center justify-center gap-2 shadow-xs"
               >
                 <Pause className="w-3.5 h-3.5" />
                 <span>Pause & Resume Later</span>
@@ -2502,10 +2472,10 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   setShowBackModal(false);
                   handleSubmitFinal();
                 }}
-                className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold border border-gray-200 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 active:scale-98 text-gray-700 dark:text-gray-300 transition cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 rounded-xl text-xs font-medium border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer flex items-center justify-center gap-2"
               >
                 <Check className="w-3.5 h-3.5" />
-                <span>End & Submit Exam</span>
+                <span>Submit & End Now</span>
               </button>
             </div>
 
@@ -2513,9 +2483,9 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowBackModal(false)}
-                className="text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition cursor-pointer"
+                className="text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
               >
-                Cancel and stay in exam
+                Cancel and return to exam
               </button>
             </div>
           </div>
@@ -2524,56 +2494,51 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
       {/* ================= EXAM PAUSED OVERLAY MODAL ================= */}
       {isPaused && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
-          <div
-            className="rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-200 dark:border-neutral-800 text-center space-y-5"
-            style={{ backgroundColor: themeColors.background.white }}
-          >
-            <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center bg-gray-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-800 dark:text-gray-200">
-              <Pause className="w-5 h-5 fill-current" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="rounded-2xl max-w-md w-full p-6 sm:p-7 bg-white dark:bg-neutral-900 shadow-2xl border border-slate-200 dark:border-neutral-800 text-center space-y-5">
+            <div className="w-10 h-10 rounded-full mx-auto flex items-center justify-center bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-300">
+              <Pause className="w-4 h-4 fill-current" />
             </div>
 
             <div>
-              <h3 className="text-xl font-bold" style={{ color: themeColors.text.primary }}>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                 Examination Paused
               </h3>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                Your timer is frozen and all responses are preserved in session memory.
+              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
+                Your timer is paused and all responses have been saved.
               </p>
             </div>
 
-            {/* Frozen Stats Cards */}
             <div className="grid grid-cols-2 gap-3 text-center">
-              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
-                <span className="text-xs text-gray-500 font-medium block">Frozen Timer</span>
-                <span className="text-xl font-bold font-mono text-gray-800 dark:text-gray-200">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-100 dark:border-neutral-700/60">
+                <span className="text-[11px] text-slate-400 font-medium block">Time Remaining</span>
+                <span className="text-lg font-bold font-mono text-slate-800 dark:text-slate-200 mt-0.5 block">
                   {formatTimer(secondsLeft)}
                 </span>
               </div>
-              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
-                <span className="text-xs text-gray-500 font-medium block">Attempted</span>
-                <span className="text-xl font-bold" style={{ color: themeColors.text.primary }}>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-100 dark:border-neutral-700/60">
+                <span className="text-[11px] text-slate-400 font-medium block">Attempted</span>
+                <span className="text-lg font-bold text-slate-800 dark:text-slate-200 mt-0.5 block">
                   {answeredCount} / {questions.length}
                 </span>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
               <button
+                type="button"
                 onClick={handlePauseAndExit}
-                className="flex-1 py-2.5 rounded-xl font-semibold text-sm border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
-                style={{ color: themeColors.text.primary }}
+                className="flex-1 py-2 rounded-xl font-medium text-xs border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
               >
-                Pause & Exit to Catalog
+                Pause & Exit
               </button>
 
               <button
+                type="button"
                 onClick={() => setIsPaused(false)}
-                className="flex-1 py-2.5 rounded-xl font-bold text-sm shadow-sm transition hover:opacity-90 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
-                style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+                className="flex-1 py-2 rounded-xl font-semibold text-xs bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-sm transition active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <Play className="w-4 h-4 fill-current" />
+                <Play className="w-3.5 h-3.5 fill-current" />
                 Resume Exam
               </button>
             </div>
@@ -2583,7 +2548,6 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
     </div>
   );
 };
-
 /* ========================================================================= */
 /* ============= VIEW: DETAILED REPORT CARD & TEACHER FEEDBACK ============= */
 /* ========================================================================= */

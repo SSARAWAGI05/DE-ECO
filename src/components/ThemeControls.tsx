@@ -8,6 +8,22 @@ export const ThemeControls: React.FC = () => {
   const { isDark, toggleTheme, isFocusMode, toggleFocusMode } = useTheme();
   const themeColors = getThemeColors(isDark, isFocusMode);
 
+  const [inExam, setInExam] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkExam = () => {
+      setInExam(document.body.classList.contains("in-exam-session"));
+    };
+    checkExam();
+
+    const observer = new MutationObserver(checkExam);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+
+    return () => observer.disconnect();
+  }, []);
+
+  if (inExam) return null;
+
   return (
     <div
       className="fixed right-4 bottom-8 z-[60] flex flex-col items-center gap-3 bg-white/85 dark:bg-neutral-900/85 backdrop-blur-md border border-gray-200 dark:border-neutral-700 shadow-xl rounded-2xl p-2.5 transition-all duration-300 hover:shadow-2xl"

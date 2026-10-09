@@ -16,6 +16,12 @@
   font-family: 'Comic Sans MS', cursive, sans-serif;
 }
 
+/* Professional academic font stack override for Exam Taking Portal */
+.exam-portal-root,
+.exam-portal-root * {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
 /* ✅ Fix white bar at bottom - ensure body/html cover full viewport */
 html, body, #root {
   margin: 0;
