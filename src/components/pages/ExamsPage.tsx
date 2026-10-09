@@ -3681,18 +3681,18 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   onClick={() => setViewMode("questions_only")}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     viewMode === "questions_only"
-                      ? "bg-white dark:bg-neutral-900 text-amber-600 dark:text-amber-400 shadow-xs"
+                      ? "bg-white dark:bg-neutral-900 text-slate-900 dark:text-white shadow-xs"
                       : "text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                   title="Questions Only: Hide typing spaces for pen & paper writing"
                 >
-                  <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <FileText className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300 shrink-0" />
                   <span className="hidden sm:inline">Questions Only</span>
                   <span className="sm:hidden">Q-Only</span>
                 </button>
               </div>
 
-              {currentQ.type === "mcq" && answers[currentQ.id] && viewMode === "full" && (
+              {currentQ.type === "mcq" && answers[currentQ.id] && (
                 <button
                   type="button"
                   onClick={() => handleAnswerChange("")}
@@ -3723,147 +3723,99 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
           {/* Answering Canvas / Focus Stage */}
           {viewMode === "questions_only" ? (
             /* ========================================================================= */
-            /* QUESTIONS ONLY: CENTERED FLASHCARD PRESENTATION                           */
+            /* QUESTIONS ONLY: CLEAN FOCUSED QUESTION CARD (PEN & PAPER MODE)            */
             /* ========================================================================= */
-            <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-4 sm:py-8 custom-scrollbar flex flex-col items-center min-h-0 bg-slate-100/50 dark:bg-neutral-950/40">
-              <div className="w-full max-w-2xl my-auto animate-in fade-in zoom-in-95 duration-200">
-                {/* FLASHCARD CARD */}
-                <div className="relative rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200/90 dark:border-neutral-800 shadow-xl dark:shadow-2xl dark:shadow-black/60 overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-4 sm:py-8 custom-scrollbar">
+              <div className="max-w-3xl mx-auto w-full">
+                {/* Clean, Refined Question Card */}
+                <div className="rounded-2xl border border-slate-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xs p-5 sm:p-7 space-y-5">
                   
-                  {/* Top Ambient Bar */}
-                  <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-indigo-500 to-amber-500" />
-
-                  {/* Card Header */}
-                  <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 dark:border-neutral-800/80 flex items-center justify-between gap-2.5">
+                  {/* Subtle Card Header */}
+                  <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-neutral-800 text-xs">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/80 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                        <span>Question {currentIdx + 1} of {questions.length}</span>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        Question {currentQ.number} of {questions.length}
                       </span>
-
-                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300">
+                      <span className="text-slate-300 dark:text-neutral-700">•</span>
+                      <span className="text-slate-500 dark:text-neutral-400 font-medium">
                         {currentQ.marks} {currentQ.marks === 1 ? "Mark" : "Marks"}
                       </span>
-
-                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-50 dark:bg-neutral-850 text-slate-500 dark:text-neutral-400 border border-slate-200/60 dark:border-neutral-800 hidden sm:inline-block">
+                      <span className="text-slate-300 dark:text-neutral-700 hidden sm:inline">•</span>
+                      <span className="text-slate-500 dark:text-neutral-400 hidden sm:inline">
                         {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive"}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={toggleFlag}
-                        className={`p-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
-                          flagged[currentQ.id]
-                            ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
-                            : "text-slate-400 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800"
-                        }`}
-                        title="Flag question for review (M)"
-                      >
-                        <Bookmark className={`w-4 h-4 ${flagged[currentQ.id] ? "fill-amber-500 text-amber-500" : ""}`} />
-                        <span className="hidden sm:inline text-xs">{flagged[currentQ.id] ? "Flagged" : "Flag"}</span>
-                      </button>
-                    </div>
+                    <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-neutral-800 text-[11px] font-semibold text-slate-600 dark:text-neutral-400">
+                      Questions Only View
+                    </span>
                   </div>
 
-                  {/* Card Body: Question Statement & Reference Options */}
-                  <div className="p-4 sm:p-8 space-y-4 sm:space-y-6">
-                    <div className="space-y-2">
-                      <div className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500 flex items-center gap-1.5">
-                        <PenTool className="w-3.5 h-3.5 text-amber-500" />
-                        <span>Pen & Paper Focus Statement</span>
-                      </div>
-                      <div className="text-base sm:text-xl md:text-2xl font-semibold leading-relaxed text-slate-900 dark:text-neutral-100 tracking-tight select-text">
-                        {currentQ.question}
-                      </div>
-                    </div>
+                  {/* Primary Question Statement */}
+                  <div className="text-base sm:text-[19px] font-medium leading-relaxed text-slate-900 dark:text-neutral-100 tracking-tight select-text">
+                    {currentQ.question}
+                  </div>
 
-                    {/* MCQ Options (Choice Reference Tiles) */}
-                    {currentQ.type === "mcq" && currentQ.options && currentQ.options.length > 0 && (
-                      <div className="space-y-3 pt-2">
-                        <div className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
-                          Options Reference:
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
-                          {currentQ.options.map((option) => (
+                  {/* MCQ Options: Clean, full-width options matching the platform design */}
+                  {currentQ.type === "mcq" && currentQ.options && currentQ.options.length > 0 && (
+                    <div className="space-y-2.5 pt-1">
+                      {currentQ.options.map((option) => {
+                        const isSelected = answers[currentQ.id] === option.id;
+
+                        return (
+                          <div
+                            key={option.id}
+                            onClick={() => handleAnswerChange(option.id)}
+                            className={`group flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-3.5 rounded-xl border transition-all cursor-pointer select-none ${
+                              isSelected
+                                ? "border-slate-900 dark:border-white bg-slate-50/90 dark:bg-neutral-800/80 shadow-xs ring-1 ring-slate-900/10 dark:ring-white/20"
+                                : "border-slate-200/80 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-slate-50/50 dark:hover:bg-neutral-850/40"
+                            }`}
+                          >
                             <div
-                              key={option.id}
-                              className="flex items-start gap-2.5 sm:gap-3 p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-50/80 dark:bg-neutral-800/60 border border-slate-200/80 dark:border-neutral-750 transition-colors"
+                              className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 border transition-all ${
+                                isSelected
+                                  ? "bg-slate-900 text-white dark:bg-white dark:text-neutral-900 border-slate-900 dark:border-white shadow-xs"
+                                  : "border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 group-hover:bg-slate-100 dark:group-hover:bg-neutral-750"
+                              }`}
                             >
-                              <span className="w-7 h-7 rounded-xl bg-white dark:bg-neutral-700 border border-slate-200 dark:border-neutral-600 font-bold text-xs flex items-center justify-center shrink-0 text-slate-800 dark:text-neutral-200 shadow-2xs">
-                                {option.id}
-                              </span>
-                              <span className="text-sm font-medium text-slate-800 dark:text-neutral-200 pt-0.5 leading-normal">
-                                {option.text}
-                              </span>
+                              {option.id}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
-                    {/* Descriptive Paper Banner */}
-                    {currentQ.type === "descriptive" && (
-                      <div className="p-3.5 sm:p-4 rounded-2xl border border-dashed border-amber-300 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 flex items-center gap-3 sm:gap-3.5">
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800/60">
-                          <PenTool className="w-4 h-4 sm:w-5 sm:h-5" />
-                        </div>
-                        <div className="text-xs">
-                          <span className="font-bold text-amber-900 dark:text-amber-300 block">
-                            Pen & Paper Descriptive Answer
-                          </span>
-                          <span className="text-amber-800/80 dark:text-amber-400/80">
-                            Solve and write your detailed explanation on your own answer sheet.
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Card Footer: Flipping Controls & Typing Mode Switch */}
-                  <div className="p-3.5 sm:p-5 border-t border-slate-100 dark:border-neutral-800/80 bg-slate-50/60 dark:bg-neutral-850/60 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 text-xs">
-                    {/* Quick Flip Buttons on Card */}
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setCurrentIdx((p) => Math.max(0, p - 1))}
-                        disabled={currentIdx === 0}
-                        className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer flex items-center gap-1 font-semibold"
-                        title="Previous question (← Arrow)"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                        <span className="hidden sm:inline">Prev Card</span>
-                      </button>
-
-                      <span className="text-[11px] font-bold text-slate-400 dark:text-neutral-500 px-1">
-                        {currentIdx + 1} / {questions.length}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (currentIdx < questions.length - 1) {
-                            setCurrentIdx((p) => p + 1);
-                          } else {
-                            setShowSubmitModal(true);
-                          }
-                        }}
-                        className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 transition cursor-pointer flex items-center gap-1 font-semibold"
-                        title="Next question (→ Arrow)"
-                      >
-                        <span className="hidden sm:inline">{currentIdx === questions.length - 1 ? "Finish" : "Next Card"}</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
+                            <div
+                              className={`text-sm sm:text-base leading-normal flex-1 ${
+                                isSelected
+                                  ? "font-semibold text-slate-900 dark:text-white"
+                                  : "font-normal text-slate-800 dark:text-neutral-200"
+                              }`}
+                            >
+                              {option.text}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
+                  )}
 
-                    {/* Quick Switch to Full Typing Mode */}
+                  {/* Descriptive: Clean, minimal writing guidance */}
+                  {currentQ.type === "descriptive" && (
+                    <div className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-neutral-850/60 border border-slate-200/70 dark:border-neutral-800 flex items-center gap-2.5 text-xs text-slate-600 dark:text-neutral-400">
+                      <PenTool className="w-4 h-4 text-slate-400 dark:text-neutral-500 shrink-0" />
+                      <span>Descriptive Question • Write your full answer on your physical paper. Typing space is hidden in this view.</span>
+                    </div>
+                  )}
+
+                  {/* Clean Footer Link */}
+                  <div className="pt-3 border-t border-slate-100 dark:border-neutral-800/80 flex items-center justify-between text-xs">
+                    <span className="text-[11px] text-slate-400 dark:text-neutral-500">
+                      Use the bottom bar to navigate questions
+                    </span>
                     <button
                       type="button"
                       onClick={() => setViewMode("full")}
-                      className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                      className="text-slate-900 dark:text-white hover:underline font-semibold inline-flex items-center gap-1 cursor-pointer"
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
+                      <Edit3 className="w-3.5 h-3.5 text-indigo-500" />
                       <span>Switch to Typing Mode →</span>
                     </button>
                   </div>
