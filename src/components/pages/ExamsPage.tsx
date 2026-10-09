@@ -16,17 +16,15 @@ import {
   GraduationCap,
   MessageSquare,
   Star,
-  ShieldAlert,
   ThumbsUp,
   Flame,
   UserCheck,
   Search,
   FileText,
-  Sparkles,
-  HelpCircle,
-  Send,
+  Pause,
+  Play,
   Eye,
-  CheckCheck
+  Sparkles
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getThemeColors } from "../../styles/colors";
@@ -60,9 +58,10 @@ export interface Exam {
   title: string;
   course: string;
   instructor: string;
-  status: "live" | "upcoming" | "practice";
+  status: "live" | "upcoming" | "expired";
   scheduledDate: string;
   scheduledTime: string;
+  expiredAt?: string;
   durationMinutes: number;
   totalMarks: number;
   passingMarks: number;
@@ -251,17 +250,17 @@ const MOCK_EXAMS: Exam[] = [
   },
   {
     id: "exam-intl-trade",
-    title: "International Trade & Forex Mock Diagnostic",
+    title: "International Trade & Foreign Exchange Examination",
     course: "Global Economics & Currency Markets",
     instructor: "Rishika",
-    status: "practice",
-    scheduledDate: "On-Demand Practice",
-    scheduledTime: "Available anytime",
-    durationMinutes: 30,
-    totalMarks: 30,
-    passingMarks: 12,
-    mcqCount: 4,
-    descriptiveCount: 1,
+    status: "upcoming",
+    scheduledDate: "Next Monday",
+    scheduledTime: "11:00 AM - 12:00 PM IST",
+    durationMinutes: 45,
+    totalMarks: 50,
+    passingMarks: 20,
+    mcqCount: 5,
+    descriptiveCount: 2,
     syllabus: [
       "Ricardian Comparative Advantage",
       "Tariffs, Quotas & Subsidies Analysis",
@@ -269,9 +268,34 @@ const MOCK_EXAMS: Exam[] = [
       "Balance of Payments: Current vs Capital Account"
     ],
     instructions: [
-      "This is an un-proctored diagnostic mock test.",
-      "You may take this test as many times as you like to practice your speed.",
-      "Immediate self-scoring and teacher model answers will be provided."
+      "Scheduled live exam window opens precisely at 11:00 AM IST.",
+      "Covers Chapters on International Trade and Currency Markets.",
+      "Ensure a reliable internet connection before commencing."
+    ],
+    questions: []
+  },
+  {
+    id: "exam-stats-probability",
+    title: "Econometric Probability & Distributions Quiz",
+    course: "Quantitative Economics & Data Analysis",
+    instructor: "Rishika",
+    status: "expired",
+    scheduledDate: "Today (Ended at 11:30 AM)",
+    scheduledTime: "Window expired today at 11:30 AM IST",
+    expiredAt: "11:30 AM",
+    durationMinutes: 40,
+    totalMarks: 40,
+    passingMarks: 16,
+    mcqCount: 5,
+    descriptiveCount: 1,
+    syllabus: [
+      "Normal, Binomial & Poisson Distributions",
+      "Hypothesis Testing & Z-Scores",
+      "Standard Error & Confidence Intervals"
+    ],
+    instructions: [
+      "Exam submission window has expired for this test.",
+      "Remains visible on your dashboard until midnight today."
     ],
     questions: []
   }
@@ -371,6 +395,12 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
   // Top level tabs: 'catalog' | 'results'
   const [activeTab, setActiveTab] = useState<"catalog" | "results">("catalog");
 
+  // Dynamic exams list for Tab 1 (Upcoming & Live Exams)
+  const [examsList, setExamsList] = useState<Exam[]>(MOCK_EXAMS);
+
+  // Dynamic results list for Tab 2 (Results & Teacher Feedback)
+  const [resultsList, setResultsList] = useState<ExamResult[]>(MOCK_RESULTS);
+
   // Active exam state (null when browsing, populated when taking test)
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
 
@@ -382,16 +412,63 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "live" | "upcoming" | "practice">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "live" | "upcoming" | "expired">("all");
 
-  // Filtered exams
-  const filteredExams = MOCK_EXAMS.filter((exam) => {
+  // Filtered exams for Tab 1
+  const filteredExams = examsList.filter((exam) => {
     const matchesSearch =
       exam.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       exam.course.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || exam.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Handler when student completes an exam:
+  // 1. Remove exam from Tab 1 (Upcoming & Live)
+  // 2. Add to Tab 2 (Results & Teacher Feedback) with "under_evaluation"
+  // 3. Switch to Tab 2
+  const handleFinishExam = (newResult: ExamResult) => {
+    setExamsList((prev) => prev.filter((e) => e.id !== newResult.examId));
+    setResultsList((prev) => [newResult, ...prev]);
+    setActiveExam(null);
+    setSelectedResult(newResult);
+    setActiveTab("results");
+  };
+
+  // Demo simulator to evaluate an un-graded submission
+  const handleSimulateTeacherReview = (resultId: string) => {
+    const applyGrading = (r: ExamResult): ExamResult => {
+      if (r.id !== resultId) return r;
+      return {
+        ...r,
+        status: "graded" as const,
+        scoreObtained: 46,
+        percentage: 92,
+        grade: "A+ Distinction",
+        isPassed: true,
+        teacherFeedback: {
+          evaluatedAt: "Just now by Instructor Rishika",
+          overall: "Magnificent work! Your analysis of the Keynesian liquidity trap and macroeconomic shifters was structured with immense clarity. Great improvement on addressing open-economy nuances!",
+          strengths: [
+            "Flawless conceptual clarity on monetary transmission",
+            "Effective use of economic diagram references in essay",
+            "High analytical rigor and concise writing"
+          ],
+          improvements: [
+            "Could also mention asset market expectations in the zero lower bound context"
+          ]
+        },
+        answers: r.answers.map((ans) => ({
+          ...ans,
+          marksAwarded: ans.type === "mcq" ? ans.marks : ans.marks - 2,
+          teacherComment: ans.type === "descriptive" ? "Excellent depth of argument and synthesis of economic variables!" : undefined
+        }))
+      };
+    };
+
+    setResultsList((prev) => prev.map(applyGrading));
+    setSelectedResult((prev) => (prev && prev.id === resultId ? applyGrading(prev) : prev));
+  };
 
   return (
     <div
@@ -403,11 +480,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
         <ExamTakingPortal
           exam={activeExam}
           onExit={() => setActiveExam(null)}
-          onFinishExam={(result) => {
-            setActiveExam(null);
-            setSelectedResult(result);
-            setActiveTab("results");
-          }}
+          onFinishExam={handleFinishExam}
           themeColors={themeColors}
           isDark={isDark}
         />
@@ -416,7 +489,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
           {/* ================= PAGE HEADER ================= */}
           <div className="text-center mb-10">
             <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider mb-4 border-2 border-black dark:border-white shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 shadow-sm"
               style={{ backgroundColor: themeColors.accent.yellow, color: '#000000' }}
             >
               <GraduationCap className="w-4 h-4" /> Academic Examination System
@@ -435,58 +508,58 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
             </p>
           </div>
 
-          {/* ================= DE-ECO 4 STATS BAR ================= */}
+          {/* ================= CLEAN PASTEL 4 STATS BAR (NO HARSH BORDERS) ================= */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
             {/* Box 1: Scheduled Tests */}
             <div
-              className="rounded-2xl p-4 sm:p-5 text-center border-2 border-black dark:border-white shadow-md transition hover:scale-[1.02]"
+              className="rounded-2xl p-4 sm:p-5 text-center shadow-md transition hover:scale-[1.02]"
               style={{ backgroundColor: themeColors.accent.blue }}
             >
               <div className="text-2xl sm:text-3xl font-black" style={{ color: themeColors.primary.w2 }}>
-                {MOCK_EXAMS.length}
+                {examsList.filter((e) => e.status !== "expired").length}
               </div>
               <div className="text-xs sm:text-sm font-bold mt-1" style={{ color: themeColors.primary.w2 }}>
-                Available Assessments
+                Upcoming & Live
               </div>
             </div>
 
             {/* Box 2: Live Test Window */}
             <div
-              className="rounded-2xl p-4 sm:p-5 text-center border-2 border-black dark:border-white shadow-md transition hover:scale-[1.02]"
+              className="rounded-2xl p-4 sm:p-5 text-center shadow-md transition hover:scale-[1.02]"
               style={{ backgroundColor: themeColors.accent.yellow }}
             >
               <div className="text-2xl sm:text-3xl font-black flex items-center justify-center gap-1.5" style={{ color: '#000000' }}>
                 <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
-                1 Live
+                {examsList.filter((e) => e.status === "live").length} Live
               </div>
               <div className="text-xs sm:text-sm font-bold mt-1" style={{ color: '#000000' }}>
                 Active Mid-Term Window
               </div>
             </div>
 
-            {/* Box 3: Average Score */}
+            {/* Box 3: Completed / Results */}
             <div
-              className="rounded-2xl p-4 sm:p-5 text-center border-2 border-black dark:border-white shadow-md transition hover:scale-[1.02]"
+              className="rounded-2xl p-4 sm:p-5 text-center shadow-md transition hover:scale-[1.02]"
               style={{ backgroundColor: themeColors.accent.green }}
             >
               <div className="text-2xl sm:text-3xl font-black" style={{ color: '#000000' }}>
-                86.0%
+                {resultsList.length}
               </div>
               <div className="text-xs sm:text-sm font-bold mt-1" style={{ color: '#000000' }}>
-                Average Student Score
+                Total Tests Taken
               </div>
             </div>
 
-            {/* Box 4: Recent Standing */}
+            {/* Box 4: Pending Evaluation */}
             <div
-              className="rounded-2xl p-4 sm:p-5 text-center border-2 border-black dark:border-white shadow-md transition hover:scale-[1.02]"
+              className="rounded-2xl p-4 sm:p-5 text-center shadow-md transition hover:scale-[1.02]"
               style={{ backgroundColor: themeColors.accent.red }}
             >
               <div className="text-2xl sm:text-3xl font-black" style={{ color: themeColors.primary.w2 }}>
-                Grade A+
+                {resultsList.filter((r) => r.status === "under_evaluation").length}
               </div>
               <div className="text-xs sm:text-sm font-bold mt-1" style={{ color: themeColors.primary.w2 }}>
-                Recent Standing
+                Waiting for Feedback
               </div>
             </div>
           </div>
@@ -494,12 +567,12 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
           {/* ================= SIGNATURE DE-ECO PILL TABS ================= */}
           <div className="flex justify-center mb-10">
             <div
-              className="inline-flex rounded-full p-1.5 border-2 border-black dark:border-white shadow-md"
-              style={{ backgroundColor: themeColors.primary.w }}
+              className="inline-flex rounded-full p-1 border-2 shadow-sm"
+              style={{ backgroundColor: themeColors.primary.w, borderColor: themeColors.primary.w2 }}
             >
               <button
                 onClick={() => setActiveTab("catalog")}
-                className={`px-6 sm:px-10 py-3 rounded-full text-sm font-black transition-all flex items-center gap-2 ${
+                className={`px-6 sm:px-10 py-3 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${
                   activeTab === "catalog" ? "shadow-md" : "opacity-60 hover:opacity-100"
                 }`}
                 style={
@@ -518,13 +591,13 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                       : { backgroundColor: themeColors.accent.blue, color: themeColors.primary.w2 }
                   }
                 >
-                  {MOCK_EXAMS.length}
+                  {examsList.length}
                 </span>
               </button>
 
               <button
                 onClick={() => setActiveTab("results")}
-                className={`px-6 sm:px-10 py-3 rounded-full text-sm font-black transition-all flex items-center gap-2 ${
+                className={`px-6 sm:px-10 py-3 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${
                   activeTab === "results" ? "shadow-md" : "opacity-60 hover:opacity-100"
                 }`}
                 style={
@@ -543,7 +616,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                       : { backgroundColor: themeColors.accent.green, color: "#000000" }
                   }
                 >
-                  {MOCK_RESULTS.length}
+                  {resultsList.length}
                 </span>
               </button>
             </div>
@@ -556,13 +629,13 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
               <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                 {/* Search Bar */}
                 <div className="relative w-full sm:w-80">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Search exams or courses..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border-2 border-black dark:border-white font-semibold text-sm outline-none transition shadow-sm"
+                    className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-neutral-700 font-medium text-sm outline-none transition shadow-sm focus:border-black dark:focus:border-white focus:ring-1 focus:ring-black dark:focus:ring-white"
                     style={{
                       backgroundColor: themeColors.background.white,
                       color: themeColors.text.primary
@@ -576,15 +649,15 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                     { id: "all", label: "All Exams" },
                     { id: "live", label: "Live Active" },
                     { id: "upcoming", label: "Scheduled" },
-                    { id: "practice", label: "Diagnostic Mocks" }
+                    { id: "expired", label: "Expired Today" }
                   ].map((filter) => {
                     const isSelected = statusFilter === filter.id;
                     return (
                       <button
                         key={filter.id}
                         onClick={() => setStatusFilter(filter.id as any)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold border-2 border-black dark:border-white transition-all shadow-sm ${
-                          isSelected ? "scale-105" : "opacity-75 hover:opacity-100"
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs ${
+                          isSelected ? "scale-105 shadow-md" : "opacity-75 hover:opacity-100"
                         }`}
                         style={
                           isSelected
@@ -603,19 +676,19 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {filteredExams.map((exam) => {
                   const isLive = exam.status === "live";
-                  const isPractice = exam.status === "practice";
+                  const isExpired = exam.status === "expired";
 
                   return (
                     <div
                       key={exam.id}
-                      className="rounded-2xl p-6 sm:p-7 shadow-lg border-2 border-black dark:border-white transition-all hover:scale-[1.01] flex flex-col justify-between"
+                      className="rounded-2xl p-6 sm:p-7 shadow-lg border border-gray-100 dark:border-neutral-800 transition-all hover:scale-[1.01] hover:shadow-xl flex flex-col justify-between"
                       style={{ backgroundColor: themeColors.background.white }}
                     >
                       {/* Top Header Row */}
                       <div>
                         <div className="flex items-center justify-between gap-3 mb-3">
                           <span
-                            className="text-xs font-bold px-3 py-1 rounded-md border border-black/30 dark:border-white/30 uppercase tracking-wide"
+                            className="text-xs font-bold px-3 py-1 rounded-md bg-gray-100 dark:bg-neutral-800 uppercase tracking-wide"
                             style={{ color: themeColors.text.secondary }}
                           >
                             {exam.course}
@@ -624,24 +697,24 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                           {/* Status Badge */}
                           {isLive && (
                             <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase border-2 border-black shadow-sm"
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs"
                               style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
                             >
                               <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
                               LIVE NOW
                             </span>
                           )}
-                          {isPractice && (
+                          {isExpired && (
                             <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase border-2 border-black shadow-sm"
-                              style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/40"
                             >
-                              PRACTICE MOCK
+                              <Clock className="w-3.5 h-3.5" />
+                              EXPIRED TODAY
                             </span>
                           )}
-                          {!isLive && !isPractice && (
+                          {!isLive && !isExpired && (
                             <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase border-2 border-black shadow-sm"
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs"
                               style={{ backgroundColor: themeColors.accent.blue, color: "#000000" }}
                             >
                               SCHEDULED
@@ -663,9 +736,9 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                           <span>Course Instructor: <strong style={{ color: themeColors.text.primary }}>{exam.instructor}</strong></span>
                         </div>
 
-                        {/* 4 Neo-Brutalist Spec Blocks */}
+                        {/* 4 Clean Spec Blocks */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
-                          <div className="rounded-xl p-3 border-2 border-black/15 dark:border-white/20 bg-gray-50 dark:bg-neutral-800 text-center">
+                          <div className="rounded-xl p-3 bg-gray-50 dark:bg-neutral-800/80 text-center border border-gray-100 dark:border-neutral-700/60">
                             <Clock className="w-4 h-4 mx-auto mb-1 text-gray-500" />
                             <div className="text-xs text-gray-500 font-medium">Duration</div>
                             <div className="text-sm font-black" style={{ color: themeColors.text.primary }}>
@@ -673,7 +746,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                             </div>
                           </div>
 
-                          <div className="rounded-xl p-3 border-2 border-black/15 dark:border-white/20 bg-gray-50 dark:bg-neutral-800 text-center">
+                          <div className="rounded-xl p-3 bg-gray-50 dark:bg-neutral-800/80 text-center border border-gray-100 dark:border-neutral-700/60">
                             <Award className="w-4 h-4 mx-auto mb-1 text-gray-500" />
                             <div className="text-xs text-gray-500 font-medium">Total Marks</div>
                             <div className="text-sm font-black" style={{ color: themeColors.text.primary }}>
@@ -681,7 +754,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                             </div>
                           </div>
 
-                          <div className="rounded-xl p-3 border-2 border-black/15 dark:border-white/20 bg-gray-50 dark:bg-neutral-800 text-center">
+                          <div className="rounded-xl p-3 bg-gray-50 dark:bg-neutral-800/80 text-center border border-gray-100 dark:border-neutral-700/60">
                             <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-gray-500" />
                             <div className="text-xs text-gray-500 font-medium">Passing Marks</div>
                             <div className="text-sm font-black" style={{ color: themeColors.text.primary }}>
@@ -689,7 +762,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                             </div>
                           </div>
 
-                          <div className="rounded-xl p-3 border-2 border-black/15 dark:border-white/20 bg-gray-50 dark:bg-neutral-800 text-center">
+                          <div className="rounded-xl p-3 bg-gray-50 dark:bg-neutral-800/80 text-center border border-gray-100 dark:border-neutral-700/60">
                             <FileText className="w-4 h-4 mx-auto mb-1 text-gray-500" />
                             <div className="text-xs text-gray-500 font-medium">Format</div>
                             <div className="text-xs font-black" style={{ color: themeColors.text.primary }}>
@@ -697,39 +770,17 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                             </div>
                           </div>
                         </div>
-
-                        {/* Syllabus Chips */}
-                        <div className="mb-6">
-                          <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: themeColors.text.secondary }}>
-                            Topics & Syllabus Tested:
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {exam.syllabus.slice(0, 4).map((topic, i) => (
-                              <span
-                                key={i}
-                                className="text-xs font-medium px-2.5 py-1 rounded-lg border border-black/20 dark:border-white/20"
-                                style={{ backgroundColor: themeColors.accent.orangeSection || "#f7f7f7", color: themeColors.text.primary }}
-                              >
-                                {topic}
-                              </span>
-                            ))}
-                            {exam.syllabus.length > 4 && (
-                              <span
-                                className="text-xs font-bold px-2 py-1 rounded-lg border border-black/20 dark:border-white/20"
-                                style={{ color: themeColors.text.secondary }}
-                              >
-                                +{exam.syllabus.length - 4} more
-                              </span>
-                            )}
-                          </div>
-                        </div>
                       </div>
 
                       {/* Bottom Action Footer */}
-                      <div className="pt-4 border-t-2 border-black/10 dark:border-white/10 flex items-center justify-between gap-4">
+                      <div className="pt-4 border-t border-gray-200 dark:border-neutral-800 flex items-center justify-between gap-4">
                         <div className="text-xs font-bold" style={{ color: themeColors.text.secondary }}>
-                          {isLive ? (
-                            <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 font-black">
+                          {isExpired ? (
+                            <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 font-bold">
+                              <AlertCircle className="w-3.5 h-3.5" /> Closed at {exam.expiredAt || "11:30 AM"} • Visible till midnight
+                            </span>
+                          ) : isLive ? (
+                            <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 font-bold">
                               <Clock className="w-3.5 h-3.5" /> Closes in 6 hours
                             </span>
                           ) : (
@@ -738,28 +789,27 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                         </div>
 
                         {/* Action CTA */}
-                        {isLive ? (
+                        {isExpired ? (
+                          <button
+                            disabled
+                            className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gray-100 dark:bg-neutral-800 text-gray-400 cursor-not-allowed flex items-center gap-1.5"
+                          >
+                            Expired (Not Attempted)
+                          </button>
+                        ) : isLive ? (
                           <button
                             onClick={() => setPreExamModal(exam)}
-                            className="px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2 border-2 border-black dark:border-white shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
+                            className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
                             style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
                           >
                             Take Exam Now <ArrowRight className="w-4 h-4" />
                           </button>
-                        ) : isPractice ? (
-                          <button
-                            onClick={() => setPreExamModal(exam)}
-                            className="px-5 py-2.5 rounded-xl font-black text-sm flex items-center gap-2 border-2 border-black shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
-                            style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                          >
-                            Start Practice <ChevronRight className="w-4 h-4" />
-                          </button>
                         ) : (
                           <button
                             disabled
-                            className="px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-gray-300 dark:border-neutral-700 text-gray-400 cursor-not-allowed flex items-center gap-1.5"
+                            className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gray-100 dark:bg-neutral-800 text-gray-400 cursor-not-allowed flex items-center gap-1.5"
                           >
-                            Starts in 2 Days
+                            Opens {exam.scheduledDate}
                           </button>
                         )}
                       </div>
@@ -769,7 +819,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
               </div>
 
               {filteredExams.length === 0 && (
-                <div className="text-center py-16 rounded-2xl border-2 border-black dark:border-white bg-white dark:bg-black p-8">
+                <div className="text-center py-16 rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-black p-8">
                   <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-400" />
                   <h3 className="text-xl font-bold mb-1" style={{ color: themeColors.text.primary }}>
                     No assessments match your filter
@@ -785,133 +835,150 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
           {/* ================= TAB 2: RESULTS & TEACHER FEEDBACK ================= */}
           {activeTab === "results" && (
             <div className="space-y-6">
-              {/* Highlight Banner */}
-              <div
-                className="rounded-2xl p-6 border-2 border-black dark:border-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4"
-                style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white border-2 border-black flex items-center justify-center shrink-0 shadow-sm">
-                    <Star className="w-6 h-6 text-black fill-yellow-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-black text-black">
-                      Official Instructor Evaluation & Report System
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-800 font-medium">
-                      Instructor Rishika evaluates descriptive questions, provides personalized guidance, and annotates key exam techniques.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               {/* Results Cards List */}
               <div className="grid grid-cols-1 gap-5">
-                {MOCK_RESULTS.map((res) => {
-                  const isGraded = res.status === "graded";
+                {resultsList.length === 0 ? (
+                  <div
+                    className="rounded-2xl p-12 text-center border border-dashed border-gray-300 dark:border-neutral-700 space-y-3"
+                    style={{ backgroundColor: themeColors.background.white }}
+                  >
+                    <Award className="w-12 h-12 mx-auto text-gray-400" />
+                    <h3 className="text-lg font-bold" style={{ color: themeColors.text.primary }}>
+                      No Exam Submissions Yet
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Completed exams and teacher evaluations will appear here as soon as you submit a test.
+                    </p>
+                  </div>
+                ) : (
+                  resultsList.map((res) => {
+                    const isGraded = res.status === "graded";
 
-                  return (
-                    <div
-                      key={res.id}
-                      className="rounded-2xl border-2 border-black dark:border-white p-6 sm:p-7 shadow-lg transition-all hover:scale-[1.01] flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
-                      style={{ backgroundColor: themeColors.background.white }}
-                    >
-                      {/* Left: Info */}
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-3">
-                          <span
-                            className="text-xs font-black uppercase px-2.5 py-0.5 rounded border border-black/30 dark:border-white/30"
-                            style={{ color: themeColors.text.secondary }}
-                          >
-                            {res.course}
-                          </span>
-                          <span className="text-xs font-semibold text-gray-500">
-                            Submitted: {res.submittedAt}
-                          </span>
+                    return (
+                      <div
+                        key={res.id}
+                        className="rounded-2xl border border-gray-100 dark:border-neutral-800 p-6 sm:p-7 shadow-lg transition-all hover:scale-[1.01] flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+                        style={{ backgroundColor: themeColors.background.white }}
+                      >
+                        {/* Left: Info */}
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-3">
+                            <span
+                              className="text-xs font-bold uppercase px-2.5 py-0.5 rounded bg-gray-100 dark:bg-neutral-800"
+                              style={{ color: themeColors.text.secondary }}
+                            >
+                              {res.course}
+                            </span>
+                            <span className="text-xs font-semibold text-gray-500">
+                              Submitted: {res.submittedAt}
+                            </span>
+                          </div>
+
+                          <h3 className="text-xl sm:text-2xl font-black" style={{ color: themeColors.text.primary }}>
+                            {res.examTitle}
+                          </h3>
+
+                          {isGraded ? (
+                            <div className="flex items-center gap-3 pt-1">
+                              <span
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shadow-xs"
+                                style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Evaluated & Released
+                              </span>
+                              <span className="text-xs font-bold" style={{ color: themeColors.text.secondary }}>
+                                Evaluated by <strong style={{ color: themeColors.text.primary }}>{res.instructor}</strong>
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3 pt-1">
+                              <span
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shadow-xs"
+                                style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
+                              >
+                                <Clock className="w-3.5 h-3.5" /> Waiting for Teacher's Feedback
+                              </span>
+                              <span className="text-xs font-bold text-gray-500">
+                                Instructor Rishika is evaluating your descriptive essay responses
+                              </span>
+                            </div>
+                          )}
                         </div>
 
-                        <h3 className="text-xl sm:text-2xl font-black" style={{ color: themeColors.text.primary }}>
-                          {res.examTitle}
-                        </h3>
-
+                        {/* Middle: Score Summary (if graded) or Evaluation Notice */}
                         {isGraded ? (
-                          <div className="flex items-center gap-3 pt-1">
-                            <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border-2 border-black shadow-sm"
-                              style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Evaluated & Released
-                            </span>
-                            <span className="text-xs font-bold" style={{ color: themeColors.text.secondary }}>
-                              Evaluated by <strong style={{ color: themeColors.text.primary }}>{res.instructor}</strong>
-                            </span>
+                          <div className="flex items-center gap-4 px-6 py-3 rounded-xl bg-gray-50 dark:bg-neutral-800 shadow-xs shrink-0">
+                            <div className="text-right">
+                              <span className="text-xs text-gray-500 font-bold block uppercase">Score</span>
+                              <span className="text-2xl font-black" style={{ color: themeColors.text.primary }}>
+                                {res.scoreObtained}
+                                <span className="text-sm font-normal text-gray-500">/{res.totalMarks}</span>
+                              </span>
+                            </div>
+                            <div className="w-[1px] h-9 bg-gray-200 dark:bg-neutral-700" />
+                            <div>
+                              <span className="text-xs font-black block" style={{ color: themeColors.text.primary }}>
+                                {res.percentage}%
+                              </span>
+                              <span
+                                className="text-xs font-bold uppercase px-2 py-0.5 rounded shadow-xs inline-block"
+                                style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
+                              >
+                                {res.grade}
+                              </span>
+                            </div>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-3 pt-1">
-                            <span
-                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border-2 border-black shadow-sm"
-                              style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-                            >
-                              <RefreshCw className="w-3 h-3 animate-spin" /> Under Evaluation
-                            </span>
-                            <span className="text-xs font-bold text-gray-500">
-                              Instructor is grading descriptive essays
-                            </span>
+                          <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 shadow-xs shrink-0">
+                            <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <div>
+                              <span className="text-xs font-bold text-amber-900 dark:text-amber-200 block">
+                                Evaluation In Progress
+                              </span>
+                              <span className="text-xs text-amber-700 dark:text-amber-400">
+                                Marks & personalized remarks pending
+                              </span>
+                            </div>
                           </div>
                         )}
-                      </div>
 
-                      {/* Middle: Score Summary (if graded) */}
-                      {isGraded && (
-                        <div
-                          className="flex items-center gap-4 px-6 py-3 rounded-xl border-2 border-black dark:border-white shadow-sm shrink-0"
-                          style={{ backgroundColor: themeColors.accent.orangeSection || "#f7f7f7" }}
-                        >
-                          <div className="text-right">
-                            <span className="text-xs text-gray-500 font-bold block uppercase">Score</span>
-                            <span className="text-2xl font-black" style={{ color: themeColors.text.primary }}>
-                              {res.scoreObtained}
-                              <span className="text-sm font-normal text-gray-500">/{res.totalMarks}</span>
-                            </span>
-                          </div>
-                          <div className="w-[2px] h-9 bg-black/20 dark:bg-white/20" />
-                          <div>
-                            <span className="text-xs font-black block" style={{ color: themeColors.text.primary }}>
-                              {res.percentage}%
-                            </span>
-                            <span
-                              className="text-xs font-black uppercase px-2 py-0.5 rounded border border-black shadow-xs inline-block"
-                              style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
+                        {/* Right: CTA buttons */}
+                        <div className="shrink-0 w-full md:w-auto flex flex-col sm:flex-row items-center gap-2">
+                          {isGraded ? (
+                            <button
+                              onClick={() => setSelectedResult(res)}
+                              className="w-full md:w-auto px-6 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
+                              style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
                             >
-                              {res.grade}
-                            </span>
-                          </div>
+                              <Award className="w-4 h-4 text-yellow-400" />
+                              View Full Report & Feedback
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => setSelectedResult(res)}
+                                className="w-full md:w-auto px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                                style={{ color: themeColors.text.primary }}
+                              >
+                                <Eye className="w-4 h-4" />
+                                View Submitted Test
+                              </button>
+                              <button
+                                onClick={() => handleSimulateTeacherReview(res.id)}
+                                className="w-full md:w-auto px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer"
+                                style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
+                                title="Simulate Instructor Rishika releasing evaluation"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 fill-black" />
+                                Simulate Teacher Review
+                              </button>
+                            </>
+                          )}
                         </div>
-                      )}
-
-                      {/* Right: CTA button */}
-                      <div className="shrink-0 w-full md:w-auto">
-                        {isGraded ? (
-                          <button
-                            onClick={() => setSelectedResult(res)}
-                            className="w-full md:w-auto px-6 py-3 rounded-xl font-black text-sm flex items-center justify-center gap-2 border-2 border-black dark:border-white shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
-                            style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
-                          >
-                            <Award className="w-4 h-4 text-yellow-400" />
-                            View Full Report & Feedback
-                          </button>
-                        ) : (
-                          <button
-                            disabled
-                            className="w-full md:w-auto px-5 py-3 rounded-xl font-bold text-xs border-2 border-gray-300 dark:border-neutral-700 text-gray-400 cursor-not-allowed text-center"
-                          >
-                            Results Releasing Soon
-                          </button>
-                        )}
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </div>
           )}
@@ -920,16 +987,16 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 
       {/* ================= PRE-EXAM INSTRUCTIONS MODAL ================= */}
       {preExamModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div
-            className="rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border-2 border-black dark:border-white space-y-6"
+            className="rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-gray-200 dark:border-neutral-800 space-y-6"
             style={{ backgroundColor: themeColors.background.white }}
           >
             {/* Modal Header */}
             <div className="flex items-start justify-between">
               <div>
                 <span
-                  className="text-xs font-black uppercase px-2.5 py-0.5 rounded border border-black shadow-xs"
+                  className="text-xs font-bold uppercase px-2.5 py-0.5 rounded shadow-xs"
                   style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
                 >
                   Candidate Instructions
@@ -943,8 +1010,8 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
               </div>
               <button
                 onClick={() => setPreExamModal(null)}
-                className="p-1.5 rounded-lg border-2 border-black dark:border-white hover:scale-105 transition cursor-pointer"
-                style={{ backgroundColor: themeColors.primary.w, color: themeColors.text.primary }}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                style={{ color: themeColors.text.primary }}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -952,19 +1019,19 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 
             {/* Quick Rules Grid */}
             <div className="grid grid-cols-3 gap-2.5 text-center">
-              <div className="p-3 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
+              <div className="p-3 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
                 <span className="text-xs text-gray-500 font-bold block">Duration</span>
                 <span className="font-black text-sm" style={{ color: themeColors.text.primary }}>
                   {preExamModal.durationMinutes} Minutes
                 </span>
               </div>
-              <div className="p-3 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
+              <div className="p-3 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
                 <span className="text-xs text-gray-500 font-bold block">Total Marks</span>
                 <span className="font-black text-sm" style={{ color: themeColors.text.primary }}>
                   {preExamModal.totalMarks} Marks
                 </span>
               </div>
-              <div className="p-3 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
+              <div className="p-3 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
                 <span className="text-xs text-gray-500 font-bold block">Questions</span>
                 <span className="font-black text-sm" style={{ color: themeColors.text.primary }}>
                   {preExamModal.mcqCount + preExamModal.descriptiveCount} Total
@@ -974,10 +1041,10 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 
             {/* Instructions List */}
             <div
-              className="p-4 rounded-xl border-2 border-black/20 space-y-2 text-xs"
+              className="p-4 rounded-xl space-y-2 text-xs"
               style={{ backgroundColor: themeColors.accent.orangeSection || "#f9f9f9" }}
             >
-              <span className="font-black uppercase tracking-wider block" style={{ color: themeColors.text.primary }}>
+              <span className="font-bold uppercase tracking-wider block" style={{ color: themeColors.text.primary }}>
                 Examination Protocol & Rules:
               </span>
               <ul className="space-y-1.5 font-medium" style={{ color: themeColors.text.secondary }}>
@@ -994,8 +1061,8 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setPreExamModal(null)}
-                className="flex-1 py-3 rounded-xl font-bold text-sm border-2 border-black dark:border-white transition hover:scale-[1.02] cursor-pointer"
-                style={{ backgroundColor: themeColors.primary.w, color: themeColors.primary.w2 }}
+                className="flex-1 py-3 rounded-xl font-bold text-sm border border-gray-300 dark:border-neutral-700 transition hover:bg-gray-100 dark:hover:bg-neutral-800 cursor-pointer"
+                style={{ color: themeColors.text.primary }}
               >
                 Cancel
               </button>
@@ -1005,7 +1072,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                   setPreExamModal(null);
                   setActiveExam(examToStart);
                 }}
-                className="flex-1 py-3 rounded-xl font-black text-sm border-2 border-black dark:border-white shadow-md transition hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                className="flex-1 py-3 rounded-xl font-bold text-sm shadow-md transition hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
                 style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
               >
                 I am Ready, Start Exam <ArrowRight className="w-4 h-4" />
@@ -1020,6 +1087,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
         <DetailedReportCardModal
           result={selectedResult}
           onClose={() => setSelectedResult(null)}
+          onSimulateReview={handleSimulateTeacherReview}
           themeColors={themeColors}
           isDark={isDark}
         />
@@ -1054,12 +1122,15 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [lastSaved, setLastSaved] = useState<string>("Draft auto-saved");
 
   // Timer countdown in seconds
   const [secondsLeft, setSecondsLeft] = useState(exam.durationMinutes * 60);
 
   useEffect(() => {
+    if (isPaused) return;
+
     const timer = setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
@@ -1072,7 +1143,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [isPaused]);
 
   const formatTimer = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -1162,30 +1233,30 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
     >
       {/* ================= TOP PERSISTENT EXAM NAVBAR ================= */}
       <header
-        className="border-b-2 border-black dark:border-white px-4 sm:px-8 py-3.5 flex items-center justify-between z-20 shadow-md"
+        className="border-b border-gray-200 dark:border-neutral-800 px-4 sm:px-8 py-3.5 flex items-center justify-between z-20 shadow-sm"
         style={{ backgroundColor: themeColors.background.white }}
       >
         {/* Left: Info */}
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-xl border-2 border-black dark:border-white flex items-center justify-center font-black"
+            className="w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-xs"
             style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
           >
             Q{currentIdx + 1}
           </div>
           <div>
-            <h1 className="text-base sm:text-lg font-black leading-tight" style={{ color: themeColors.text.primary }}>
+            <h1 className="text-base sm:text-lg font-bold leading-tight" style={{ color: themeColors.text.primary }}>
               {exam.title}
             </h1>
-            <p className="text-xs font-semibold" style={{ color: themeColors.text.secondary }}>
+            <p className="text-xs font-medium" style={{ color: themeColors.text.secondary }}>
               {exam.course} • Question {currentIdx + 1} of {questions.length}
             </p>
           </div>
         </div>
 
-        {/* Center: Neo-Brutalist Timer */}
+        {/* Center: Clean Countdown Timer */}
         <div
-          className="flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl border-2 border-black shadow-sm font-mono font-black text-lg sm:text-xl"
+          className="flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl shadow-xs font-mono font-bold text-lg sm:text-xl"
           style={{
             backgroundColor: isLowTime ? themeColors.accent.red : themeColors.accent.yellow,
             color: "#000000"
@@ -1196,10 +1267,20 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={() => setIsPaused(true)}
+            className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-gray-200 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+            style={{ color: themeColors.text.primary, backgroundColor: themeColors.primary.w }}
+            title="Pause Exam & Freeze Timer"
+          >
+            <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />
+            <span>Pause</span>
+          </button>
+
           <button
             onClick={() => setShowSubmitModal(true)}
-            className="px-5 py-2 rounded-xl font-black text-xs sm:text-sm border-2 border-black dark:border-white shadow-md hover:scale-105 active:scale-95 transition cursor-pointer"
+            className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md hover:scale-105 active:scale-95 transition cursor-pointer"
             style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
           >
             Submit Exam
@@ -1208,7 +1289,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
       </header>
 
       {/* Progress Bar under navbar */}
-      <div className="w-full bg-gray-200 dark:bg-neutral-800 h-1.5 border-b border-black/20">
+      <div className="w-full bg-gray-200 dark:bg-neutral-800 h-1">
         <div
           className="h-full transition-all duration-300"
           style={{
@@ -1224,29 +1305,27 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
         <div className="flex-1 flex flex-col justify-between overflow-y-auto pr-1">
           {/* Main Question Card */}
           <div
-            className="rounded-2xl p-6 sm:p-8 border-2 border-black dark:border-white shadow-lg space-y-6"
+            className="rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-neutral-800 shadow-md space-y-6"
             style={{ backgroundColor: themeColors.background.white }}
           >
             {/* Question Header Meta */}
-            <div className="flex items-center justify-between flex-wrap gap-2 pb-4 border-b-2 border-black/10 dark:border-white/10">
+            <div className="flex items-center justify-between flex-wrap gap-2 pb-4 border-b border-gray-100 dark:border-neutral-800">
               <div className="flex items-center gap-2">
                 <span
-                  className="text-xs font-black uppercase px-3 py-1 rounded-full border border-black shadow-xs"
+                  className="text-xs font-bold uppercase px-3 py-1 rounded-full shadow-xs"
                   style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
                 >
                   Question {currentQ.number} of {questions.length}
                 </span>
 
                 <span
-                  className="text-xs font-black uppercase px-3 py-1 rounded-full border border-black shadow-xs"
+                  className="text-xs font-bold uppercase px-3 py-1 rounded-full shadow-xs"
                   style={{ backgroundColor: themeColors.accent.blue, color: "#000000" }}
                 >
                   {currentQ.marks} Marks
                 </span>
 
-                <span
-                  className="text-xs font-bold uppercase px-3 py-1 rounded-full border border-black/30 text-gray-600 dark:text-gray-300"
-                >
+                <span className="text-xs font-medium uppercase px-3 py-1 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300">
                   {currentQ.type === "mcq" ? "Multiple Choice Question" : "Descriptive Essay Response"}
                 </span>
               </div>
@@ -1254,8 +1333,10 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               {/* Flag for Review button */}
               <button
                 onClick={toggleFlag}
-                className={`px-3 py-1 rounded-xl text-xs font-bold border-2 border-black transition cursor-pointer flex items-center gap-1.5 ${
-                  flagged[currentQ.id] ? "shadow-sm scale-105" : "opacity-80 hover:opacity-100"
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center gap-1.5 ${
+                  flagged[currentQ.id]
+                    ? "border-amber-300 shadow-xs scale-105"
+                    : "border-gray-200 dark:border-neutral-700 opacity-80 hover:opacity-100"
                 }`}
                 style={{
                   backgroundColor: flagged[currentQ.id] ? themeColors.accent.yellow : themeColors.primary.w,
@@ -1282,8 +1363,10 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                     <div
                       key={option.id}
                       onClick={() => handleAnswerChange(option.id)}
-                      className={`rounded-xl p-4 sm:p-5 border-2 border-black dark:border-white transition-all cursor-pointer flex items-center gap-4 select-none ${
-                        isSelected ? "scale-[1.01] shadow-md" : "hover:border-black/60 opacity-90"
+                      className={`rounded-xl p-4 sm:p-5 border transition-all cursor-pointer flex items-center gap-4 select-none ${
+                        isSelected
+                          ? "border-amber-400 shadow-md scale-[1.01]"
+                          : "border-gray-200 dark:border-neutral-700 hover:border-gray-400 opacity-90"
                       }`}
                       style={{
                         backgroundColor: isSelected ? themeColors.accent.yellow : themeColors.background.white,
@@ -1291,16 +1374,16 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                       }}
                     >
                       <div
-                        className="w-10 h-10 rounded-xl border-2 border-black font-black flex items-center justify-center shrink-0 text-base"
+                        className="w-10 h-10 rounded-xl font-bold flex items-center justify-center shrink-0 text-base"
                         style={{
-                          backgroundColor: isSelected ? "#000000" : themeColors.primary.w,
-                          color: isSelected ? "#ffffff" : "#000000"
+                          backgroundColor: isSelected ? "#000000" : (isDark ? "#262626" : "#f0f0f0"),
+                          color: isSelected ? "#ffffff" : themeColors.text.primary
                         }}
                       >
                         {option.id}
                       </div>
 
-                      <div className="font-semibold text-sm sm:text-base flex-1">
+                      <div className="font-medium text-sm sm:text-base flex-1">
                         {option.text}
                       </div>
 
@@ -1318,7 +1401,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               <div className="space-y-3 pt-2">
                 {/* Guidelines Banner */}
                 <div
-                  className="p-3.5 rounded-xl border-2 border-black/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                  className="p-3.5 rounded-xl border border-amber-200/60 dark:border-neutral-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
                   style={{ backgroundColor: themeColors.accent.orangeSection || "#fdf7ee" }}
                 >
                   <span className="font-bold text-gray-800">
@@ -1334,7 +1417,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   value={answers[currentQ.id] || ""}
                   onChange={(e) => handleAnswerChange(e.target.value)}
                   placeholder="Type your structured economic analysis here. Use paragraphs or numbered points for conceptual clarity..."
-                  className="w-full min-h-[280px] p-5 rounded-2xl border-2 border-black dark:border-white text-base font-sans leading-relaxed outline-none focus:ring-4 focus:ring-black/10 resize-y shadow-inner"
+                  className="w-full min-h-[280px] p-5 rounded-2xl border border-gray-200 dark:border-neutral-700 text-base font-sans leading-relaxed outline-none focus:ring-2 focus:ring-black dark:focus:ring-white resize-y shadow-inner"
                   style={{
                     backgroundColor: themeColors.primary.w,
                     color: themeColors.text.primary
@@ -1342,12 +1425,12 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 />
 
                 {/* Live Stats Bar */}
-                <div className="flex items-center justify-between text-xs font-bold pt-1 text-gray-500">
+                <div className="flex items-center justify-between text-xs font-semibold pt-1 text-gray-500">
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     {lastSaved}
                   </span>
-                  <span className="px-3 py-1 rounded-md border border-black/20 bg-gray-50 dark:bg-neutral-800">
+                  <span className="px-3 py-1 rounded-md bg-gray-100 dark:bg-neutral-800">
                     {wordCount} Words Written
                   </span>
                 </div>
@@ -1360,13 +1443,13 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             <button
               onClick={() => setCurrentIdx((prev) => Math.max(0, prev - 1))}
               disabled={currentIdx === 0}
-              className="px-5 py-2.5 rounded-xl font-bold text-sm border-2 border-black dark:border-white transition hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
-              style={{ backgroundColor: themeColors.primary.w, color: themeColors.text.primary }}
+              className="px-5 py-2.5 rounded-xl font-bold text-sm border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
+              style={{ color: themeColors.text.primary }}
             >
               <ChevronLeft className="w-4 h-4" /> Previous
             </button>
 
-            <div className="text-xs font-bold text-gray-500 hidden sm:block">
+            <div className="text-xs font-medium text-gray-500 hidden sm:block">
               Auto-saved draft in browser memory
             </div>
 
@@ -1378,7 +1461,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   setShowSubmitModal(true);
                 }
               }}
-              className="px-6 py-2.5 rounded-xl font-black text-sm border-2 border-black dark:border-white shadow-md transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1.5"
+              className="px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1.5"
               style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
             >
               {currentIdx === questions.length - 1 ? (
@@ -1393,13 +1476,13 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
         {/* RIGHT SIDEBAR: QUESTION PALETTE GRID */}
         <div className="w-72 hidden lg:flex flex-col gap-5 shrink-0">
           <div
-            className="rounded-2xl p-5 border-2 border-black dark:border-white shadow-lg space-y-5"
+            className="rounded-2xl p-5 border border-gray-100 dark:border-neutral-800 shadow-md space-y-5"
             style={{ backgroundColor: themeColors.background.white }}
           >
             {/* Candidate Card */}
-            <div className="p-3 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800 text-xs font-bold space-y-1">
+            <div className="p-3 rounded-xl bg-gray-50 dark:bg-neutral-800 text-xs font-medium space-y-1">
               <div className="text-gray-500 uppercase tracking-wider text-[10px]">Active Candidate</div>
-              <div className="text-sm font-black truncate" style={{ color: themeColors.text.primary }}>
+              <div className="text-sm font-bold truncate" style={{ color: themeColors.text.primary }}>
                 test@test.com
               </div>
               <div className="text-emerald-600 font-bold flex items-center gap-1">
@@ -1410,14 +1493,14 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             {/* Stats Summary */}
             <div className="grid grid-cols-2 gap-2 text-center text-xs">
               <div
-                className="p-2.5 rounded-xl border-2 border-black font-bold"
+                className="p-2.5 rounded-xl font-bold shadow-xs"
                 style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
               >
                 <span className="block text-lg font-black">{answeredCount}</span>
                 Answered
               </div>
               <div
-                className="p-2.5 rounded-xl border-2 border-black font-bold"
+                className="p-2.5 rounded-xl font-bold shadow-xs"
                 style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
               >
                 <span className="block text-lg font-black">{Object.keys(flagged).filter(k => flagged[k]).length}</span>
@@ -1427,7 +1510,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
             {/* Question Palette Number Grid */}
             <div>
-              <div className="text-xs font-black uppercase tracking-wider mb-3" style={{ color: themeColors.text.secondary }}>
+              <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: themeColors.text.secondary }}>
                 Question Palette:
               </div>
 
@@ -1439,27 +1522,27 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
                   let bg = themeColors.background.white;
                   let textColor = themeColors.text.primary;
-                  let borderStyle = "border-2 border-black/30";
+                  let borderStyle = "border border-gray-200 dark:border-neutral-700";
 
                   if (isAnswered) {
                     bg = themeColors.accent.green;
                     textColor = "#000000";
-                    borderStyle = "border-2 border-black";
+                    borderStyle = "border-none shadow-xs";
                   } else if (isFlagged) {
                     bg = themeColors.accent.yellow;
                     textColor = "#000000";
-                    borderStyle = "border-2 border-black";
+                    borderStyle = "border-none shadow-xs";
                   }
 
                   if (isCurrent) {
-                    borderStyle = "border-3 border-black ring-2 ring-black dark:ring-white scale-105 shadow-sm";
+                    borderStyle = "ring-2 ring-black dark:ring-white scale-105 shadow-md";
                   }
 
                   return (
                     <button
                       key={q.id}
                       onClick={() => setCurrentIdx(idx)}
-                      className={`h-11 rounded-xl font-black text-sm flex items-center justify-center transition-all cursor-pointer ${borderStyle}`}
+                      className={`h-11 rounded-xl font-bold text-sm flex items-center justify-center transition-all cursor-pointer ${borderStyle}`}
                       style={{ backgroundColor: bg, color: textColor }}
                     >
                       {idx + 1}
@@ -1470,23 +1553,23 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             </div>
 
             {/* Palette Legend */}
-            <div className="pt-3 border-t-2 border-black/10 dark:border-white/10 space-y-2 text-xs font-bold text-gray-600 dark:text-gray-300">
+            <div className="pt-3 border-t border-gray-100 dark:border-neutral-800 space-y-2 text-xs font-medium text-gray-600 dark:text-gray-300">
               <div className="flex items-center gap-2">
                 <span
-                  className="w-4 h-4 rounded-md border border-black"
+                  className="w-3.5 h-3.5 rounded-md"
                   style={{ backgroundColor: themeColors.accent.green }}
                 />
                 <span>Answered</span>
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className="w-4 h-4 rounded-md border border-black"
+                  className="w-3.5 h-3.5 rounded-md"
                   style={{ backgroundColor: themeColors.accent.yellow }}
                 />
                 <span>Marked for Review</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded-md border-2 border-black/40 bg-white" />
+                <span className="w-3.5 h-3.5 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900" />
                 <span>Not Attempted</span>
               </div>
             </div>
@@ -1496,9 +1579,9 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
       {/* ================= PRE-SUBMIT CONFIRMATION MODAL ================= */}
       {showSubmitModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div
-            className="rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl border-2 border-black dark:border-white space-y-5"
+            className="rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-gray-200 dark:border-neutral-800 space-y-5"
             style={{ backgroundColor: themeColors.background.white }}
           >
             <h3 className="text-xl font-black" style={{ color: themeColors.text.primary }}>
@@ -1512,24 +1595,24 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             {/* Summary Grid */}
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div
-                className="p-3.5 rounded-xl border-2 border-black font-bold"
+                className="p-3.5 rounded-xl font-bold shadow-xs"
                 style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
               >
-                <span className="block text-gray-700">Answered Questions</span>
+                <span className="block text-gray-700 font-medium">Answered Questions</span>
                 <span className="text-2xl font-black">{answeredCount} of {questions.length}</span>
               </div>
 
               <div
-                className="p-3.5 rounded-xl border-2 border-black font-bold"
+                className="p-3.5 rounded-xl font-bold shadow-xs"
                 style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
               >
-                <span className="block text-gray-700">Unanswered</span>
+                <span className="block text-gray-700 font-medium">Unanswered</span>
                 <span className="text-2xl font-black">{questions.length - answeredCount} Remaining</span>
               </div>
             </div>
 
             {questions.length - answeredCount > 0 && (
-              <div className="p-3 rounded-xl border-2 border-red-500 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-xs font-bold flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-xs font-bold flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>You have {questions.length - answeredCount} unanswered questions!</span>
               </div>
@@ -1538,17 +1621,87 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setShowSubmitModal(false)}
-                className="flex-1 py-3 rounded-xl font-bold text-sm border-2 border-black dark:border-white transition hover:scale-[1.02] cursor-pointer"
-                style={{ backgroundColor: themeColors.primary.w, color: themeColors.primary.w2 }}
+                className="flex-1 py-3 rounded-xl font-bold text-sm border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                style={{ color: themeColors.text.primary }}
               >
                 Back to Test
               </button>
               <button
                 onClick={handleSubmitFinal}
-                className="flex-1 py-3 rounded-xl font-black text-sm border-2 border-black dark:border-white shadow-md transition hover:scale-[1.02] active:scale-95 cursor-pointer"
+                className="flex-1 py-3 rounded-xl font-bold text-sm shadow-md transition hover:scale-[1.02] active:scale-95 cursor-pointer"
                 style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
               >
                 Confirm & Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= EXAM PAUSED OVERLAY MODAL ================= */}
+      {isPaused && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+          <div
+            className="rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-200 dark:border-neutral-800 text-center space-y-6"
+            style={{ backgroundColor: themeColors.background.white }}
+          >
+            <div
+              className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center shadow-xs"
+              style={{ backgroundColor: themeColors.accent.yellow }}
+            >
+              <Pause className="w-8 h-8 text-black fill-black" />
+            </div>
+
+            <div>
+              <h3 className="text-2xl font-black mb-1.5" style={{ color: themeColors.text.primary }}>
+                Exam Paused
+              </h3>
+              <p className="text-xs sm:text-sm font-medium" style={{ color: themeColors.text.secondary }}>
+                Your timer is frozen and all your answers are safely preserved. Take a break and resume whenever you're ready.
+              </p>
+            </div>
+
+            {/* Frozen Stats Cards */}
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
+                <span className="text-xs text-gray-500 font-bold block">Frozen Time</span>
+                <span className="text-xl font-black font-mono text-amber-600 dark:text-amber-400">
+                  {formatTimer(secondsLeft)}
+                </span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
+                <span className="text-xs text-gray-500 font-bold block">Attempted</span>
+                <span className="text-xl font-black" style={{ color: themeColors.text.primary }}>
+                  {answeredCount} / {questions.length}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>All progress & drafts auto-saved</span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setIsPaused(false);
+                  onExit();
+                }}
+                className="flex-1 py-3 rounded-xl font-bold text-sm border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                style={{ color: themeColors.text.primary }}
+              >
+                Exit to Dashboard
+              </button>
+
+              <button
+                onClick={() => setIsPaused(false)}
+                className="flex-1 py-3 rounded-xl font-bold text-sm shadow-md transition hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+              >
+                <Play className="w-4 h-4 fill-current" />
+                Resume Exam
               </button>
             </div>
           </div>
@@ -1565,6 +1718,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 interface DetailedReportCardModalProps {
   result: ExamResult;
   onClose: () => void;
+  onSimulateReview?: (resultId: string) => void;
   themeColors: any;
   isDark: boolean;
 }
@@ -1572,10 +1726,12 @@ interface DetailedReportCardModalProps {
 const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
   result,
   onClose,
+  onSimulateReview,
   themeColors,
   isDark
 }) => {
   const [filterType, setFilterType] = useState<"all" | "mcq" | "descriptive">("all");
+  const isUnderEvaluation = result.status === "under_evaluation";
 
   const displayedAnswers = result.answers.filter((a) => {
     if (filterType === "all") return true;
@@ -1583,22 +1739,25 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
       <div
-        className="rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border-2 border-black dark:border-white flex flex-col"
+        className="rounded-2xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-gray-200 dark:border-neutral-800 flex flex-col"
         style={{ backgroundColor: themeColors.background.white }}
       >
         {/* Sticky Header */}
         <div
-          className="sticky top-0 border-b-2 border-black dark:border-white p-5 sm:p-6 flex items-center justify-between z-10 shadow-sm"
+          className="sticky top-0 border-b border-gray-100 dark:border-neutral-800 p-5 sm:p-6 flex items-center justify-between z-10 shadow-sm"
           style={{ backgroundColor: themeColors.background.white }}
         >
           <div>
             <span
-              className="text-xs font-black uppercase px-2.5 py-0.5 rounded border border-black shadow-xs"
-              style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
+              className="text-xs font-bold uppercase px-2.5 py-0.5 rounded shadow-xs"
+              style={{
+                backgroundColor: isUnderEvaluation ? themeColors.accent.yellow : themeColors.accent.green,
+                color: "#000000"
+              }}
             >
-              Academic Assessment Report Card
+              {isUnderEvaluation ? "Waiting for Teacher's Feedback" : "Academic Assessment Report Card"}
             </span>
             <h2 className="text-xl sm:text-2xl font-black mt-1" style={{ color: themeColors.text.primary }}>
               {result.examTitle}
@@ -1606,8 +1765,8 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl border-2 border-black dark:border-white hover:scale-105 transition cursor-pointer"
-            style={{ backgroundColor: themeColors.primary.w, color: themeColors.text.primary }}
+            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+            style={{ color: themeColors.text.primary }}
           >
             <X className="w-5 h-5" />
           </button>
@@ -1616,98 +1775,149 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
         <div className="p-5 sm:p-8 space-y-8">
           {/* ================= HERO SCORE BANNER ================= */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Massive Score Block */}
-            <div
-              className="md:col-span-1 p-6 rounded-2xl border-2 border-black shadow-lg flex flex-col justify-between"
-              style={{ backgroundColor: themeColors.accent.blue, color: "#000000" }}
-            >
-              <div>
-                <span className="text-xs font-black uppercase tracking-wider block text-gray-800">
-                  Total Score Obtained
-                </span>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-5xl font-black">{result.scoreObtained}</span>
-                  <span className="text-2xl font-bold text-gray-700">/{result.totalMarks}</span>
+            {/* Massive Score Block / Under Evaluation Block */}
+            {isUnderEvaluation ? (
+              <div
+                className="md:col-span-1 p-6 rounded-2xl shadow-md flex flex-col justify-between"
+                style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
+              >
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider block text-gray-900">
+                    Evaluation Status
+                  </span>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Clock className="w-7 h-7 text-black shrink-0" />
+                    <span className="text-2xl font-black text-black">Awaiting Review</span>
+                  </div>
+                  <p className="text-xs text-gray-800 mt-2 font-medium leading-relaxed">
+                    Instructor Rishika is evaluating your descriptive essay responses.
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-black/15 flex items-center justify-between text-xs font-bold">
+                  <span className="px-3 py-1 rounded-full bg-white shadow-xs text-black">
+                    {result.submittedAt}
+                  </span>
+                  {onSimulateReview && (
+                    <button
+                      onClick={() => onSimulateReview(result.id)}
+                      className="px-3 py-1 rounded-full shadow-xs flex items-center gap-1 bg-black text-white hover:scale-105 active:scale-95 transition cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3 text-yellow-400 fill-yellow-400" /> Simulate Review
+                    </button>
+                  )}
                 </div>
               </div>
+            ) : (
+              <div
+                className="md:col-span-1 p-6 rounded-2xl shadow-md flex flex-col justify-between"
+                style={{ backgroundColor: themeColors.accent.blue, color: "#000000" }}
+              >
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider block text-gray-800">
+                    Total Score Obtained
+                  </span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-5xl font-black">{result.scoreObtained}</span>
+                    <span className="text-2xl font-bold text-gray-700">/{result.totalMarks}</span>
+                  </div>
+                </div>
 
-              <div className="mt-4 pt-4 border-t-2 border-black/20 flex items-center justify-between text-xs font-black">
-                <span className="px-3 py-1 rounded-full bg-white border border-black">
-                  {result.percentage}% Marks
-                </span>
-                <span
-                  className="px-3 py-1 rounded-full border border-black shadow-xs flex items-center gap-1"
-                  style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                >
-                  <Award className="w-3.5 h-3.5" /> {result.grade}
-                </span>
+                <div className="mt-4 pt-4 border-t border-black/15 flex items-center justify-between text-xs font-bold">
+                  <span className="px-3 py-1 rounded-full bg-white shadow-xs">
+                    {result.percentage}% Marks
+                  </span>
+                  <span
+                    className="px-3 py-1 rounded-full shadow-xs flex items-center gap-1"
+                    style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
+                  >
+                    <Award className="w-3.5 h-3.5" /> {result.grade}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* 6 Quick Metrics */}
             <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
+              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
                 <span className="text-xs text-gray-500 font-bold block">Course</span>
-                <span className="font-black text-sm block truncate" style={{ color: themeColors.text.primary }}>
+                <span className="font-bold text-sm block truncate" style={{ color: themeColors.text.primary }}>
                   {result.course}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
+              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
                 <span className="text-xs text-gray-500 font-bold block">Evaluated By</span>
-                <span className="font-black text-sm flex items-center gap-1.5" style={{ color: themeColors.text.primary }}>
+                <span className="font-bold text-sm flex items-center gap-1.5" style={{ color: themeColors.text.primary }}>
                   <UserCheck className="w-4 h-4 text-emerald-600" /> {result.instructor}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
+              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
                 <span className="text-xs text-gray-500 font-bold block">Time Taken</span>
-                <span className="font-black text-sm flex items-center gap-1" style={{ color: themeColors.text.primary }}>
+                <span className="font-bold text-sm flex items-center gap-1" style={{ color: themeColors.text.primary }}>
                   <Clock className="w-4 h-4 text-indigo-500" /> {result.timeSpentMinutes} Mins
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
+              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
                 <span className="text-xs text-gray-500 font-bold block">MCQ Section</span>
-                <span className="font-black text-sm text-emerald-600">
-                  100% Accuracy
+                <span className="font-bold text-sm text-emerald-600">
+                  {isUnderEvaluation ? "Submitted & Logged" : "100% Accuracy"}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
+              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
                 <span className="text-xs text-gray-500 font-bold block">Descriptive Essays</span>
-                <span className="font-black text-sm text-indigo-600">
-                  18 / 20 Marks
+                <span className="font-bold text-sm text-indigo-600">
+                  {isUnderEvaluation ? "Under Review" : "18 / 20 Marks"}
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl border-2 border-black/15 bg-gray-50 dark:bg-neutral-800">
+              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
                 <span className="text-xs text-gray-500 font-bold block">Final Status</span>
-                <span className="font-black text-sm text-emerald-600">
-                  PASSED
+                <span className={`font-bold text-sm ${isUnderEvaluation ? "text-amber-600" : "text-emerald-600"}`}>
+                  {isUnderEvaluation ? "Pending Feedback" : (result.isPassed ? "PASSED" : "FAILED")}
                 </span>
               </div>
             </div>
           </div>
 
           {/* ================= INSTRUCTOR RISHIKA'S HIGHLIGHTED FEEDBACK BOX ================= */}
-          {result.teacherFeedback && (
+          {isUnderEvaluation ? (
             <div
-              className="rounded-2xl p-6 sm:p-7 border-2 border-black shadow-lg space-y-4"
+              className="rounded-2xl p-6 sm:p-7 shadow-md space-y-3"
+              style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
+            >
+              <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-black/15">
+                <h4 className="font-bold text-lg flex items-center gap-2 text-black">
+                  <Clock className="w-5 h-5 text-black" /> Instructor Evaluation In Progress
+                </h4>
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white shadow-xs text-black">
+                  Waiting for Teacher's Feedback
+                </span>
+              </div>
+              <p className="text-sm font-medium leading-relaxed text-gray-900">
+                Instructor Rishika evaluates descriptive essay responses with personalized annotations and feedback. Once grading completes, your full report card, marks breakdown, and personalized feedback will be published here.
+              </p>
+            </div>
+          ) : result.teacherFeedback && (
+            <div
+              className="rounded-2xl p-6 sm:p-7 shadow-md space-y-4"
               style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
             >
               {/* Header */}
-              <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b-2 border-black/20">
-                <h4 className="font-black text-lg flex items-center gap-2 text-black">
+              <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-black/15">
+                <h4 className="font-bold text-lg flex items-center gap-2 text-black">
                   <MessageSquare className="w-5 h-5 text-black" /> Personal Feedback from Instructor Rishika
                 </h4>
-                <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-white border border-black">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white shadow-xs">
                   {result.teacherFeedback.evaluatedAt}
                 </span>
               </div>
 
               {/* Overall Feedback Commentary Quote */}
-              <div className="p-4 rounded-xl border-2 border-black bg-white text-black font-serif italic text-sm sm:text-base leading-relaxed shadow-sm">
+              <div className="p-4 rounded-xl bg-white text-black font-serif italic text-sm sm:text-base leading-relaxed shadow-xs">
                 "{result.teacherFeedback.overall}"
               </div>
 
@@ -1715,10 +1925,10 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 {/* Strengths Card */}
                 <div
-                  className="p-4 rounded-xl border-2 border-black shadow-sm space-y-2"
+                  className="p-4 rounded-xl shadow-xs space-y-2"
                   style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
                 >
-                  <span className="text-xs font-black uppercase flex items-center gap-1.5 text-black">
+                  <span className="text-xs font-bold uppercase flex items-center gap-1.5 text-black">
                     <ThumbsUp className="w-4 h-4 text-black" /> Key Strengths Noted:
                   </span>
                   <ul className="text-xs text-black font-medium space-y-1.5 list-disc list-inside">
@@ -1730,10 +1940,10 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
 
                 {/* Improvements Card */}
                 <div
-                  className="p-4 rounded-xl border-2 border-black shadow-sm space-y-2"
+                  className="p-4 rounded-xl shadow-xs space-y-2"
                   style={{ backgroundColor: themeColors.accent.red, color: "#000000" }}
                 >
-                  <span className="text-xs font-black uppercase flex items-center gap-1.5 text-black">
+                  <span className="text-xs font-bold uppercase flex items-center gap-1.5 text-black">
                     <Flame className="w-4 h-4 text-black" /> High-Impact Action Items:
                   </span>
                   <ul className="text-xs text-black font-medium space-y-1.5 list-disc list-inside">
@@ -1749,12 +1959,12 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
           {/* ================= QUESTION-BY-QUESTION BREAKDOWN ================= */}
           <div className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h4 className="font-black text-xl" style={{ color: themeColors.text.primary }}>
+              <h4 className="font-bold text-xl" style={{ color: themeColors.text.primary }}>
                 Question-by-Question Breakdown
               </h4>
 
               {/* Filter Tabs */}
-              <div className="flex items-center gap-1.5 p-1 rounded-xl border-2 border-black dark:border-white text-xs font-bold bg-white dark:bg-black">
+              <div className="flex items-center gap-1.5 p-1 rounded-xl border border-gray-200 dark:border-neutral-700 text-xs font-bold bg-white dark:bg-black">
                 <button
                   onClick={() => setFilterType("all")}
                   className={`px-3 py-1 rounded-lg transition-all ${
@@ -1786,27 +1996,35 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
             {displayedAnswers.map((ans) => (
               <div
                 key={ans.questionId}
-                className="p-5 sm:p-6 rounded-2xl border-2 border-black dark:border-white shadow-md space-y-4"
+                className="p-5 sm:p-6 rounded-2xl border border-gray-100 dark:border-neutral-800 shadow-sm space-y-4"
                 style={{ backgroundColor: themeColors.background.white }}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-2">
                     <span
-                      className="text-xs font-black px-2.5 py-0.5 rounded border border-black shadow-xs"
+                      className="text-xs font-bold px-2.5 py-0.5 rounded shadow-xs"
                       style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
                     >
                       Q{ans.questionNumber}
                     </span>
-                    <span className="text-xs font-bold uppercase text-gray-500">
+                    <span className="text-xs font-medium uppercase text-gray-500">
                       {ans.type === "mcq" ? "Multiple Choice" : "Descriptive Essay"}
                     </span>
                   </div>
 
                   <span
-                    className="text-xs font-black px-3 py-1 rounded-full border border-black shadow-xs"
-                    style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
+                    className="text-xs font-bold px-3 py-1 rounded-full shadow-xs"
+                    style={{
+                      backgroundColor:
+                        isUnderEvaluation && ans.type === "descriptive"
+                          ? themeColors.accent.yellow
+                          : themeColors.accent.green,
+                      color: "#000000"
+                    }}
                   >
-                    {ans.marksAwarded ?? 0} / {ans.marks} Marks
+                    {isUnderEvaluation && ans.type === "descriptive"
+                      ? "Pending Evaluation"
+                      : `${ans.marksAwarded ?? 0} / ${ans.marks} Marks`}
                   </span>
                 </div>
 
@@ -1818,22 +2036,22 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                 {ans.type === "mcq" && (
                   <div className="space-y-2 text-xs sm:text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 font-bold">Your Response:</span>
+                      <span className="text-gray-500 font-medium">Your Response:</span>
                       <span
-                        className="font-black px-2.5 py-0.5 rounded border border-black text-xs"
+                        className="font-bold px-2.5 py-0.5 rounded text-xs shadow-xs"
                         style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
                       >
                         Option {ans.studentAnswer}
                       </span>
                       {ans.isCorrect && (
-                        <span className="text-emerald-700 font-black flex items-center gap-1 text-xs">
+                        <span className="text-emerald-700 font-bold flex items-center gap-1 text-xs">
                           <Check className="w-3.5 h-3.5" /> Correct Answer
                         </span>
                       )}
                     </div>
 
                     {ans.explanation && (
-                      <div className="p-3.5 rounded-xl border border-black/20 bg-gray-50 dark:bg-neutral-800 text-xs font-medium text-gray-700 dark:text-gray-300">
+                      <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800 text-xs font-medium text-gray-700 dark:text-gray-300">
                         <strong>Pedagogical Explanation:</strong> {ans.explanation}
                       </div>
                     )}
@@ -1847,17 +2065,22 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                       <span className="text-gray-500 text-xs font-bold block mb-1">
                         Your Submitted Written Essay:
                       </span>
-                      <p className="p-4 rounded-xl border border-black/20 bg-gray-50 dark:bg-neutral-800 text-xs leading-relaxed" style={{ color: themeColors.text.primary }}>
-                        {ans.studentAnswer}
+                      <p className="p-4 rounded-xl bg-gray-50 dark:bg-neutral-800 text-xs leading-relaxed" style={{ color: themeColors.text.primary }}>
+                        {ans.studentAnswer || "(No answer submitted)"}
                       </p>
                     </div>
 
-                    {ans.teacherComment && (
+                    {isUnderEvaluation ? (
+                      <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-amber-900 dark:text-amber-300 text-xs font-medium flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Instructor Rishika's annotation & marks will be published upon review.</span>
+                      </div>
+                    ) : ans.teacherComment && (
                       <div
-                        className="p-4 rounded-xl border-2 border-black text-xs shadow-sm space-y-1"
+                        className="p-4 rounded-xl text-xs shadow-xs space-y-1"
                         style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
                       >
-                        <strong className="block font-black uppercase text-black flex items-center gap-1.5">
+                        <strong className="block font-bold uppercase text-black flex items-center gap-1.5">
                           <MessageSquare className="w-4 h-4 text-black" /> Instructor Rishika's Annotation:
                         </strong>
                         <p className="font-serif italic text-black leading-relaxed">
@@ -1872,10 +2095,10 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
           </div>
 
           {/* Modal Footer */}
-          <div className="pt-4 border-t-2 border-black/10 dark:border-white/10 flex justify-end">
+          <div className="pt-4 border-t border-gray-100 dark:border-neutral-800 flex justify-end">
             <button
               onClick={onClose}
-              className="px-6 py-2.5 rounded-xl font-black text-sm border-2 border-black dark:border-white shadow-md hover:scale-105 active:scale-95 transition cursor-pointer"
+              className="px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:scale-105 active:scale-95 transition cursor-pointer"
               style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
             >
               Close Report Card
