@@ -1205,7 +1205,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
               status: d.status || "live",
               scheduledDate: d.scheduled_date || "Anytime / Self-Paced",
               scheduledTime: d.scheduled_time || "Flexible",
-              durationMinutes: Number(d.duration_minutes) || 45,
+              durationMinutes: Number(d.duration_minutes) || 60,
               totalMarks: Number(d.total_marks) || 100,
               passingMarks: Number(d.passing_marks) || 40,
               mcqCount: Number(d.mcq_count) || 0,
