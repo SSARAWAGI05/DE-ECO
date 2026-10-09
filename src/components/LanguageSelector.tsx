@@ -31,15 +31,17 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       document.addEventListener("touchstart", handleClickOutside);
-      // Auto-focus search input
-      setTimeout(() => searchInputRef.current?.focus(), 50);
+      // Auto-focus search input ONLY on desktop so mobile virtual keyboard doesn't hijack screen
+      if (!isMobile) {
+        setTimeout(() => searchInputRef.current?.focus(), 50);
+      }
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("touchstart", handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, isMobile]);
 
   const filteredLanguages = SUPPORTED_LANGUAGES.filter(
     (l) =>
@@ -49,15 +51,15 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   );
 
   const handleSelect = (lang: Language) => {
-    setLanguage(lang.code);
     setIsOpen(false);
     setSearch("");
+    setLanguage(lang.code);
   };
 
   // Dock Variant (floating controls on bottom right)
   if (variant === "dock") {
     return (
-      <div className="relative" ref={dropdownRef}>
+      <div className="relative notranslate" translate="no" ref={dropdownRef}>
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
@@ -127,25 +129,25 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   // Mobile drawer variant
   if (isMobile) {
     return (
-      <div className="relative w-full" ref={dropdownRef}>
+      <div className="relative w-full notranslate" translate="no" ref={dropdownRef}>
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full px-4 py-2.5 rounded-xl font-semibold flex items-center justify-between bg-white/10 dark:bg-neutral-800/60 text-white hover:bg-white/20 transition cursor-pointer"
+          className="w-full px-4 py-2.5 rounded-xl font-semibold flex items-center justify-between bg-white/10 dark:bg-neutral-800/60 text-white hover:bg-white/20 transition cursor-pointer select-none touch-manipulation"
         >
           <div className="flex items-center gap-2.5 text-sm">
-            <Globe className="w-4 h-4 text-emerald-400" />
-            <span>Language: {currentLanguageObj.flag} {currentLanguageObj.nativeName}</span>
+            <Globe className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="truncate">Language: {currentLanguageObj.flag} {currentLanguageObj.nativeName}</span>
           </div>
           <ChevronDown
-            className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 transition-transform duration-200 shrink-0 ${isOpen ? "rotate-180" : ""}`}
           />
         </button>
 
         {isOpen && (
-          <div className="mt-2 bg-neutral-900/95 border border-neutral-700 rounded-2xl shadow-2xl p-2 max-h-60 overflow-y-auto space-y-1">
+          <div className="mt-2 bg-neutral-900 border border-neutral-700/80 rounded-2xl shadow-2xl p-2 max-h-60 overflow-y-auto space-y-1 overscroll-contain">
             <div className="px-2 py-1.5 flex items-center gap-2 border-b border-neutral-800 mb-1">
-              <Search className="w-3.5 h-3.5 text-neutral-400" />
+              <Search className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -160,19 +162,19 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                 key={lang.code}
                 type="button"
                 onClick={() => handleSelect(lang)}
-                className={`w-full px-3 py-2 rounded-xl text-left text-xs flex items-center justify-between cursor-pointer ${
+                className={`w-full px-3 py-2.5 rounded-xl text-left text-xs flex items-center justify-between cursor-pointer active:scale-[0.98] transition select-none touch-manipulation ${
                   currentLanguage === lang.code
-                    ? "bg-emerald-900/50 text-emerald-300 font-bold"
-                    : "hover:bg-neutral-800 text-neutral-200"
+                    ? "bg-emerald-900/60 text-emerald-300 font-bold"
+                    : "hover:bg-neutral-800 active:bg-neutral-800 text-neutral-200"
                 }`}
               >
                 <span className="flex items-center gap-2">
                   <span className="text-base">{lang.flag}</span>
-                  <span>{lang.nativeName}</span>
+                  <span className="font-medium">{lang.nativeName}</span>
                   <span className="text-[11px] text-neutral-400">({lang.name})</span>
                 </span>
                 {currentLanguage === lang.code && (
-                  <Check className="w-4 h-4 text-emerald-400" />
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
                 )}
               </button>
             ))}
@@ -184,7 +186,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   // Desktop Navbar Variant (pill style matching DE-ECO navbar)
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative notranslate" translate="no" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}

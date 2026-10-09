@@ -19,7 +19,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   const { isDark } = useTheme();
   const themeColors = getThemeColors(isDark);
 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -246,7 +246,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-3 rounded-2xl px-4 py-3 shadow-2xl"
+            className="mt-3 rounded-2xl px-4 py-3 shadow-2xl max-h-[82vh] overflow-y-auto overscroll-contain"
             style={{
               backgroundColor: `${themeColors.primary.black}ee`,
               border: `1px solid ${themeColors.primary.darkGray}40`,

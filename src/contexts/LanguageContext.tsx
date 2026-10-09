@@ -37,17 +37,41 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+// Helper to thoroughly clear googtrans cookies across all domains and paths
+const clearTranslateCookie = () => {
+  const hostname = window.location.hostname;
+  const domainParts = hostname.split('.');
+  
+  const domainsToClear = ['', hostname, `.${hostname}`];
+  if (domainParts.length >= 2) {
+    const rootDomain = domainParts.slice(-2).join('.');
+    domainsToClear.push(rootDomain, `.${rootDomain}`);
+  }
+
+  domainsToClear.forEach((domain) => {
+    const domainAttr = domain ? `; domain=${domain}` : '';
+    document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/${domainAttr}`;
+    document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${domainAttr}`;
+  });
+};
+
 // Helper to set cookies across root and domain
 const setTranslateCookie = (langCode: string) => {
+  clearTranslateCookie();
+  if (langCode === "en") return;
+
   const hostname = window.location.hostname;
-  if (langCode === "en") {
-    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${hostname};`;
-    document.cookie = "googtrans=/en/en; path=/;";
-    document.cookie = `googtrans=/en/en; path=/; domain=${hostname};`;
-  } else {
-    document.cookie = `googtrans=/en/${langCode}; path=/;`;
-    document.cookie = `googtrans=/en/${langCode}; path=/; domain=${hostname};`;
+  const cookieVal = `/en/${langCode}`;
+
+  document.cookie = `googtrans=${cookieVal}; path=/;`;
+
+  if (hostname && hostname !== "localhost" && !hostname.includes("127.0.0.1")) {
+    document.cookie = `googtrans=${cookieVal}; path=/; domain=${hostname};`;
+    const parts = hostname.split('.');
+    if (parts.length >= 2) {
+      const rootDomain = parts.slice(-2).join('.');
+      document.cookie = `googtrans=${cookieVal}; path=/; domain=.${rootDomain};`;
+    }
   }
 };
 
@@ -80,13 +104,15 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         if (combo) {
           if (combo.value !== saved) {
             combo.value = saved;
-            combo.dispatchEvent(new Event("change"));
+            combo.dispatchEvent(new Event("change", { bubbles: true }));
           }
           clearInterval(interval);
         }
         if (attempts > 30) clearInterval(interval);
       }, 250);
       return () => clearInterval(interval);
+    } else {
+      clearTranslateCookie();
     }
   }, []);
 
@@ -95,12 +121,32 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     setCurrentLanguageState(langCode);
     localStorage.setItem("deeco_language", langCode);
+
+    if (langCode === "en") {
+      clearTranslateCookie();
+      const combo = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
+      if (combo) {
+        combo.value = "";
+        combo.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      setTimeout(() => {
+        window.location.reload();
+      }, 50);
+      return;
+    }
+
     setTranslateCookie(langCode);
 
     const combo = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
     if (combo) {
       combo.value = langCode;
-      combo.dispatchEvent(new Event("change"));
+      combo.dispatchEvent(new Event("change", { bubbles: true }));
+      // When switching between non-English languages, reload cleans up DOM nodes
+      if (currentLanguage !== "en") {
+        setTimeout(() => {
+          window.location.reload();
+        }, 80);
+      }
     } else {
       // Reload if combo is not available yet
       window.location.reload();
