@@ -169,7 +169,8 @@ const MOCK_EXAMS: Exam[] = [
   {
     id: "a1111111-1111-4111-8111-111111111111",
     title: "Macroeconomics Mid-Term Examination 2026",
-    course: "Macroeconomic Theory & Policy",
+    course: "All Students (General Economics Benchmark)",
+    courseId: "all",
     instructor: "Rishika",
     status: "live",
     scheduledDate: "Active Now",
@@ -274,7 +275,7 @@ const MOCK_EXAMS: Exam[] = [
     ]
   },
   {
-    id: "exam-micro-structures",
+    id: "a4444444-4444-4444-8444-444444444444",
     title: "Microeconomics & Market Structures Unit Test",
     course: "Foundations of Microeconomics",
     instructor: "Rishika",
