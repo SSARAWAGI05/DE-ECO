@@ -1250,40 +1250,22 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
     };
   }, []);
 
-  // Filtered exams for Tab 1
+  // Filtered exams for Tab 1 (strictly student-level)
   const filteredExams = examsList.filter((exam) => {
-    // 1. If assigned to a specific student -> ONLY that student sees it
+    // 1. If assigned to specific students: check if logged-in student's email is in the list
     if (exam.assignedType === "student") {
-      if (!currentUserEmail || exam.assignedStudentEmail?.toLowerCase().trim() !== currentUserEmail) {
+      if (!currentUserEmail) return false;
+      const assignedEmails = (exam.assignedStudentEmail || "")
+        .toLowerCase()
+        .split(",")
+        .map((e) => e.trim());
+      if (!assignedEmails.includes(currentUserEmail.toLowerCase().trim())) {
         return false;
       }
     }
 
-    // 2. If assigned to a specific course -> ONLY students enrolled in that course (or open/general exams)
-    if (exam.assignedType === "course" || (!exam.assignedType && exam.course)) {
-      const courseTitleLower = (exam.course || "").toLowerCase().trim();
-      const isGeneralOpenExam =
-        !exam.course ||
-        courseTitleLower.includes("general") ||
-        courseTitleLower.includes("all students") ||
-        exam.courseId === "all";
-
-      // If it's a specific course (not an open exam):
-      // Only show if the logged in student is enrolled in this course!
-      if (!isGeneralOpenExam) {
-        if (currentUserEmail) {
-          const isEnrolledById = Boolean(exam.courseId && enrolledCourseIds.has(exam.courseId));
-          const isEnrolledByTitle = enrolledCourseTitles.has(courseTitleLower);
-          if (!isEnrolledById && !isEnrolledByTitle) {
-            return false;
-          }
-        }
-      }
-    }
-
-    const matchesSearch =
-      exam.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      exam.course.toLowerCase().includes(searchQuery.toLowerCase());
+    // 2. Search & Status filter
+    const matchesSearch = exam.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || exam.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
