@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Award,
+  Download,
   ChevronRight,
   ChevronLeft,
   ChevronDown,
@@ -105,6 +106,8 @@ export interface ExamResult {
   examTitle: string;
   course: string;
   instructor: string;
+  studentName?: string;
+  studentEmail?: string;
   submittedAt: string;
   status: "graded" | "under_evaluation";
   totalMarks: number;
@@ -165,273 +168,9 @@ export const generateUUID = (): string => {
 /* ============================== MOCK DATA ================================ */
 /* ========================================================================= */
 
-const MOCK_EXAMS: Exam[] = [
-  {
-    id: "a1111111-1111-4111-8111-111111111111",
-    title: "Macroeconomics Mid-Term Examination 2026",
-    course: "All Students (General Economics Benchmark)",
-    courseId: "all",
-    instructor: "Rishika",
-    status: "live",
-    scheduledDate: "Active Now",
-    scheduledTime: "Window closes in 6 hours",
-    durationMinutes: 45,
-    totalMarks: 50,
-    passingMarks: 20,
-    mcqCount: 4,
-    descriptiveCount: 2,
-    syllabus: [
-      "National Income Accounting & GDP Deflator",
-      "Keynesian Autonomous Investment Multiplier",
-      "Open Market Operations & Reserve Requirements",
-      "Short-run vs Long-run Phillips Curve",
-      "Liquidity Trap & Monetary Policy Effectiveness"
-    ],
-    instructions: [
-      "You have 45 minutes to complete all 6 questions.",
-      "Section A consists of 4 Multiple Choice Questions (5 marks each = 20 marks).",
-      "Section B consists of 2 Descriptive Essay Questions (15 marks each = 30 marks).",
-      "Your descriptive answers will continuously auto-save as drafts in your browser.",
-      "You can navigate freely between questions using the Question Palette.",
-      "The exam will automatically submit when the timer expires."
-    ],
-    questions: [
-      {
-        id: "q1",
-        number: 1,
-        type: "mcq",
-        question: "Which of the following is NOT included in the calculation of Gross Domestic Product (GDP) using the expenditure approach?",
-        marks: 5,
-        options: [
-          { id: "A", text: "Gross Private Domestic Investment (capital goods & inventory changes)" },
-          { id: "B", text: "Government transfer payments (e.g., social security and unemployment pensions)" },
-          { id: "C", text: "Government consumption expenditures and gross public investment" },
-          { id: "D", text: "Net Exports of goods and services (Exports minus Imports)" }
-        ],
-        correctAnswer: "B",
-        explanation: "Government transfer payments are excluded from GDP because they do not reflect compensation for current productive activities or new output."
-      },
-      {
-        id: "q2",
-        number: 2,
-        type: "mcq",
-        question: "In a closed Keynesian macroeconomic model with no government sector, if the Marginal Propensity to Consume (MPC) is 0.8, what is the value of the autonomous investment multiplier?",
-        marks: 5,
-        options: [
-          { id: "A", text: "2.5" },
-          { id: "B", text: "4.0" },
-          { id: "C", text: "5.0" },
-          { id: "D", text: "8.0" }
-        ],
-        correctAnswer: "C",
-        explanation: "The autonomous multiplier formula is k = 1 / (1 - MPC). Substituting 0.8: k = 1 / (1 - 0.8) = 1 / 0.2 = 5.0."
-      },
-      {
-        id: "q3",
-        number: 3,
-        type: "mcq",
-        question: "When the Central Bank conducts Open Market Operations by purchasing government bonds from commercial banks, what is the primary consequence on the banking system and market interest rates?",
-        marks: 5,
-        options: [
-          { id: "A", text: "Commercial bank reserves decrease, constraining credit and elevating bond yields" },
-          { id: "B", text: "Commercial bank excess reserves rise, credit availability expands, and short-term interest rates fall" },
-          { id: "C", text: "The statutory reserve requirement ratio automatically quadruples" },
-          { id: "D", text: "Inflation is instantaneously pegged to zero with no shift in bank balance sheets" }
-        ],
-        correctAnswer: "B",
-        explanation: "Purchasing government securities injects fresh liquidity directly into commercial bank reserves, lowering interbank borrowing rates and loan interest rates."
-      },
-      {
-        id: "q4",
-        number: 4,
-        type: "mcq",
-        question: "The traditional short-run Phillips curve illustrates an inverse empirical trade-off between which pair of macroeconomic indicators?",
-        marks: 5,
-        options: [
-          { id: "A", text: "Fiscal deficit and the foreign currency exchange rate" },
-          { id: "B", text: "The inflation rate and the unemployment rate" },
-          { id: "C", text: "Nominal interest rates and capital account surplus" },
-          { id: "D", text: "The current account deficit and velocity of money" }
-        ],
-        correctAnswer: "B",
-        explanation: "A.W. Phillips showed that lower unemployment in the short-run puts upward pressure on nominal wages, generating higher price inflation."
-      },
-      {
-        id: "q5",
-        number: 5,
-        type: "descriptive",
-        question: "Define the Keynesian concept of a 'Liquidity Trap'. Explain the precise economic conditions under which it develops, why conventional expansionary monetary policy becomes powerless, and what alternative policy measures Keynesian economists advocate to re-ignite aggregate demand.",
-        marks: 15,
-        modelAnswer: "A liquidity trap is a situation where nominal interest rates approach the zero lower bound, causing money demand to become infinitely elastic. People expect asset prices to fall, so any increase in the money supply is hoarded rather than invested. Conventional open market operations fail. Keynesians argue that direct expansionary fiscal policy (state infrastructure spending) is required to restore aggregate demand."
-      },
-      {
-        id: "q6",
-        number: 6,
-        type: "descriptive",
-        question: "Critically distinguish between Cost-Push Inflation and Demand-Pull Inflation. In your response, illustrate the shifting mechanisms in the Aggregate Demand (AD) and Short-Run Aggregate Supply (SRAS) framework, and evaluate the policy dilemma central banks face when confronting stagflation.",
-        marks: 15,
-        modelAnswer: "Demand-pull inflation occurs when aggregate spending outpaces aggregate productive capacity, shifting AD to the right. Cost-push inflation is caused by supply-side shocks (e.g. oil price surges) shifting SRAS to the left, causing prices to rise while GDP falls (stagflation). The central bank dilemma: hiking interest rates cools inflation but worsens unemployment; easing policy alleviates recession but fuels hyperinflation."
-      }
-    ]
-  },
-  {
-    id: "a4444444-4444-4444-8444-444444444444",
-    title: "Microeconomics & Market Structures Unit Test",
-    course: "Foundations of Microeconomics",
-    instructor: "Rishika",
-    status: "upcoming",
-    scheduledDate: "In 2 Days (Wednesday)",
-    scheduledTime: "10:00 AM - 11:00 AM IST",
-    durationMinutes: 60,
-    totalMarks: 60,
-    passingMarks: 24,
-    mcqCount: 6,
-    descriptiveCount: 2,
-    syllabus: [
-      "Consumer Equilibrium & Indifference Curves",
-      "Price Elasticity of Demand & Supply",
-      "Perfect Competition vs Pure Monopoly",
-      "Deadweight Loss & Welfare Economics",
-      "Price Discrimination & Consumer Surplus"
-    ],
-    instructions: [
-      "Scheduled live exam window opens precisely at 10:00 AM IST.",
-      "Covers Chapters 3, 4 and 5 of Microeconomic Foundations.",
-      "Ensure a reliable internet connection before commencing."
-    ],
-    questions: []
-  },
-  {
-    id: "a2222222-2222-4222-8222-222222222222",
-    title: "International Trade & Foreign Exchange Examination",
-    course: "Global Economics & Currency Markets",
-    instructor: "Rishika",
-    status: "upcoming",
-    scheduledDate: "Next Monday",
-    scheduledTime: "11:00 AM - 12:00 PM IST",
-    durationMinutes: 45,
-    totalMarks: 50,
-    passingMarks: 20,
-    mcqCount: 5,
-    descriptiveCount: 2,
-    syllabus: [
-      "Ricardian Comparative Advantage",
-      "Tariffs, Quotas & Subsidies Analysis",
-      "Floating vs Fixed Exchange Rate Systems",
-      "Balance of Payments: Current vs Capital Account"
-    ],
-    instructions: [
-      "Scheduled live exam window opens precisely at 11:00 AM IST.",
-      "Covers Chapters on International Trade and Currency Markets.",
-      "Ensure a reliable internet connection before commencing."
-    ],
-    questions: []
-  },
-  {
-    id: "a3333333-3333-4333-8333-333333333333",
-    title: "Econometric Probability & Distributions Quiz",
-    course: "Quantitative Economics & Data Analysis",
-    instructor: "Rishika",
-    status: "expired",
-    scheduledDate: "Today (Ended at 11:30 AM)",
-    scheduledTime: "Window expired today at 11:30 AM IST",
-    expiredAt: "11:30 AM",
-    durationMinutes: 40,
-    totalMarks: 40,
-    passingMarks: 16,
-    mcqCount: 5,
-    descriptiveCount: 1,
-    syllabus: [
-      "Normal, Binomial & Poisson Distributions",
-      "Hypothesis Testing & Z-Scores",
-      "Standard Error & Confidence Intervals"
-    ],
-    instructions: [
-      "Exam submission window has expired for this test.",
-      "Remains visible on your dashboard until midnight today."
-    ],
-    questions: []
-  }
-];
+const MOCK_EXAMS: Exam[] = [];
 
-const MOCK_RESULTS: ExamResult[] = [
-  {
-    id: "b1111111-1111-4111-8111-111111111111",
-    examId: "a1111111-1111-4111-8111-111111111111",
-    examTitle: "Foundations of Economics & Market Equilibria",
-    course: "Principles of Microeconomics",
-    instructor: "Rishika",
-    submittedAt: "Sep 24, 2026 • 11:42 AM",
-    status: "graded",
-    totalMarks: 50,
-    scoreObtained: 43,
-    percentage: 86,
-    grade: "A+ Distinction",
-    isPassed: true,
-    timeSpentMinutes: 38,
-    teacherFeedback: {
-      evaluatedAt: "Sep 25, 2026 by Instructor Rishika",
-      overall: "Outstanding performance! You scored a flawless 20/20 in the Multiple Choice Section, reflecting exceptional conceptual grasp of demand/supply shifters and elasticity. In Question 3 regarding price floors, your deadweight loss reasoning and welfare transfer explanations were stellar. Make sure to review the government budgetary burden in surplus acquisition for a perfect 50/50!",
-      strengths: [
-        "100% precision on elasticity formulas and midpoint calculation problems",
-        "Clear, structured economic terminology throughout descriptive essay sections",
-        "Accurate identification of deadweight loss and consumer surplus transfer"
-      ],
-      improvements: [
-        "Remember to quantify government budgetary cost when analyzing agricultural price support systems",
-        "Use bullet points for policy trade-offs to make your essay layout even crisper"
-      ]
-    },
-    answers: [
-      {
-        questionId: "q1",
-        questionNumber: 1,
-        type: "mcq",
-        question: "When price of a commodity increases from $10 to $12 and quantity demanded falls from 100 units to 70 units, the price elasticity of demand using the midpoint formula is:",
-        marks: 5,
-        studentAnswer: "B",
-        correctAnswer: "B",
-        isCorrect: true,
-        marksAwarded: 5,
-        explanation: "Midpoint % change in quantity = -35.29%, % change in price = +18.18%. Elasticity = -1.94 (Elastic demand)."
-      },
-      {
-        questionId: "q2",
-        questionNumber: 2,
-        type: "mcq",
-        question: "Which condition holds true for a profit-maximizing firm operating under Perfect Competition in the short-run?",
-        marks: 5,
-        studentAnswer: "C",
-        correctAnswer: "C",
-        isCorrect: true,
-        marksAwarded: 5,
-        explanation: "Firms maximize profits where Marginal Revenue (MR) equals Marginal Cost (MC), and in perfect competition MR = Price."
-      },
-      {
-        questionId: "q3",
-        questionNumber: 3,
-        type: "descriptive",
-        question: "Explain the economic welfare consequences of imposing a binding Price Floor on essential agricultural goods. Detail who benefits, who loses, and why deadweight loss arises.",
-        marks: 20,
-        marksAwarded: 18,
-        studentAnswer: "A binding price floor is set above the free-market equilibrium price. When enacted on agricultural commodities, producers who successfully sell at the higher floor price receive producer surplus gains. However, consumers suffer through reduced consumer surplus as quantity demanded contracts. A market surplus (excess supply) occurs because quantity supplied exceeds quantity demanded at the legal floor price. Deadweight loss is created because mutually beneficial transactions between willing buyers and sellers are blocked.",
-        teacherComment: "Brilliant explanation of the consumer and producer welfare transfer. You accurately identified deadweight loss. To achieve 20/20, note that if the government buys the surplus to sustain the price floor, taxpayers bear the budgetary purchase cost."
-      }
-    ]
-  },
-  {
-    id: "b2222222-2222-4222-8222-222222222222",
-    examId: "a2222222-2222-4222-8222-222222222222",
-    examTitle: "Applied Economic Statistics - Unit Quiz 2",
-    course: "Quantitative Economics & Data Analysis",
-    instructor: "Rishika",
-    submittedAt: "Today • 2:15 PM",
-    status: "under_evaluation",
-    totalMarks: 40,
-    timeSpentMinutes: 28,
-    answers: []
-  }
-];
+const MOCK_RESULTS: ExamResult[] = [];
 
 /* ========================================================================= */
 /* ========================== MAIN COMPONENT =============================== */
@@ -454,15 +193,26 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
   // Top level tabs: 'catalog' | 'results'
   const [activeTab, setActiveTab] = useState<"catalog" | "results">("catalog");
 
+  // Helper to filter out legacy mock IDs
+  const isMockId = (id: string) =>
+    /^(a1111111|a2222222|a3333333|a4444444|b1111111|b2222222|exam-|res-)/i.test(id || "");
+
   // Dynamic exams list for Tab 1 (Upcoming & Live Exams)
   const [examsList, setExamsList] = useState<Exam[]>(() => {
     try {
       if (typeof window !== "undefined") {
         const saved = localStorage.getItem("deeco_admin_exams");
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+          const parsed: Exam[] = JSON.parse(saved);
+          const filtered = parsed.filter((e) => !isMockId(e.id));
+          if (filtered.length !== parsed.length) {
+            localStorage.setItem("deeco_admin_exams", JSON.stringify(filtered));
+          }
+          return filtered;
+        }
       }
     } catch (e) {}
-    return MOCK_EXAMS;
+    return [];
   });
 
   // Dynamic results list for Tab 2 (Results & Teacher Feedback)
@@ -470,10 +220,17 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
     try {
       if (typeof window !== "undefined") {
         const saved = localStorage.getItem("deeco_exam_results");
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+          const parsed: ExamResult[] = JSON.parse(saved);
+          const filtered = parsed.filter((r) => !isMockId(r.id));
+          if (filtered.length !== parsed.length) {
+            localStorage.setItem("deeco_exam_results", JSON.stringify(filtered));
+          }
+          return filtered;
+        }
       }
     } catch (e) {}
-    return MOCK_RESULTS;
+    return [];
   });
 
   // Persistent paused/active exam sessions by examId (timer, answers, currentIdx preserved)
@@ -502,6 +259,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 
   // Current logged in student & active course enrollments
   const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
+  const [currentUserName, setCurrentUserName] = useState<string>("");
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
   const [enrolledCourseTitles, setEnrolledCourseTitles] = useState<Set<string>>(new Set());
 
@@ -515,6 +273,8 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
         if (user.email) {
           setCurrentUserEmail(user.email.toLowerCase().trim());
         }
+        const uName = (user.user_metadata as any)?.full_name || (user.user_metadata as any)?.name || user.email?.split("@")[0] || "Student";
+        setCurrentUserName(uName);
 
         // 1. Fetch course enrollments
         const { data: enrollments, error: enrollError } = await supabase
@@ -542,13 +302,15 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
           .eq("user_id", user.id)
           .order("submitted_at", { ascending: false });
 
-        if (!subError && submissionsData && submissionsData.length > 0) {
+        if (!subError && submissionsData) {
           const mappedResults: ExamResult[] = submissionsData.map((d: any) => ({
             id: d.id,
             examId: d.exam_id,
             examTitle: d.exam_title,
             course: d.course_title || "",
             instructor: d.instructor_name || "Rishika",
+            studentName: d.student_name || uName,
+            studentEmail: d.student_email || (user.email ? user.email.toLowerCase().trim() : undefined),
             submittedAt: d.submitted_at
               ? new Date(d.submitted_at).toLocaleDateString("en-US", {
                   month: "short",
@@ -573,7 +335,19 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                 ? Boolean(d.is_passed)
                 : undefined,
             timeSpentMinutes: Number(d.time_spent_minutes) || 0,
-            teacherFeedback: d.teacher_feedback || undefined,
+            teacherFeedback: (() => {
+              const tf = d.teacher_feedback;
+              if (!tf) return undefined;
+              const cleanOverall = tf.overall && tf.overall !== 'Good attempt on the paper.' ? String(tf.overall).trim() : '';
+              const cleanStrengths = Array.isArray(tf.strengths)
+                ? tf.strengths.filter((s: string) => s && s !== 'Demonstrated understanding of key concepts')
+                : [];
+              const cleanImprovements = Array.isArray(tf.improvements)
+                ? tf.improvements.filter((i: string) => i && i !== 'Review questions where marks were deducted')
+                : [];
+              if (!cleanOverall && cleanStrengths.length === 0 && cleanImprovements.length === 0) return undefined;
+              return { ...tf, overall: cleanOverall, strengths: cleanStrengths, improvements: cleanImprovements };
+            })(),
             answers: Array.isArray(d.answers) ? d.answers : []
           }));
           setResultsList(mappedResults);
@@ -592,7 +366,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
           .eq("is_active", true)
           .order("created_at", { ascending: false });
 
-        if (!examsError && examsData && examsData.length > 0) {
+        if (!examsError && examsData) {
           const mappedExams: Exam[] = examsData
             .map((d: any) => ({
               id: d.id,
@@ -833,7 +607,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
           overall: "Magnificent work! Your analysis of the Keynesian liquidity trap and macroeconomic shifters was structured with immense clarity. Great improvement on addressing open-economy nuances!",
           strengths: [
             "Flawless conceptual clarity on monetary transmission",
-            "Effective use of economic diagram references in essay",
+            "Effective use of economic diagram references in descriptive answers",
             "High analytical rigor and concise writing"
           ],
           improvements: [
@@ -1074,6 +848,12 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                   const isExpired = exam.status === "expired";
                   const savedSession = examSessions[exam.id];
                   const isPausedSession = !!savedSession;
+                  const isAnytime =
+                    !exam.scheduledDate ||
+                    exam.scheduledDate.toLowerCase().includes("anytime") ||
+                    exam.scheduledDate.toLowerCase().includes("self-paced") ||
+                    exam.scheduledDate.toLowerCase().includes("flexible") ||
+                    exam.scheduledTime?.toLowerCase().includes("flexible");
 
                   return (
                     <div
@@ -1084,14 +864,12 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                       {/* Top Header Row */}
                       <div>
                         <div className="flex items-center justify-between gap-3 mb-3">
-                          {exam.assignedType === 'student' ? (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                              <span>👤</span> 1-on-1 Assigned Exam
-                            </span>
-                          ) : (
+                          {exam.course && !exam.course.startsWith("1-on-1") && !exam.course.toLowerCase().includes("all students") ? (
                             <span className="text-xs font-semibold text-gray-500 dark:text-neutral-400 truncate">
                               {exam.course}
                             </span>
+                          ) : (
+                            <span />
                           )}
 
                           <div className="flex items-center gap-2">
@@ -1173,7 +951,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                             <FileText className="w-4 h-4 mx-auto mb-1 text-gray-500" />
                             <div className="text-xs text-gray-500 font-medium">Format</div>
                             <div className="text-xs font-black" style={{ color: themeColors.text.primary }}>
-                              {exam.mcqCount} MCQ + {exam.descriptiveCount} Essay
+                              {exam.mcqCount} MCQ + {exam.descriptiveCount} Descriptive
                             </div>
                           </div>
                         </div>
@@ -1190,12 +968,14 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                             <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 font-bold">
                               <AlertCircle className="w-3.5 h-3.5" /> Closed at {exam.expiredAt || "11:30 AM"} • Visible till midnight
                             </span>
-                          ) : isLive ? (
-                            <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 font-bold">
-                              <Clock className="w-3.5 h-3.5" /> Closes in 6 hours
+                          ) : isAnytime ? (
+                            <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-semibold">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> Anytime / Self-Paced
                             </span>
                           ) : (
-                            <span>{exam.scheduledDate} • {exam.scheduledTime}</span>
+                            <span className="text-slate-600 dark:text-neutral-400 flex items-center gap-1 font-medium">
+                              <Calendar className="w-3.5 h-3.5" /> {exam.scheduledDate} {exam.scheduledTime && exam.scheduledTime !== "Flexible" ? `• ${exam.scheduledTime}` : ""}
+                            </span>
                           )}
                         </div>
 
@@ -1313,7 +1093,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                                 <Clock className="w-3.5 h-3.5" /> Waiting for Teacher's Feedback
                               </span>
                               <span className="text-xs font-bold text-gray-500">
-                                Instructor Rishika is evaluating your descriptive essay responses
+                                Instructor Rishika is evaluating your descriptive responses
                               </span>
                             </div>
                           )}
@@ -1342,14 +1122,25 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                         {/* Right: CTA buttons */}
                         <div className="shrink-0 w-full md:w-auto flex flex-col sm:flex-row items-center gap-2">
                           {isGraded ? (
-                            <button
-                              onClick={() => setSelectedResult(res)}
-                              className="w-full md:w-auto px-6 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
-                              style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
-                            >
-                              <Award className="w-4 h-4 text-yellow-400" />
-                              View Full Report & Feedback
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => downloadReportCard(res, { studentName: currentUserName, studentEmail: currentUserEmail })}
+                                className="w-full sm:w-auto px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer"
+                                title="Download Official DE-ECO Report Card"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                Download PDF
+                              </button>
+                              <button
+                                onClick={() => setSelectedResult(res)}
+                                className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
+                                style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+                              >
+                                <Award className="w-4 h-4 text-yellow-400" />
+                                View Full Report
+                              </button>
+                            </>
                           ) : (
                             <button
                               onClick={() => setSelectedResult(res)}
@@ -1476,6 +1267,8 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
           onSimulateReview={handleSimulateTeacherReview}
           themeColors={themeColors}
           isDark={isDark}
+          studentName={currentUserName}
+          studentEmail={currentUserEmail}
         />
       )}
     </div>
@@ -2200,8 +1993,8 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   themeColors,
   isDark
 }) => {
-  // Use questions from the exam, or fallback
-  const questions = exam.questions.length > 0 ? exam.questions : MOCK_EXAMS[0].questions;
+  // Use questions from the exam, or empty array
+  const questions = exam.questions && exam.questions.length > 0 ? exam.questions : [];
   const { toggleTheme } = useTheme();
 
   const [currentIdx, setCurrentIdx] = useState(initialSession ? initialSession.currentIdx : 0);
@@ -2247,6 +2040,25 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
     return () => clearInterval(timer);
   }, [isPaused, showBackModal, showSubmitModal]);
+
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-[#0b0f19] text-center">
+        <div className="max-w-md p-8 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl">
+          <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">No Questions Available</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+            This examination paper currently has no questions configured. Please check back later or contact your instructor.
+          </p>
+          <button
+            onClick={onExit}
+            className="w-full py-3 px-4 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-md"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const currentQ = questions[currentIdx];
 
@@ -2368,7 +2180,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
         correctAnswer: q.correctAnswer,
         explanation: q.explanation,
         marksAwarded: q.type === "mcq" ? (isCorrect ? q.marks : 0) : undefined,
-        teacherComment: q.type === "descriptive" ? "Pending instructor grading" : undefined,
+        teacherComment: undefined,
         isCorrect
       };
     });
@@ -2504,7 +2316,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 {currentQ.marks} {currentQ.marks === 1 ? "Mark" : "Marks"}
               </span>
               <span className="hidden sm:inline-block px-2.5 py-0.5 rounded text-[11px] font-medium bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 border border-slate-200/60 dark:border-neutral-700">
-                {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive Essay"}
+                {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive Response"}
               </span>
             </div>
 
@@ -2599,7 +2411,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 </div>
               )}
 
-              {/* Descriptive Essay Word Editor */}
+              {/* Descriptive Answer Word Editor */}
               {currentQ.type === "descriptive" && (
                 <div className="pt-1">
                   <WordAnswerEditor
@@ -2957,6 +2769,8 @@ interface DetailedReportCardModalProps {
   onSimulateReview?: (resultId: string) => void;
   themeColors: any;
   isDark: boolean;
+  studentName?: string;
+  studentEmail?: string;
 }
 
 const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
@@ -2964,7 +2778,9 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
   onClose,
   onSimulateReview,
   themeColors,
-  isDark
+  isDark,
+  studentName,
+  studentEmail
 }) => {
   const [filterType, setFilterType] = useState<"all" | "mcq" | "descriptive">("all");
   const isUnderEvaluation = result.status === "under_evaluation";
@@ -2999,13 +2815,27 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
               {result.examTitle}
             </h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
-            style={{ color: themeColors.text.primary }}
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {!isUnderEvaluation && (
+              <button
+                type="button"
+                onClick={() => downloadReportCard(result, { studentName: result.studentName || studentName, studentEmail: result.studentEmail || studentEmail })}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer"
+                title="Download / Print Official DE-ECO Report Card"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Download Report Card (PDF)</span>
+                <span className="sm:hidden">Download</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+              style={{ color: themeColors.text.primary }}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="p-5 sm:p-8 space-y-8">
@@ -3026,7 +2856,7 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                     <span className="text-2xl font-black text-black">Awaiting Review</span>
                   </div>
                   <p className="text-xs text-gray-800 mt-2 font-medium leading-relaxed">
-                    Instructor Rishika is evaluating your descriptive essay responses.
+                    Instructor Rishika is evaluating your descriptive responses.
                   </p>
                 </div>
 
@@ -3090,7 +2920,7 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
               </div>
 
               <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
-                <span className="text-xs text-gray-500 font-bold block">Descriptive Essays</span>
+                <span className="text-xs text-gray-500 font-bold block">Descriptive Responses</span>
                 <span className="font-bold text-sm text-indigo-600">
                   {isUnderEvaluation ? "Under Review" : "18 / 20 Marks"}
                 </span>
@@ -3117,10 +2947,14 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                 </h4>
               </div>
               <p className="text-sm font-medium leading-relaxed text-gray-900">
-                Instructor Rishika evaluates descriptive essay responses with personalized annotations and feedback. Once grading completes, your full report card, marks breakdown, and personalized feedback will be published here.
+                Instructor Rishika evaluates descriptive responses with personalized annotations and feedback. Once grading completes, your full report card, marks breakdown, and personalized feedback will be published here.
               </p>
             </div>
-          ) : result.teacherFeedback && (
+          ) : (result.teacherFeedback && (
+            (result.teacherFeedback.overall && result.teacherFeedback.overall.trim() !== '') ||
+            (Array.isArray(result.teacherFeedback.strengths) && result.teacherFeedback.strengths.length > 0) ||
+            (Array.isArray(result.teacherFeedback.improvements) && result.teacherFeedback.improvements.length > 0)
+          )) && (
             <div
               className="rounded-2xl p-6 sm:p-7 shadow-md space-y-4"
               style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
@@ -3130,48 +2964,59 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                 <h4 className="font-bold text-lg flex items-center gap-2 text-black">
                   <MessageSquare className="w-5 h-5 text-black" /> Personal Feedback from Instructor Rishika
                 </h4>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white shadow-xs">
-                  {result.teacherFeedback.evaluatedAt}
-                </span>
+                {result.teacherFeedback.evaluatedAt && (
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white shadow-xs">
+                    {result.teacherFeedback.evaluatedAt}
+                  </span>
+                )}
               </div>
 
               {/* Overall Feedback Commentary Quote */}
-              <div className="p-4 rounded-xl bg-white text-black font-serif italic text-sm sm:text-base leading-relaxed shadow-xs">
-                "{result.teacherFeedback.overall}"
-              </div>
+              {result.teacherFeedback.overall && result.teacherFeedback.overall.trim() !== '' && (
+                <div className="p-4 rounded-xl bg-white text-black font-serif italic text-sm sm:text-base leading-relaxed shadow-xs">
+                  "{result.teacherFeedback.overall}"
+                </div>
+              )}
 
               {/* Strengths & Improvements */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                {/* Strengths Card */}
-                <div
-                  className="p-4 rounded-xl shadow-xs space-y-2"
-                  style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                >
-                  <span className="text-xs font-bold uppercase flex items-center gap-1.5 text-black">
-                    <ThumbsUp className="w-4 h-4 text-black" /> Key Strengths Noted:
-                  </span>
-                  <ul className="text-xs text-black font-medium space-y-1.5 list-disc list-inside">
-                    {result.teacherFeedback.strengths.map((s, idx) => (
-                      <li key={idx}>{s}</li>
-                    ))}
-                  </ul>
-                </div>
+              {((Array.isArray(result.teacherFeedback.strengths) && result.teacherFeedback.strengths.length > 0) ||
+                (Array.isArray(result.teacherFeedback.improvements) && result.teacherFeedback.improvements.length > 0)) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  {/* Strengths Card */}
+                  {Array.isArray(result.teacherFeedback.strengths) && result.teacherFeedback.strengths.length > 0 && (
+                    <div
+                      className="p-4 rounded-xl shadow-xs space-y-2"
+                      style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
+                    >
+                      <span className="text-xs font-bold uppercase flex items-center gap-1.5 text-black">
+                        <ThumbsUp className="w-4 h-4 text-black" /> Key Strengths Noted:
+                      </span>
+                      <ul className="text-xs text-black font-medium space-y-1.5 list-disc list-inside">
+                        {result.teacherFeedback.strengths.map((s, idx) => (
+                          <li key={idx}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                {/* Improvements Card */}
-                <div
-                  className="p-4 rounded-xl shadow-xs space-y-2"
-                  style={{ backgroundColor: themeColors.accent.red, color: "#000000" }}
-                >
-                  <span className="text-xs font-bold uppercase flex items-center gap-1.5 text-black">
-                    <Flame className="w-4 h-4 text-black" /> High-Impact Action Items:
-                  </span>
-                  <ul className="text-xs text-black font-medium space-y-1.5 list-disc list-inside">
-                    {result.teacherFeedback.improvements.map((imp, idx) => (
-                      <li key={idx}>{imp}</li>
-                    ))}
-                  </ul>
+                  {/* Improvements Card */}
+                  {Array.isArray(result.teacherFeedback.improvements) && result.teacherFeedback.improvements.length > 0 && (
+                    <div
+                      className="p-4 rounded-xl shadow-xs space-y-2"
+                      style={{ backgroundColor: themeColors.accent.red, color: "#000000" }}
+                    >
+                      <span className="text-xs font-bold uppercase flex items-center gap-1.5 text-black">
+                        <Flame className="w-4 h-4 text-black" /> High-Impact Action Items:
+                      </span>
+                      <ul className="text-xs text-black font-medium space-y-1.5 list-disc list-inside">
+                        {result.teacherFeedback.improvements.map((imp, idx) => (
+                          <li key={idx}>{imp}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -3227,7 +3072,7 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                       Q{ans.questionNumber}
                     </span>
                     <span className="text-xs font-medium uppercase text-gray-500">
-                      {ans.type === "mcq" ? "Multiple Choice" : "Descriptive Essay"}
+                      {ans.type === "mcq" ? "Multiple Choice" : "Descriptive Response"}
                     </span>
                   </div>
 
@@ -3282,7 +3127,7 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                   <div className="space-y-3 text-xs sm:text-sm">
                     <div>
                       <span className="text-gray-500 text-xs font-bold block mb-1">
-                        Your Submitted Written Essay:
+                        Your Submitted Written Response:
                       </span>
                       {ans.studentAnswer ? (
                         <div
@@ -3325,7 +3170,17 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
           </div>
 
           {/* Modal Footer */}
-          <div className="pt-4 border-t border-gray-100 dark:border-neutral-800 flex justify-end">
+          <div className="pt-4 border-t border-gray-100 dark:border-neutral-800 flex items-center justify-between">
+            {!isUnderEvaluation ? (
+              <button
+                type="button"
+                onClick={() => downloadReportCard(result, { studentName: result.studentName || studentName, studentEmail: result.studentEmail || studentEmail })}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white bg-emerald-600 hover:bg-emerald-700 shadow-md hover:scale-105 active:scale-95 transition cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                Download Report Card (PDF)
+              </button>
+            ) : <div />}
             <button
               onClick={onClose}
               className="px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:scale-105 active:scale-95 transition cursor-pointer"
