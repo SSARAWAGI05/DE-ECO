@@ -51,7 +51,10 @@ import {
   Sun,
   Moon,
   Cloud,
-  Save
+  Save,
+  PenTool,
+  Edit3,
+  SlidersHorizontal
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getThemeColors } from "../../styles/colors";
@@ -2222,7 +2225,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
       {preExamModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div
-            className="rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-gray-200 dark:border-neutral-800 space-y-6"
+            className="rounded-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto p-5 sm:p-7 shadow-2xl border border-gray-200 dark:border-neutral-800 space-y-5"
             style={{ backgroundColor: themeColors.background.white }}
           >
             {/* Modal Header */}
@@ -2272,12 +2275,76 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
               </div>
             </div>
 
+            {/* HOW TO USE THE EXAM AREA (DIRECT & TO THE POINT GUIDE) */}
+            <div className="p-4 rounded-xl space-y-3 bg-slate-50 dark:bg-neutral-800/60 border border-slate-200/80 dark:border-neutral-700/60 text-xs">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <span className="font-bold uppercase tracking-wider text-slate-900 dark:text-white text-[11px]">
+                  How to Use the Exam Room (Key Features):
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* 1. Saving Progress */}
+                <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-850 border border-slate-200/70 dark:border-neutral-750 flex items-start gap-2.5">
+                  <div className="p-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
+                    <Save className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">Save Progress</span>
+                    <span className="text-[11px] text-slate-500 dark:text-neutral-400 leading-tight block mt-0.5">
+                      Tap anytime to sync answers to the cloud. You can safely resume later from any device.
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Pausing Test */}
+                <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-850 border border-slate-200/70 dark:border-neutral-750 flex items-start gap-2.5">
+                  <div className="p-1 rounded-md bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 shrink-0 mt-0.5">
+                    <Pause className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">Pause & Exit</span>
+                    <span className="text-[11px] text-slate-500 dark:text-neutral-400 leading-tight block mt-0.5">
+                      Need a break? Pause to freeze your timer and exit. Return anytime to resume seamlessly.
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. View Mode Toggle */}
+                <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-850 border border-slate-200/70 dark:border-neutral-750 flex items-start gap-2.5">
+                  <div className="p-1 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+                    <PenTool className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">Questions Only Toggle</span>
+                    <span className="text-[11px] text-slate-500 dark:text-neutral-400 leading-tight block mt-0.5">
+                      Writing with pen & paper? Switch to "Questions Only" to hide answering spaces for clear reading.
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4. Mark for Review */}
+                <div className="p-2.5 rounded-lg bg-white dark:bg-neutral-850 border border-slate-200/70 dark:border-neutral-750 flex items-start gap-2.5">
+                  <div className="p-1 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5">
+                    <Bookmark className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">Mark for Review</span>
+                    <span className="text-[11px] text-slate-500 dark:text-neutral-400 leading-tight block mt-0.5">
+                      Flag uncertain questions (or press 'M') to easily revisit them from the grid before submitting.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Instructions List */}
             <div
-              className="p-4 rounded-xl space-y-2 text-xs"
+              className="p-3.5 rounded-xl space-y-1.5 text-xs"
               style={{ backgroundColor: themeColors.accent.orangeSection || "#f9f9f9" }}
             >
-              <span className="font-bold uppercase tracking-wider block" style={{ color: themeColors.text.primary }}>
+              <span className="font-bold uppercase tracking-wider block text-[11px]" style={{ color: themeColors.text.primary }}>
                 Examination Protocol & Rules:
               </span>
               <ul className="space-y-1.5 font-medium" style={{ color: themeColors.text.secondary }}>
@@ -3077,6 +3144,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   );
   const [isSavingProgress, setIsSavingProgress] = useState(false);
   const [saveButtonState, setSaveButtonState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [viewMode, setViewMode] = useState<"full" | "questions_only">("full");
 
   // Explicit Save Handler (User tapped 'Save Progress')
   const handleExplicitSave = async () => {
@@ -3229,8 +3297,8 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
       const key = e.key.toUpperCase();
 
-      // MCQ selection via keys A, B, C, D
-      if (currentQ.type === "mcq" && currentQ.options && ["A", "B", "C", "D"].includes(key)) {
+      // MCQ selection via keys A, B, C, D (only in interactive full mode)
+      if (viewMode === "full" && currentQ.type === "mcq" && currentQ.options && ["A", "B", "C", "D"].includes(key)) {
         const matching = currentQ.options.find((o) => o.id === key);
         if (matching) {
           e.preventDefault();
@@ -3259,7 +3327,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIdx, currentQ, showSubmitModal, showBackModal, isPaused, questions.length]);
+  }, [currentIdx, currentQ, showSubmitModal, showBackModal, isPaused, questions.length, viewMode]);
 
   // Final submit handler
   const handleSubmitFinal = () => {
@@ -3442,8 +3510,8 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
         <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-neutral-900 border-r border-slate-200 dark:border-neutral-800">
           
           {/* Question Subheader Bar */}
-          <div className="px-8 py-3.5 border-b border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2.5">
+          <div className="px-4 sm:px-8 py-3 border-b border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-2.5">
               <span className="text-xs font-bold text-slate-900 dark:text-white">
                 Question {currentQ.number} of {questions.length}
               </span>
@@ -3456,8 +3524,41 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
-              {currentQ.type === "mcq" && answers[currentQ.id] && (
+            {/* Mode Switcher + Action Controls */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* TOGGLE: Questions Only vs Questions + Answering */}
+              <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-neutral-800 border border-slate-200/80 dark:border-neutral-700/80 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("full")}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    viewMode === "full"
+                      ? "bg-white dark:bg-neutral-900 text-slate-900 dark:text-white shadow-xs"
+                      : "text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                  title="Questions + Answering: Type answers or select options on screen"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <span className="hidden sm:inline">Questions + Answering</span>
+                  <span className="sm:hidden">Type</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("questions_only")}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    viewMode === "questions_only"
+                      ? "bg-white dark:bg-neutral-900 text-amber-600 dark:text-amber-400 shadow-xs"
+                      : "text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                  title="Questions Only: Hide typing spaces for pen & paper writing"
+                >
+                  <FileText className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className="hidden sm:inline">Questions Only</span>
+                  <span className="sm:hidden">Questions Only</span>
+                </button>
+              </div>
+
+              {currentQ.type === "mcq" && answers[currentQ.id] && viewMode === "full" && (
                 <button
                   type="button"
                   onClick={() => handleAnswerChange("")}
@@ -3478,14 +3579,15 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 title="Mark for later review (Press 'M')"
               >
                 <Bookmark className={`w-3.5 h-3.5 ${flagged[currentQ.id] ? "fill-amber-500 text-amber-500" : ""}`} />
-                <span>{flagged[currentQ.id] ? "Marked for Review" : "Mark for Review"}</span>
+                <span className="hidden sm:inline">{flagged[currentQ.id] ? "Marked for Review" : "Mark for Review"}</span>
+                <span className="sm:hidden">{flagged[currentQ.id] ? "Marked" : "Review"}</span>
                 <span className="hidden lg:inline text-[10px] opacity-40 font-mono">(M)</span>
               </button>
             </div>
           </div>
 
           {/* Answering Canvas (Centered reading column, no dead space) */}
-          <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 sm:py-8 custom-scrollbar">
             <div className="max-w-3xl mx-auto w-full space-y-7">
               
               {/* Question Statement */}
@@ -3493,71 +3595,124 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 {currentQ.question}
               </div>
 
-              {/* MCQ Options with Tactile Key Badges & Keyboard Shortcuts */}
-              {currentQ.type === "mcq" && currentQ.options && (
-                <div className="space-y-3 pt-1">
-                  {currentQ.options.map((option) => {
-                    const isSelected = answers[currentQ.id] === option.id;
-
-                    return (
-                      <div
-                        key={option.id}
-                        onClick={() => handleAnswerChange(option.id)}
-                        className={`group flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer select-none ${
-                          isSelected
-                            ? "border-slate-900 dark:border-white bg-slate-50/90 dark:bg-neutral-800/80 shadow-xs ring-1 ring-slate-900/10 dark:ring-white/20"
-                            : "border-slate-200/90 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 hover:bg-slate-50/40 dark:hover:bg-neutral-800/30 bg-white dark:bg-neutral-900"
-                        }`}
-                      >
-                        {/* Tactile Keyboard Key Badge */}
-                        <div
-                          className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 border transition-all ${
-                            isSelected
-                              ? "bg-slate-900 text-white dark:bg-white dark:text-neutral-900 border-slate-900 dark:border-white shadow-xs"
-                              : "border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 group-hover:bg-slate-100 dark:group-hover:bg-neutral-750"
-                          }`}
-                        >
-                          {option.id}
-                        </div>
-
-                        {/* Option Text */}
-                        <div className={`text-[15px] sm:text-base leading-normal flex-1 ${
-                          isSelected
-                            ? "font-semibold text-slate-900 dark:text-white"
-                            : "font-normal text-slate-800 dark:text-neutral-200"
-                        }`}>
-                          {option.text}
-                        </div>
-
-                        {/* Radio Selector */}
-                        <div
-                          className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                            isSelected
-                              ? "border-2 border-slate-900 dark:border-white"
-                              : "border border-slate-300 dark:border-neutral-600"
-                          }`}
-                        >
-                          {isSelected && (
-                            <div className="w-2 h-2 rounded-full bg-slate-900 dark:bg-white" />
-                          )}
-                        </div>
+              {/* QUESTIONS ONLY MODE (Pen & Paper Mode) */}
+              {viewMode === "questions_only" ? (
+                <div className="space-y-5 pt-1">
+                  {/* For MCQ: Show options clearly as reference question content so student can read and solve on paper */}
+                  {currentQ.type === "mcq" && currentQ.options && currentQ.options.length > 0 && (
+                    <div className="space-y-3 p-5 rounded-2xl bg-slate-50/90 dark:bg-neutral-850/90 border border-slate-200/90 dark:border-neutral-800">
+                      <span className="text-[11px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider block">
+                        Multiple Choice Options (Pen & Paper Reference):
+                      </span>
+                      <div className="space-y-2">
+                        {currentQ.options.map((option) => (
+                          <div
+                            key={option.id}
+                            className="flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-750 text-sm font-medium text-slate-800 dark:text-neutral-200"
+                          >
+                            <span className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 font-bold text-xs flex items-center justify-center shrink-0 text-slate-700 dark:text-neutral-300">
+                              {option.id}
+                            </span>
+                            <span className="pt-0.5 leading-normal">{option.text}</span>
+                          </div>
+                        ))}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    </div>
+                  )}
 
-              {/* Descriptive Answer Word Editor */}
-              {currentQ.type === "descriptive" && (
-                <div className="pt-1">
-                  <WordAnswerEditor
-                    key={currentQ.id}
-                    value={answers[currentQ.id] || ""}
-                    onChange={(newVal) => handleAnswerChange(newVal)}
-                    lastSavedText={lastSaved}
-                    isDark={isDark}
-                  />
+                  {/* Pen & Paper Banner */}
+                  <div className="p-4 rounded-2xl border border-dashed border-amber-300 dark:border-amber-800/80 bg-amber-50/60 dark:bg-amber-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 shrink-0">
+                        <PenTool className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-amber-900 dark:text-amber-300 block">
+                          Questions Only Mode (Pen & Paper)
+                        </span>
+                        <span className="text-amber-800/80 dark:text-amber-400/80">
+                          The on-screen typing space is hidden. Solve and write your answer on your own paper.
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("full")}
+                      className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-800 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 font-bold hover:bg-amber-100/50 transition cursor-pointer shrink-0 self-start sm:self-auto text-xs"
+                    >
+                      Enable Typing Mode →
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  {/* MCQ Options with Tactile Key Badges & Keyboard Shortcuts */}
+                  {currentQ.type === "mcq" && currentQ.options && (
+                    <div className="space-y-3 pt-1">
+                      {currentQ.options.map((option) => {
+                        const isSelected = answers[currentQ.id] === option.id;
+
+                        return (
+                          <div
+                            key={option.id}
+                            onClick={() => handleAnswerChange(option.id)}
+                            className={`group flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                              isSelected
+                                ? "border-slate-900 dark:border-white bg-slate-50/90 dark:bg-neutral-800/80 shadow-xs ring-1 ring-slate-900/10 dark:ring-white/20"
+                                : "border-slate-200/90 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 hover:bg-slate-50/40 dark:hover:bg-neutral-800/30 bg-white dark:bg-neutral-900"
+                            }`}
+                          >
+                            {/* Tactile Keyboard Key Badge */}
+                            <div
+                              className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 border transition-all ${
+                                isSelected
+                                  ? "bg-slate-900 text-white dark:bg-white dark:text-neutral-900 border-slate-900 dark:border-white shadow-xs"
+                                  : "border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 group-hover:bg-slate-100 dark:group-hover:bg-neutral-750"
+                              }`}
+                            >
+                              {option.id}
+                            </div>
+
+                            {/* Option Text */}
+                            <div className={`text-[15px] sm:text-base leading-normal flex-1 ${
+                              isSelected
+                                ? "font-semibold text-slate-900 dark:text-white"
+                                : "font-normal text-slate-800 dark:text-neutral-200"
+                            }`}>
+                              {option.text}
+                            </div>
+
+                            {/* Radio Selector */}
+                            <div
+                              className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                                isSelected
+                                  ? "border-2 border-slate-900 dark:border-white"
+                                  : "border border-slate-300 dark:border-neutral-600"
+                              }`}
+                            >
+                              {isSelected && (
+                                <div className="w-2 h-2 rounded-full bg-slate-900 dark:bg-white" />
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Descriptive Answer Word Editor */}
+                  {currentQ.type === "descriptive" && (
+                    <div className="pt-1">
+                      <WordAnswerEditor
+                        key={currentQ.id}
+                        value={answers[currentQ.id] || ""}
+                        onChange={(newVal) => handleAnswerChange(newVal)}
+                        lastSavedText={lastSaved}
+                        isDark={isDark}
+                      />
+                    </div>
+                  )}
+                </>
               )}
 
             </div>
