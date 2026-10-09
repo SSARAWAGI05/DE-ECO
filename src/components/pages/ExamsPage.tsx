@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Clock,
   Calendar,
@@ -7,6 +7,7 @@ import {
   Award,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Bookmark,
   BookOpen,
   ArrowRight,
@@ -22,7 +23,28 @@ import {
   FileText,
   Pause,
   Play,
-  Eye
+  Eye,
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  List,
+  ListOrdered,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Quote,
+  Table as TableIcon,
+  Highlighter,
+  Undo,
+  Redo,
+  Subscript,
+  Superscript,
+  Maximize2,
+  Minimize2,
+  Minus,
+  Sparkles
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getThemeColors } from "../../styles/colors";
@@ -1115,6 +1137,787 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 };
 
 /* ========================================================================= */
+/* =================== VIEW: MS WORD DOCUMENT EDITOR ======================= */
+/* ========================================================================= */
+
+interface WordAnswerEditorProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  recommendedWords?: string;
+  lastSavedText?: string;
+  isDark?: boolean;
+}
+
+const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
+  value,
+  onChange,
+  placeholder = "Type your academic essay response here. Formulate clear arguments, define theoretical assumptions, and use numbered points or paragraphs for structure...",
+  recommendedWords = "150 - 250 words",
+  lastSavedText = "Draft auto-saved",
+  isDark = false
+}) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [activeRibbonTab, setActiveRibbonTab] = useState<"home" | "insert" | "layout">("home");
+  const [selectedFont, setSelectedFont] = useState("Calibri, sans-serif");
+  const [selectedSize, setSelectedSize] = useState("3"); // 3 = 12pt standard in execCommand
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+  const [showTableMenu, setShowTableMenu] = useState(false);
+  const [showFormulaMenu, setShowFormulaMenu] = useState(false);
+
+  // Sync value into contentEditable when switching questions or restoring
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== (value || "")) {
+      editorRef.current.innerHTML = value || "";
+    }
+  }, [value]);
+
+  // Extract clean text to calculate words and characters
+  const getWordAndCharCount = (html: string) => {
+    if (!html) return { words: 0, chars: 0 };
+    const text = html.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim();
+    const words = text === "" ? 0 : text.split(/\s+/).filter(Boolean).length;
+    const chars = html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").length;
+    return { words, chars };
+  };
+
+  const { words: wordCount, chars: charCount } = getWordAndCharCount(value);
+
+  // Content change handler
+  const handleInput = () => {
+    if (editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      onChange(html);
+    }
+  };
+
+  // Execute rich formatting commands while preserving cursor selection
+  const execCmd = (cmd: string, val: string | undefined = undefined) => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    document.execCommand(cmd, false, val);
+    handleInput();
+  };
+
+  // Keyboard shortcut listener
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Tab") {
+      e.preventDefault();
+      execCmd("insertHTML", "&nbsp;&nbsp;&nbsp;&nbsp;");
+    }
+  };
+
+  // Insert Table Helper
+  const handleInsertTable = (rows: number, cols: number) => {
+    setShowTableMenu(false);
+    let tableHtml =
+      '<table style="width:100%; border-collapse:collapse; margin:14px 0; border:1px solid #cbd5e1; font-size:13px;">' +
+      '<thead><tr style="background-color:#f1f5f9;">';
+    for (let c = 0; c < cols; c++) {
+      tableHtml += `<th style="border:1px solid #cbd5e1; padding:8px 12px; text-align:left; font-weight:700;">Column ${c + 1}</th>`;
+    }
+    tableHtml += "</tr></thead><tbody>";
+    for (let r = 0; r < rows - 1; r++) {
+      tableHtml += "<tr>";
+      for (let c = 0; c < cols; c++) {
+        tableHtml += '<td style="border:1px solid #cbd5e1; padding:8px 12px;">&nbsp;</td>';
+      }
+      tableHtml += "</tr>";
+    }
+    tableHtml += "</tbody></table><p><br></p>";
+    execCmd("insertHTML", tableHtml);
+  };
+
+  // Insert Economic Equation Template
+  const handleInsertEquation = (formula: string, label: string) => {
+    setShowFormulaMenu(false);
+    const formulaHtml = `
+      <div style="background-color:#f8fafc; border-left:4px solid #185abd; padding:10px 14px; margin:12px 0; border-radius:4px; font-family:monospace; font-size:14px; color:#0f172a;">
+        <span style="font-size:11px; font-weight:bold; color:#185abd; text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:3px;">${label}</span>
+        <strong>${formula}</strong>
+      </div><p><br></p>`;
+    execCmd("insertHTML", formulaHtml);
+  };
+
+  // Insert Academic Callout
+  const handleInsertCallout = () => {
+    const calloutHtml = `
+      <blockquote style="border-left:3px solid #f59e0b; background-color:#fffbeb; padding:10px 14px; margin:12px 0; border-radius:4px; color:#78350f; font-style:italic; font-size:13px;">
+        <strong>Key Theoretical Assumption:</strong> State your economic hypothesis here...
+      </blockquote><p><br></p>`;
+    execCmd("insertHTML", calloutHtml);
+  };
+
+  // Palette colors
+  const textColors = [
+    { label: "Automatic", value: isDark ? "#f3f4f6" : "#111827" },
+    { label: "Dark Navy", value: "#1e3a8a" },
+    { label: "Crimson Red", value: "#991b1b" },
+    { label: "Forest Green", value: "#166534" },
+    { label: "Amber Brown", value: "#854d0e" },
+    { label: "Deep Purple", value: "#581c87" }
+  ];
+
+  const highlightColors = [
+    { label: "Yellow", value: "#fef08a" },
+    { label: "Lime Green", value: "#bbf7d0" },
+    { label: "Cyan", value: "#a5f3fc" },
+    { label: "Pink", value: "#fbcfe8" },
+    { label: "None", value: "transparent" }
+  ];
+
+  return (
+    <div
+      className={`rounded-xl border transition-all flex flex-col ${
+        isFullscreen
+          ? "fixed inset-0 z-50 rounded-none border-none bg-neutral-900"
+          : isDark
+          ? "border-neutral-800 bg-neutral-900 shadow-md"
+          : "border-gray-300 bg-neutral-100 shadow-sm"
+      }`}
+    >
+      {/* ================= 1. MS WORD APP TITLE BAR ================= */}
+      <div className="bg-[#185abd] text-white px-3 sm:px-4 py-2 flex items-center justify-between select-none rounded-t-xl">
+        <div className="flex items-center gap-2.5">
+          <div className="w-5 h-5 rounded bg-white text-[#185abd] flex items-center justify-center font-black text-xs shadow-xs">
+            W
+          </div>
+          <span className="font-bold text-xs sm:text-sm tracking-wide">
+            Document1 — Word (Academic Response Canvas)
+          </span>
+          <span className="hidden md:inline-flex items-center gap-1 text-[11px] bg-[#124285] px-2 py-0.5 rounded font-medium text-blue-100">
+            <Check className="w-3 h-3 text-emerald-400" /> Auto-Saved
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="hidden sm:inline-block text-xs font-medium text-blue-100">
+            Target: <strong>{recommendedWords}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="p-1 rounded hover:bg-white/20 transition cursor-pointer text-white"
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Document Canvas"}
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+
+      {/* ================= 2. RIBBON TABS (HOME | INSERT | LAYOUT) ================= */}
+      <div
+        className={`flex items-center px-3 pt-1 border-b text-xs font-semibold select-none ${
+          isDark
+            ? "bg-neutral-900 border-neutral-800 text-neutral-300"
+            : "bg-[#f3f4f6] border-gray-300 text-gray-700"
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => setActiveRibbonTab("home")}
+          className={`px-3 py-1.5 rounded-t transition cursor-pointer ${
+            activeRibbonTab === "home"
+              ? isDark
+                ? "bg-neutral-800 text-white border-b-2 border-[#185abd]"
+                : "bg-white text-[#185abd] border-b-2 border-[#185abd] shadow-2xs"
+              : "hover:bg-gray-200 dark:hover:bg-neutral-800"
+          }`}
+        >
+          Home
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveRibbonTab("insert")}
+          className={`px-3 py-1.5 rounded-t transition cursor-pointer ${
+            activeRibbonTab === "insert"
+              ? isDark
+                ? "bg-neutral-800 text-white border-b-2 border-[#185abd]"
+                : "bg-white text-[#185abd] border-b-2 border-[#185abd] shadow-2xs"
+              : "hover:bg-gray-200 dark:hover:bg-neutral-800"
+          }`}
+        >
+          Insert
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveRibbonTab("layout")}
+          className={`px-3 py-1.5 rounded-t transition cursor-pointer ${
+            activeRibbonTab === "layout"
+              ? isDark
+                ? "bg-neutral-800 text-white border-b-2 border-[#185abd]"
+                : "bg-white text-[#185abd] border-b-2 border-[#185abd] shadow-2xs"
+              : "hover:bg-gray-200 dark:hover:bg-neutral-800"
+          }`}
+        >
+          Layout & Guidelines
+        </button>
+      </div>
+
+      {/* ================= 3. THE WORD RIBBON TOOLBAR ================= */}
+      <div
+        className={`p-2 border-b flex flex-wrap items-center gap-1.5 sm:gap-2 select-none ${
+          isDark ? "bg-neutral-850 border-neutral-800 text-neutral-200" : "bg-white border-gray-300 text-gray-800"
+        }`}
+        style={{ minHeight: "52px" }}
+      >
+        {/* ================= TAB 1: HOME RIBBON ================= */}
+        {activeRibbonTab === "home" && (
+          <>
+            {/* Undo / Redo */}
+            <div className="flex items-center gap-0.5 border-r border-gray-300 dark:border-neutral-700 pr-1.5">
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("undo");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer"
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("redo");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer"
+                title="Redo (Ctrl+Y)"
+              >
+                <Redo className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Font Family Dropdown */}
+            <select
+              value={selectedFont}
+              onChange={(e) => {
+                setSelectedFont(e.target.value);
+                execCmd("fontName", e.target.value);
+              }}
+              className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 font-medium cursor-pointer outline-none max-w-[130px]"
+            >
+              <option value="Calibri, sans-serif">Calibri</option>
+              <option value="'Times New Roman', serif">Times New Roman</option>
+              <option value="Arial, sans-serif">Arial</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="'Courier New', monospace">Courier New</option>
+            </select>
+
+            {/* Font Size Dropdown */}
+            <select
+              value={selectedSize}
+              onChange={(e) => {
+                setSelectedSize(e.target.value);
+                execCmd("fontSize", e.target.value);
+              }}
+              className="px-1.5 py-1 text-xs rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 font-medium cursor-pointer outline-none"
+              title="Font Size"
+            >
+              <option value="2">10 pt</option>
+              <option value="3">12 pt (Standard)</option>
+              <option value="4">14 pt</option>
+              <option value="5">18 pt</option>
+              <option value="6">24 pt</option>
+            </select>
+
+            <div className="w-[1px] h-6 bg-gray-300 dark:bg-neutral-700" />
+
+            {/* Basic Formatting: Bold, Italic, Underline, Strikethrough */}
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("bold");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer font-black text-xs w-7 h-7 flex items-center justify-center"
+                title="Bold (Ctrl+B)"
+              >
+                <Bold className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("italic");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer w-7 h-7 flex items-center justify-center"
+                title="Italic (Ctrl+I)"
+              >
+                <Italic className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("underline");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer w-7 h-7 flex items-center justify-center"
+                title="Underline (Ctrl+U)"
+              >
+                <Underline className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("strikeThrough");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer w-7 h-7 flex items-center justify-center"
+                title="Strikethrough"
+              >
+                <Strikethrough className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("subscript");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer w-7 h-7 flex items-center justify-center"
+                title="Subscript (X₂)"
+              >
+                <Subscript className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("superscript");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer w-7 h-7 flex items-center justify-center"
+                title="Superscript (X²)"
+              >
+                <Superscript className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="w-[1px] h-6 bg-gray-300 dark:bg-neutral-700" />
+
+            {/* Text Color & Highlight Picker */}
+            <div className="relative flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowColorPicker(!showColorPicker);
+                  setShowHighlightPicker(false);
+                }}
+                className="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer flex items-center gap-1 text-xs font-bold"
+                title="Font Color"
+              >
+                <span className="underline decoration-red-600 decoration-2 font-black text-sm">A</span>
+                <ChevronDown className="w-2.5 h-2.5" />
+              </button>
+
+              {showColorPicker && (
+                <div className="absolute top-8 left-0 z-50 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-xl p-2 w-36 space-y-1">
+                  <div className="text-[10px] font-bold text-gray-500 uppercase px-1">Theme Colors</div>
+                  {textColors.map((c) => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        execCmd("foreColor", c.value);
+                        setShowColorPicker(false);
+                      }}
+                      className="w-full text-left px-2 py-1 rounded text-xs hover:bg-gray-100 dark:hover:bg-neutral-700 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="w-3.5 h-3.5 rounded-full border border-gray-300" style={{ backgroundColor: c.value }} />
+                      <span>{c.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowHighlightPicker(!showHighlightPicker);
+                  setShowColorPicker(false);
+                }}
+                className="px-1.5 py-1 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer flex items-center gap-1"
+                title="Text Highlight Color"
+              >
+                <Highlighter className="w-3.5 h-3.5 text-amber-500" />
+                <ChevronDown className="w-2.5 h-2.5" />
+              </button>
+
+              {showHighlightPicker && (
+                <div className="absolute top-8 left-10 z-50 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-xl p-2 w-32 space-y-1">
+                  <div className="text-[10px] font-bold text-gray-500 uppercase px-1">Highlighter</div>
+                  {highlightColors.map((c) => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        execCmd("hiliteColor", c.value);
+                        setShowHighlightPicker(false);
+                      }}
+                      className="w-full text-left px-2 py-1 rounded text-xs hover:bg-gray-100 dark:hover:bg-neutral-700 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span className="w-3.5 h-3.5 rounded border border-gray-300" style={{ backgroundColor: c.value }} />
+                      <span>{c.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="w-[1px] h-6 bg-gray-300 dark:bg-neutral-700" />
+
+            {/* Paragraph: Lists and Alignments */}
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("insertUnorderedList");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer w-7 h-7 flex items-center justify-center"
+                title="Bulleted List"
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("insertOrderedList");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer w-7 h-7 flex items-center justify-center"
+                title="Numbered List"
+              >
+                <ListOrdered className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("justifyLeft");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer w-7 h-7 flex items-center justify-center"
+                title="Align Left"
+              >
+                <AlignLeft className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("justifyCenter");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer w-7 h-7 flex items-center justify-center"
+                title="Center"
+              >
+                <AlignCenter className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("justifyRight");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer w-7 h-7 flex items-center justify-center"
+                title="Align Right"
+              >
+                <AlignRight className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  execCmd("justifyFull");
+                }}
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition cursor-pointer w-7 h-7 flex items-center justify-center"
+                title="Justify"
+              >
+                <AlignJustify className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="w-[1px] h-6 bg-gray-300 dark:bg-neutral-700" />
+
+            {/* Quick Word Headings / Styles */}
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  execCmd("formatBlock", e.target.value);
+                  e.target.value = "";
+                }
+              }}
+              defaultValue=""
+              className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 font-medium cursor-pointer outline-none"
+              title="Styles"
+            >
+              <option value="" disabled>Word Styles</option>
+              <option value="<p>">Normal Paragraph</option>
+              <option value="<h1>">Heading 1 (Main Title)</option>
+              <option value="<h2>">Heading 2 (Section Subheading)</option>
+              <option value="<h3>">Heading 3 (Point Heading)</option>
+              <option value="<blockquote>">Quote Block</option>
+            </select>
+          </>
+        )}
+
+        {/* ================= TAB 2: INSERT RIBBON ================= */}
+        {activeRibbonTab === "insert" && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Insert Table Menu */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowTableMenu(!showTableMenu)}
+                className="px-2.5 py-1.5 rounded bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+              >
+                <TableIcon className="w-3.5 h-3.5 text-[#185abd]" />
+                <span>Insert Table</span>
+                <ChevronDown className="w-3 h-3 text-gray-500" />
+              </button>
+
+              {showTableMenu && (
+                <div className="absolute top-8 left-0 z-50 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-xl p-2 w-44 space-y-1">
+                  <div className="text-[10px] font-bold text-gray-500 uppercase px-1">Select Grid Size</div>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleInsertTable(2, 2);
+                    }}
+                    className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer"
+                  >
+                    2 × 2 Comparison Table
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleInsertTable(3, 3);
+                    }}
+                    className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer"
+                  >
+                    3 × 3 Data Matrix
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleInsertTable(4, 3);
+                    }}
+                    className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer"
+                  >
+                    4 × 3 Detailed Table
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Insert Economic Formula Menu */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowFormulaMenu(!showFormulaMenu)}
+                className="px-2.5 py-1.5 rounded bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Insert Formula / Equation</span>
+                <ChevronDown className="w-3 h-3 text-gray-500" />
+              </button>
+
+              {showFormulaMenu && (
+                <div className="absolute top-8 left-0 z-50 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-xl p-2 w-64 space-y-1">
+                  <div className="text-[10px] font-bold text-gray-500 uppercase px-1">Economic Equation Templates</div>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleInsertEquation("Y = C(Y - T) + I(r) + G + NX", "Macro Equilibrium");
+                    }}
+                    className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer"
+                  >
+                    Macro: Y = C + I + G + NX
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleInsertEquation("M · V = P · Y", "Equation of Exchange");
+                    }}
+                    className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer"
+                  >
+                    Monetary: M · V = P · Y
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleInsertEquation("Ed = (%ΔQd) / (%ΔP) = (dQ/dP) · (P/Q)", "Price Elasticity of Demand");
+                    }}
+                    className="w-full text-left px-2 py-1.5 rounded text-xs hover:bg-gray-100 dark:hover:bg-neutral-700 cursor-pointer"
+                  >
+                    Micro: Price Elasticity Formula
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Insert Assumption Callout */}
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleInsertCallout();
+              }}
+              className="px-2.5 py-1.5 rounded bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+            >
+              <Quote className="w-3.5 h-3.5 text-amber-600" />
+              <span>Insert Assumption Box</span>
+            </button>
+
+            {/* Insert Divider */}
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                execCmd("insertHorizontalRule");
+              }}
+              className="px-2.5 py-1.5 rounded bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 transition flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+            >
+              <Minus className="w-3.5 h-3.5" />
+              <span>Section Divider</span>
+            </button>
+          </div>
+        )}
+
+        {/* ================= TAB 3: LAYOUT RIBBON ================= */}
+        {activeRibbonTab === "layout" && (
+          <div className="flex items-center gap-4 text-xs font-medium">
+            <span className="text-gray-600 dark:text-gray-300">
+              Page Margins: <strong>Standard Academic (1 inch / 2.54 cm)</strong>
+            </span>
+            <span className="text-gray-400">|</span>
+            <span className="text-gray-600 dark:text-gray-300">
+              Line Spacing: <strong>1.5 Lines (Academic Standard)</strong>
+            </span>
+            <span className="text-gray-400">|</span>
+            <span className="text-gray-600 dark:text-gray-300">
+              Spell Check: <strong className="text-emerald-600">Enabled</strong>
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* ================= 4. MS WORD HORIZONTAL RULER ================= */}
+      <div
+        className={`px-6 py-0.5 border-b flex items-center select-none text-[9px] font-mono tracking-widest ${
+          isDark ? "bg-neutral-900 border-neutral-800 text-neutral-500" : "bg-[#f8f9fa] border-gray-200 text-gray-400"
+        }`}
+      >
+        <span className="text-gray-500 mr-2">▲</span>
+        <div className="flex-1 flex justify-between px-4">
+          <span>| 1"</span>
+          <span>.</span>
+          <span>| 2"</span>
+          <span>.</span>
+          <span>| 3"</span>
+          <span>.</span>
+          <span>| 4"</span>
+          <span>.</span>
+          <span>| 5"</span>
+          <span>.</span>
+          <span>| 6"</span>
+          <span>.</span>
+          <span>| 7"</span>
+        </div>
+        <span className="text-gray-500 ml-2">▲</span>
+      </div>
+
+      {/* ================= 5. THE DOCUMENT DESK & PAPER CANVAS ================= */}
+      <div
+        className={`flex-1 p-3 sm:p-6 overflow-y-auto flex justify-center ${
+          isFullscreen ? "min-h-[75vh]" : "min-h-[380px]"
+        }`}
+        style={{
+          backgroundColor: isDark ? "#14171d" : "#e9ecef"
+        }}
+      >
+        {/* The White A4 Sheet of Paper */}
+        <div
+          className={`w-full max-w-4xl p-6 sm:p-10 rounded-xs shadow-md border transition-all flex flex-col justify-between ${
+            isDark
+              ? "bg-[#1c212b] border-neutral-700 text-neutral-100"
+              : "bg-white border-gray-300 text-gray-900"
+          }`}
+          style={{ minHeight: "360px" }}
+        >
+          {/* Header watermark on paper */}
+          <div className="pb-3 mb-3 border-b border-gray-200 dark:border-neutral-700 flex items-center justify-between text-[11px] text-gray-400 select-none">
+            <span>DE-ECO ACADEMIC EXAMINATION — ESSAY ANSWER SHEET</span>
+            <span>DATE: {new Date().toLocaleDateString()}</span>
+          </div>
+
+          {/* Actual contentEditable Canvas */}
+          <div
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={handleInput}
+            onKeyDown={handleKeyDown}
+            className="flex-1 outline-none text-sm sm:text-base leading-relaxed focus:outline-none min-h-[260px] prose dark:prose-invert max-w-none"
+            style={{
+              fontFamily: selectedFont,
+              lineHeight: "1.7"
+            }}
+            data-placeholder={placeholder}
+          />
+
+          {/* Footer watermark on paper */}
+          <div className="pt-4 mt-4 border-t border-gray-200 dark:border-neutral-700 flex items-center justify-between text-[10px] text-gray-400 select-none">
+            <span>Candidate Answer Workspace</span>
+            <span>Page 1 of 1</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= 6. MS WORD BOTTOM STATUS BAR ================= */}
+      <div className="bg-[#185abd] text-white px-3 sm:px-4 py-1.5 flex items-center justify-between text-[11px] font-medium select-none rounded-b-xl">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <span>PAGE 1 OF 1</span>
+          <span>{wordCount} WORDS</span>
+          <span className="hidden sm:inline">{charCount} CHARACTERS</span>
+          <span className="hidden md:inline">ENGLISH (UNITED STATES)</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1 text-blue-100">
+            <Check className="w-3 h-3 text-emerald-300" />
+            {lastSavedText}
+          </span>
+          <span className="hidden sm:inline text-blue-100">100% ZOOM</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ========================================================================= */
 /* ================= VIEW: INTERACTIVE EXAM TAKING PORTAL ================== */
 /* ========================================================================= */
 
@@ -1463,41 +2266,16 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               </div>
             )}
 
-            {/* ================= IF DESCRIPTIVE: CLEAN WRITING CANVAS ================= */}
+            {/* ================= IF DESCRIPTIVE: MS WORD ESSAY CANVAS ================= */}
             {currentQ.type === "descriptive" && (
-              <div className="space-y-3 pt-2">
-                {/* Guidelines Bar */}
-                <div className="flex items-center justify-between text-xs text-gray-500 border-b border-gray-100 dark:border-neutral-800 pb-2">
-                  <span>
-                    Suggested Length: <strong className="text-gray-700 dark:text-gray-300">{currentQ.recommendedWords || "150 - 250 words"}</strong>
-                  </span>
-                  <span>
-                    Structured Academic Essay
-                  </span>
-                </div>
-
-                {/* Textarea */}
-                <textarea
+              <div className="pt-2">
+                <WordAnswerEditor
                   value={answers[currentQ.id] || ""}
-                  onChange={(e) => handleAnswerChange(e.target.value)}
-                  placeholder="Type your essay response here. Formulate clear arguments, define theoretical assumptions, and use numbered points or paragraphs for structure..."
-                  className="w-full min-h-[300px] p-4.5 rounded-xl border border-gray-200 dark:border-neutral-700 text-sm sm:text-base font-sans leading-relaxed outline-none focus:border-black dark:focus:border-white focus:bg-white dark:focus:bg-black transition resize-y shadow-2xs"
-                  style={{
-                    backgroundColor: themeColors.primary.w,
-                    color: themeColors.text.primary
-                  }}
+                  onChange={(newVal) => handleAnswerChange(newVal)}
+                  recommendedWords={currentQ.recommendedWords}
+                  lastSavedText={lastSaved}
+                  isDark={isDark}
                 />
-
-                {/* Status Bar */}
-                <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    {lastSaved}
-                  </span>
-                  <span className="font-medium text-gray-600 dark:text-gray-400">
-                    {wordCount} {wordCount === 1 ? "word" : "words"}
-                  </span>
-                </div>
               </div>
             )}
           </div>
@@ -1629,6 +2407,50 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 <span className="w-2.5 h-2.5 rounded border border-gray-300 dark:border-neutral-600" />
                 <span>Unattempted</span>
               </div>
+            </div>
+          </div>
+
+          {/* ================= PREVIOUS / NEXT BUTTON TOGGLE CARD BELOW ================= */}
+          <div
+            className="rounded-2xl p-4 border border-gray-200/80 dark:border-neutral-800 shadow-sm space-y-3"
+            style={{ backgroundColor: themeColors.background.white }}
+          >
+            <div className="flex items-center justify-between text-xs px-0.5">
+              <span className="text-gray-500 font-medium">Question Navigation</span>
+              <span className="font-bold text-xs" style={{ color: themeColors.text.primary }}>
+                {currentIdx + 1} of {questions.length}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentIdx((prev) => Math.max(0, prev - 1))}
+                disabled={currentIdx === 0}
+                className="py-2.5 px-3 rounded-xl font-semibold text-xs border border-gray-200 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition disabled:opacity-35 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                style={{ color: themeColors.text.primary }}
+              >
+                <ChevronLeft className="w-4 h-4" /> Previous
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (currentIdx < questions.length - 1) {
+                    setCurrentIdx((prev) => prev + 1);
+                  } else {
+                    setShowSubmitModal(true);
+                  }
+                }}
+                className="py-2.5 px-3 rounded-xl font-bold text-xs shadow-xs transition hover:opacity-90 active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
+              >
+                {currentIdx === questions.length - 1 ? (
+                  <>Submit <Check className="w-3.5 h-3.5" /></>
+                ) : (
+                  <>Next <ChevronRight className="w-4 h-4" /></>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -2202,9 +3024,20 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                       <span className="text-gray-500 text-xs font-bold block mb-1">
                         Your Submitted Written Essay:
                       </span>
-                      <p className="p-4 rounded-xl bg-gray-50 dark:bg-neutral-800 text-xs leading-relaxed" style={{ color: themeColors.text.primary }}>
-                        {ans.studentAnswer || "(No answer submitted)"}
-                      </p>
+                      {ans.studentAnswer ? (
+                        <div
+                          className="p-4 rounded-xl bg-gray-50 dark:bg-neutral-800 text-xs leading-relaxed prose dark:prose-invert max-w-none overflow-x-auto"
+                          style={{ color: themeColors.text.primary }}
+                          dangerouslySetInnerHTML={{ __html: ans.studentAnswer }}
+                        />
+                      ) : (
+                        <p
+                          className="p-4 rounded-xl bg-gray-50 dark:bg-neutral-800 text-xs leading-relaxed italic text-gray-400"
+                          style={{ color: themeColors.text.secondary }}
+                        >
+                          (No answer submitted)
+                        </p>
+                      )}
                     </div>
 
                     {isUnderEvaluation ? (
