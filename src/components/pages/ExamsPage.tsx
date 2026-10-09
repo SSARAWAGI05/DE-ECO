@@ -173,6 +173,766 @@ const MOCK_EXAMS: Exam[] = [];
 const MOCK_RESULTS: ExamResult[] = [];
 
 /* ========================================================================= */
+/* =========== DE-ECO OFFICIAL REPORT CARD & TRANSCRIPT DOWNLOADER ========= */
+/* ========================================================================= */
+
+const escapeHtml = (str: string = ''): string => {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
+const stripHtmlTags = (html: string = ''): string => {
+  return html.replace(/<[^>]*>/g, '').trim();
+};
+
+export const downloadReportCard = (
+  data: any,
+  options?: { studentName?: string; studentEmail?: string }
+) => {
+  const candidateName = options?.studentName || data.studentName || 'Student';
+  const candidateEmail = options?.studentEmail || data.studentEmail || 'Registered Student';
+  const examTitle = data.examTitle || 'Academic Examination';
+  const rawCourse = (data.course || '').trim();
+  let courseTitle = rawCourse || 'Economics & Finance Curriculum';
+  let courseMetaLabel = 'Associated Course';
+  if (/^1-on-1/i.test(rawCourse) || rawCourse.toLowerCase().includes('1-on-1')) {
+    const match = rawCourse.match(/^1-on-1\s*[:\-–]?\s*(.*)$/i);
+    const namePart = (match && match[1] ? match[1].trim() : '') || candidateName;
+    courseTitle = namePart ? `Assessment #1: ${namePart}` : 'Assessment #1';
+    courseMetaLabel = 'Academic Assessment';
+  } else if (rawCourse.startsWith('Assessment #')) {
+    courseMetaLabel = 'Academic Assessment';
+  }
+  const instructor = data.instructor || 'Instructor Rishika';
+  const totalMarks = Number(data.totalMarks) || 100;
+  const scoreObtained = data.scoreObtained !== undefined ? Number(data.scoreObtained) : 0;
+  const percentage = data.percentage !== undefined ? Number(data.percentage) : Math.round((scoreObtained / (totalMarks || 1)) * 100);
+  const grade = data.grade || 'Completed';
+  const isPassed = data.isPassed !== undefined ? Boolean(data.isPassed) : percentage >= 40;
+  const timeSpent = Number(data.timeSpentMinutes) || 0;
+  const submittedAt = data.submittedAt || new Date().toLocaleDateString('en-US');
+  const feedback = data.teacherFeedback;
+  const transcriptCode = 'DEECO-' + (data.id ? String(data.id).slice(0, 8).toUpperCase() : 'TRANSCRIPT');
+
+  const answersList: any[] = Array.isArray(data.answers) ? data.answers : [];
+  const mcqQuestions = answersList.filter((a) => a.type === 'mcq');
+  const descriptiveQuestions = answersList.filter((a) => a.type === 'descriptive');
+
+  const mcqTotal = mcqQuestions.reduce((acc, q) => acc + (Number(q.marks) || 0), 0);
+  const mcqAwarded = mcqQuestions.reduce(
+    (acc, q) => acc + (q.marksAwarded !== undefined ? Number(q.marksAwarded) : (q.isCorrect ? Number(q.marks) : 0)),
+    0
+  );
+
+  const descTotal = descriptiveQuestions.reduce((acc, q) => acc + (Number(q.marks) || 0), 0);
+  const descAwarded = descriptiveQuestions.reduce((acc, q) => acc + (q.marksAwarded !== undefined ? Number(q.marksAwarded) : 0), 0);
+
+  const issueDate = new Date().toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
+  const html = '<!DOCTYPE html>' +
+'<html lang="en">' +
+'<head>' +
+'  <meta charset="UTF-8">' +
+'  <meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+'  <title>DE-ECO Official Report Card - ' + escapeHtml(examTitle) + '</title>' +
+'  <style>' +
+'    @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap");' +
+'    @page {' +
+'      size: A4;' +
+'      margin: 10mm 12mm;' +
+'    }' +
+'    * {' +
+'      box-sizing: border-box;' +
+'      margin: 0;' +
+'      padding: 0;' +
+'      -webkit-print-color-adjust: exact !important;' +
+'      print-color-adjust: exact !important;' +
+'    }' +
+'    body {' +
+'      font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;' +
+'      background-color: #f8fafc;' +
+'      color: #0f172a;' +
+'      line-height: 1.45;' +
+'      padding: 20px;' +
+'    }' +
+'    .report-card-wrapper {' +
+'      max-width: 860px;' +
+'      margin: 0 auto;' +
+'      background: #ffffff;' +
+'      border: 1px solid #e2e8f0;' +
+'      border-radius: 16px;' +
+'      box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.08);' +
+'      overflow: hidden;' +
+'      position: relative;' +
+'    }' +
+'    .action-bar {' +
+'      position: sticky;' +
+'      top: 0;' +
+'      z-index: 100;' +
+'      display: flex;' +
+'      justify-content: space-between;' +
+'      align-items: center;' +
+'      background: #0f172a;' +
+'      color: #ffffff;' +
+'      padding: 12px 24px;' +
+'      border-radius: 12px;' +
+'      margin-bottom: 20px;' +
+'      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);' +
+'    }' +
+'    .action-bar h3 {' +
+'      font-size: 14px;' +
+'      font-weight: 700;' +
+'      display: flex;' +
+'      align-items: center;' +
+'      gap: 8px;' +
+'    }' +
+'    .action-btns {' +
+'      display: flex;' +
+'      gap: 10px;' +
+'    }' +
+'    .btn {' +
+'      cursor: pointer;' +
+'      border: none;' +
+'      border-radius: 8px;' +
+'      padding: 8px 16px;' +
+'      font-size: 13px;' +
+'      font-weight: 700;' +
+'      display: inline-flex;' +
+'      align-items: center;' +
+'      gap: 6px;' +
+'      text-decoration: none;' +
+'    }' +
+'    .btn-primary {' +
+'      background: #10b981;' +
+'      color: #ffffff;' +
+'    }' +
+'    .btn-primary:hover {' +
+'      background: #059669;' +
+'    }' +
+'    .btn-secondary {' +
+'      background: #334155;' +
+'      color: #ffffff;' +
+'    }' +
+'    .btn-secondary:hover {' +
+'      background: #475569;' +
+'    }' +
+'    @media print {' +
+'      body {' +
+'        background: #ffffff;' +
+'        padding: 0;' +
+'      }' +
+'      .action-bar {' +
+'        display: none !important;' +
+'      }' +
+'      .report-card-wrapper {' +
+'        border: none;' +
+'        box-shadow: none;' +
+'        max-width: 100%;' +
+'        border-radius: 0;' +
+'      }' +
+'      .keep-together {' +
+'        break-inside: avoid;' +
+'        page-break-inside: avoid;' +
+'      }' +
+'    }' +
+'    .header-banner {' +
+'      background: linear-gradient(135deg, #0b1329 0%, #172554 100%);' +
+'      color: #ffffff;' +
+'      padding: 28px 36px;' +
+'      border-bottom: 4px solid #10b981;' +
+'    }' +
+'    .header-top {' +
+'      display: flex;' +
+'      justify-content: space-between;' +
+'      align-items: center;' +
+'      margin-bottom: 18px;' +
+'    }' +
+'    .brand-group {' +
+'      display: flex;' +
+'      align-items: center;' +
+'      gap: 14px;' +
+'    }' +
+'    .brand-logo-img {' +
+'      height: 44px;' +
+'      width: auto;' +
+'      object-fit: contain;' +
+'      background: #ffffff;' +
+'      padding: 4px 8px;' +
+'      border-radius: 8px;' +
+'    }' +
+'    .brand-text-name {' +
+'      font-size: 24px;' +
+'      font-weight: 900;' +
+'      letter-spacing: -0.5px;' +
+'      color: #ffffff;' +
+'      line-height: 1.1;' +
+'    }' +
+'    .brand-text-sub {' +
+'      font-size: 10px;' +
+'      font-weight: 700;' +
+'      letter-spacing: 1.5px;' +
+'      text-transform: uppercase;' +
+'      color: #94a3b8;' +
+'    }' +
+'    .header-doc-meta {' +
+'      text-align: right;' +
+'    }' +
+'    .doc-badge {' +
+'      display: inline-block;' +
+'      background: rgba(16, 185, 129, 0.2);' +
+'      color: #34d399;' +
+'      border: 1px solid rgba(52, 211, 153, 0.4);' +
+'      font-size: 10px;' +
+'      font-weight: 800;' +
+'      letter-spacing: 1px;' +
+'      text-transform: uppercase;' +
+'      padding: 4px 10px;' +
+'      border-radius: 20px;' +
+'      margin-bottom: 4px;' +
+'    }' +
+'    .doc-code {' +
+'      font-size: 12px;' +
+'      font-weight: 600;' +
+'      color: #cbd5e1;' +
+'    }' +
+'    .header-title-box h1 {' +
+'      font-size: 22px;' +
+'      font-weight: 900;' +
+'      color: #ffffff;' +
+'      margin-bottom: 4px;' +
+'      letter-spacing: -0.3px;' +
+'    }' +
+'    .header-title-box p {' +
+'      font-size: 13px;' +
+'      color: #cbd5e1;' +
+'      font-weight: 500;' +
+'    }' +
+'    .card-content {' +
+'      padding: 28px 36px;' +
+'    }' +
+'    .meta-grid {' +
+'      display: grid;' +
+'      grid-template-columns: repeat(2, 1fr);' +
+'      gap: 12px;' +
+'      background: #f8fafc;' +
+'      border: 1px solid #e2e8f0;' +
+'      border-radius: 12px;' +
+'      padding: 16px 20px;' +
+'      margin-bottom: 24px;' +
+'    }' +
+'    .meta-item {' +
+'      display: flex;' +
+'      flex-direction: column;' +
+'    }' +
+'    .meta-label {' +
+'      font-size: 10px;' +
+'      font-weight: 700;' +
+'      text-transform: uppercase;' +
+'      letter-spacing: 0.8px;' +
+'      color: #64748b;' +
+'      margin-bottom: 2px;' +
+'    }' +
+'    .meta-val {' +
+'      font-size: 13px;' +
+'      font-weight: 700;' +
+'      color: #0f172a;' +
+'    }' +
+'    .score-summary-grid {' +
+'      display: grid;' +
+'      grid-template-columns: repeat(4, 1fr);' +
+'      gap: 12px;' +
+'      margin-bottom: 24px;' +
+'    }' +
+'    .score-box {' +
+'      border: 1px solid #e2e8f0;' +
+'      background: #ffffff;' +
+'      border-radius: 12px;' +
+'      padding: 14px;' +
+'      text-align: center;' +
+'    }' +
+'    .score-box-primary {' +
+'      background: #f0fdf4;' +
+'      border-color: #bbf7d0;' +
+'    }' +
+'    .score-box-accent {' +
+'      background: #eff6ff;' +
+'      border-color: #bfdbfe;' +
+'    }' +
+'    .score-box-label {' +
+'      font-size: 10px;' +
+'      font-weight: 800;' +
+'      text-transform: uppercase;' +
+'      letter-spacing: 0.6px;' +
+'      color: #64748b;' +
+'      margin-bottom: 4px;' +
+'    }' +
+'    .score-box-val {' +
+'      font-size: 26px;' +
+'      font-weight: 900;' +
+'      color: #0f172a;' +
+'      line-height: 1.1;' +
+'    }' +
+'    .score-box-sub {' +
+'      font-size: 11px;' +
+'      font-weight: 600;' +
+'      color: #64748b;' +
+'      margin-top: 2px;' +
+'    }' +
+'    .status-badge-pass {' +
+'      display: inline-block;' +
+'      background: #059669;' +
+'      color: #ffffff;' +
+'      font-size: 11px;' +
+'      font-weight: 800;' +
+'      letter-spacing: 0.5px;' +
+'      padding: 3px 10px;' +
+'      border-radius: 6px;' +
+'    }' +
+'    .status-badge-fail {' +
+'      display: inline-block;' +
+'      background: #dc2626;' +
+'      color: #ffffff;' +
+'      font-size: 11px;' +
+'      font-weight: 800;' +
+'      letter-spacing: 0.5px;' +
+'      padding: 3px 10px;' +
+'      border-radius: 6px;' +
+'    }' +
+'    .breakdown-table {' +
+'      width: 100%;' +
+'      border-collapse: collapse;' +
+'      margin-bottom: 24px;' +
+'      border-radius: 8px;' +
+'      overflow: hidden;' +
+'      border: 1px solid #e2e8f0;' +
+'    }' +
+'    .breakdown-table th {' +
+'      background: #f1f5f9;' +
+'      font-size: 11px;' +
+'      font-weight: 800;' +
+'      text-transform: uppercase;' +
+'      letter-spacing: 0.6px;' +
+'      color: #475569;' +
+'      padding: 10px 14px;' +
+'      text-align: left;' +
+'      border-bottom: 1px solid #e2e8f0;' +
+'    }' +
+'    .breakdown-table td {' +
+'      font-size: 12px;' +
+'      padding: 10px 14px;' +
+'      border-bottom: 1px solid #f1f5f9;' +
+'      color: #1e293b;' +
+'    }' +
+'    .breakdown-table tr:last-child td {' +
+'      border-bottom: none;' +
+'      font-weight: 700;' +
+'      background: #f8fafc;' +
+'    }' +
+'    .section-title {' +
+'      font-size: 13px;' +
+'      font-weight: 800;' +
+'      text-transform: uppercase;' +
+'      letter-spacing: 0.5px;' +
+'      color: #0f172a;' +
+'      margin-bottom: 12px;' +
+'      padding-bottom: 6px;' +
+'      border-bottom: 2px solid #e2e8f0;' +
+'    }' +
+'    .feedback-box {' +
+'      background: #fffbeb;' +
+'      border: 1px solid #fde68a;' +
+'      border-left: 4px solid #f59e0b;' +
+'      border-radius: 10px;' +
+'      padding: 16px 20px;' +
+'      margin-bottom: 24px;' +
+'    }' +
+'    .feedback-header {' +
+'      display: flex;' +
+'      justify-content: space-between;' +
+'      align-items: center;' +
+'      margin-bottom: 6px;' +
+'    }' +
+'    .feedback-header h4 {' +
+'      font-size: 13px;' +
+'      font-weight: 800;' +
+'      color: #92400e;' +
+'    }' +
+'    .feedback-eval-meta {' +
+'      font-size: 11px;' +
+'      font-weight: 600;' +
+'      color: #b45309;' +
+'    }' +
+'    .feedback-body {' +
+'      font-size: 12.5px;' +
+'      color: #78350f;' +
+'      line-height: 1.5;' +
+'      font-style: italic;' +
+'      margin-bottom: 10px;' +
+'    }' +
+'    .feedback-pillars {' +
+'      display: grid;' +
+'      grid-template-columns: 1fr 1fr;' +
+'      gap: 12px;' +
+'      padding-top: 10px;' +
+'      border-top: 1px dashed rgba(245, 158, 11, 0.4);' +
+'    }' +
+'    .pillar-col h5 {' +
+'      font-size: 11px;' +
+'      font-weight: 800;' +
+'      text-transform: uppercase;' +
+'      letter-spacing: 0.5px;' +
+'      margin-bottom: 4px;' +
+'    }' +
+'    .pillar-col.strengths h5 { color: #047857; }' +
+'    .pillar-col.improvements h5 { color: #b45309; }' +
+'    .pillar-col ul { list-style-type: none; padding-left: 0; }' +
+'    .pillar-col li {' +
+'      font-size: 11.5px;' +
+'      line-height: 1.4;' +
+'      margin-bottom: 3px;' +
+'      padding-left: 14px;' +
+'      position: relative;' +
+'    }' +
+'    .pillar-col.strengths li::before {' +
+'      content: "✓";' +
+'      position: absolute;' +
+'      left: 0;' +
+'      color: #059669;' +
+'      font-weight: 900;' +
+'    }' +
+'    .pillar-col.improvements li::before {' +
+'      content: "•";' +
+'      position: absolute;' +
+'      left: 0;' +
+'      color: #d97706;' +
+'      font-weight: 900;' +
+'    }' +
+'    .question-list {' +
+'      display: flex;' +
+'      flex-direction: column;' +
+'      gap: 10px;' +
+'      margin-bottom: 24px;' +
+'    }' +
+'    .q-card {' +
+'      border: 1px solid #e2e8f0;' +
+'      border-radius: 10px;' +
+'      padding: 12px 14px;' +
+'      background: #ffffff;' +
+'      break-inside: avoid;' +
+'    }' +
+'    .q-card-head {' +
+'      display: flex;' +
+'      justify-content: space-between;' +
+'      align-items: center;' +
+'      margin-bottom: 4px;' +
+'    }' +
+'    .q-badge-row {' +
+'      display: flex;' +
+'      align-items: center;' +
+'      gap: 8px;' +
+'    }' +
+'    .q-num {' +
+'      font-size: 11px;' +
+'      font-weight: 800;' +
+'      background: #0f172a;' +
+'      color: #ffffff;' +
+'      padding: 2px 7px;' +
+'      border-radius: 4px;' +
+'    }' +
+'    .q-type {' +
+'      font-size: 10px;' +
+'      font-weight: 700;' +
+'      text-transform: uppercase;' +
+'      color: #64748b;' +
+'    }' +
+'    .q-marks {' +
+'      font-size: 12px;' +
+'      font-weight: 800;' +
+'      color: #0f172a;' +
+'    }' +
+'    .q-text {' +
+'      font-size: 12px;' +
+'      font-weight: 600;' +
+'      color: #1e293b;' +
+'      margin-bottom: 6px;' +
+'    }' +
+'    .q-answer-box {' +
+'      background: #f8fafc;' +
+'      border-left: 3px solid #cbd5e1;' +
+'      padding: 6px 10px;' +
+'      font-size: 11.5px;' +
+'      color: #334155;' +
+'      margin-bottom: 4px;' +
+'      border-radius: 0 6px 6px 0;' +
+'    }' +
+'    .q-teacher-remark {' +
+'      background: #fefce8;' +
+'      border-left: 3px solid #facc15;' +
+'      padding: 6px 10px;' +
+'      font-size: 11.5px;' +
+'      color: #854d0e;' +
+'      border-radius: 0 6px 6px 0;' +
+'      font-style: italic;' +
+'    }' +
+'    .auth-footer {' +
+'      border-top: 2px solid #e2e8f0;' +
+'      padding-top: 20px;' +
+'      margin-top: 16px;' +
+'      display: flex;' +
+'      justify-content: space-between;' +
+'      align-items: flex-end;' +
+'      break-inside: avoid;' +
+'    }' +
+'    .auth-seal-block {' +
+'      display: flex;' +
+'      align-items: center;' +
+'      gap: 12px;' +
+'    }' +
+'    .seal-badge {' +
+'      width: 58px;' +
+'      height: 58px;' +
+'      border: 3px double #0f172a;' +
+'      border-radius: 50%;' +
+'      display: flex;' +
+'      flex-direction: column;' +
+'      align-items: center;' +
+'      justify-content: center;' +
+'      text-align: center;' +
+'      background: #f8fafc;' +
+'    }' +
+'    .seal-text-top { font-size: 6px; font-weight: 900; letter-spacing: 0.5px; color: #0f172a; }' +
+'    .seal-icon { font-size: 13px; line-height: 1; color: #059669; margin: 1px 0; }' +
+'    .seal-text-bot { font-size: 5.5px; font-weight: 800; color: #64748b; }' +
+'    .auth-meta-text {' +
+'      font-size: 10.5px;' +
+'      color: #64748b;' +
+'      line-height: 1.4;' +
+'    }' +
+'    .sig-block { text-align: right; }' +
+'    .sig-name {' +
+'      font-family: "Playfair Display", Georgia, serif;' +
+'      font-size: 19px;' +
+'      font-style: italic;' +
+'      color: #0f172a;' +
+'      font-weight: 700;' +
+'      margin-bottom: 2px;' +
+'    }' +
+'    .sig-line {' +
+'      width: 150px;' +
+'      height: 1px;' +
+'      background: #cbd5e1;' +
+'      margin-left: auto;' +
+'      margin-bottom: 4px;' +
+'    }' +
+'    .sig-title { font-size: 11px; font-weight: 800; color: #1e293b; }' +
+'    .sig-org { font-size: 10px; color: #64748b; font-weight: 600; }' +
+'    .doc-legal-note {' +
+'      text-align: center;' +
+'      font-size: 9.5px;' +
+'      color: #94a3b8;' +
+'      margin-top: 16px;' +
+'      padding-top: 10px;' +
+'      border-top: 1px solid #f1f5f9;' +
+'    }' +
+'  </style>' +
+'</head>' +
+'<body>' +
+'  <div class="action-bar">' +
+'    <h3>🎓 DE-ECO Official Academic Report Card</h3>' +
+'    <div class="action-btns">' +
+'      <button onclick="window.print()" class="btn btn-primary">🖨️ Save as PDF / Print</button>' +
+'      <button onclick="window.close()" class="btn btn-secondary">✕ Close</button>' +
+'    </div>' +
+'  </div>' +
+'  <div class="report-card-wrapper">' +
+'    <header class="header-banner">' +
+'      <div class="header-top">' +
+'        <div class="brand-group">' +
+'          <img src="/logo/De-Eco-logo.png" alt="DE-ECO" class="brand-logo-img" onerror="this.style.display=\'none\'" />' +
+'          <div>' +
+'            <div class="brand-text-name">DE-ECO</div>' +
+'            <div class="brand-text-sub">Academic Assessment & Evaluation</div>' +
+'          </div>' +
+'        </div>' +
+'        <div class="header-doc-meta">' +
+'          <span class="doc-badge">Verified Performance Record</span>' +
+'          <div class="doc-code">Transcript ID: ' + escapeHtml(transcriptCode) + '</div>' +
+'          <div class="doc-code">Issue Date: ' + escapeHtml(issueDate) + '</div>' +
+'        </div>' +
+'      </div>' +
+'      <div class="header-title-box">' +
+'        <h1>' + escapeHtml(examTitle) + '</h1>' +
+'        <p>Comprehensive Academic Evaluation & Performance Transcript</p>' +
+'      </div>' +
+'    </header>' +
+'    <div class="card-content">' +
+'      <div class="meta-grid">' +
+'        <div class="meta-item"><span class="meta-label">Candidate Name</span><span class="meta-val">' + escapeHtml(candidateName) + '</span></div>' +
+'        <div class="meta-item"><span class="meta-label">' + courseMetaLabel + '</span><span class="meta-val">' + escapeHtml(courseTitle) + '</span></div>' +
+'        <div class="meta-item"><span class="meta-label">Candidate Email</span><span class="meta-val">' + escapeHtml(candidateEmail) + '</span></div>' +
+'        <div class="meta-item"><span class="meta-label">Evaluating Faculty</span><span class="meta-val">' + escapeHtml(instructor) + '</span></div>' +
+'        <div class="meta-item"><span class="meta-label">Submission Date</span><span class="meta-val">' + escapeHtml(submittedAt) + '</span></div>' +
+'        <div class="meta-item"><span class="meta-label">Time Spent</span><span class="meta-val">' + (timeSpent <= 0 ? '< 1 Minute' : timeSpent === 1 ? '1 Minute' : timeSpent + ' Minutes') + '</span></div>' +
+'      </div>' +
+'      <div class="score-summary-grid keep-together">' +
+'        <div class="score-box score-box-primary">' +
+'          <div class="score-box-label">Total Score Secured</div>' +
+'          <div class="score-box-val" style="color: #047857;">' + scoreObtained + ' <span style="font-size: 15px; color: #64748b; font-weight: 600;">/ ' + totalMarks + '</span></div>' +
+'          <div class="score-box-sub">Aggregate Marks</div>' +
+'        </div>' +
+'        <div class="score-box score-box-accent">' +
+'          <div class="score-box-label">Percentage</div>' +
+'          <div class="score-box-val" style="color: #1d4ed8;">' + percentage + '%</div>' +
+'          <div class="score-box-sub">Overall Proficiency</div>' +
+'        </div>' +
+'        <div class="score-box">' +
+'          <div class="score-box-label">Academic Grade</div>' +
+'          <div class="score-box-val" style="font-size: 18px; color: #0f172a;">' + escapeHtml(grade) + '</div>' +
+'          <div class="score-box-sub">Evaluation Tier</div>' +
+'        </div>' +
+'        <div class="score-box">' +
+'          <div class="score-box-label">Evaluation Status</div>' +
+'          <div style="margin-top: 6px;"><span class="status-badge-pass">✓ EVALUATED</span></div>' +
+'          <div class="score-box-sub" style="margin-top: 6px;">Official Verification</div>' +
+'        </div>' +
+'      </div>' +
+'      <table class="breakdown-table keep-together">' +
+'        <thead><tr><th>Assessment Component</th><th>Questions</th><th>Max Marks</th><th>Marks Awarded</th><th>Accuracy</th></tr></thead>' +
+'        <tbody>' +
+          (mcqQuestions.length > 0 ? '<tr><td><strong>Section A: Multiple Choice Questions</strong></td><td>' + mcqQuestions.length + '</td><td>' + mcqTotal + '</td><td>' + mcqAwarded + '</td><td>' + (mcqTotal > 0 ? Math.round((mcqAwarded / mcqTotal) * 100) : 0) + '%</td></tr>' : '') +
+          (descriptiveQuestions.length > 0 ? '<tr><td><strong>' + (mcqQuestions.length > 0 ? 'Section B: Descriptive Responses' : 'Descriptive Responses') + '</strong></td><td>' + descriptiveQuestions.length + '</td><td>' + descTotal + '</td><td>' + descAwarded + '</td><td>' + (descTotal > 0 ? Math.round((descAwarded / descTotal) * 100) : 0) + '%</td></tr>' : '') +
+'          <tr><td>TOTAL PERFORMANCE</td><td>' + answersList.length + '</td><td>' + totalMarks + '</td><td>' + scoreObtained + '</td><td>' + percentage + '%</td></tr>' +
+'        </tbody>' +
+'      </table>' +
+      (feedback && (
+        (feedback.overall && feedback.overall.trim() !== '' && feedback.overall !== 'Good attempt on the paper.') ||
+        (Array.isArray(feedback.strengths) && feedback.strengths.filter((s: string) => s && s !== 'Demonstrated understanding of key concepts').length > 0) ||
+        (Array.isArray(feedback.improvements) && feedback.improvements.filter((i: string) => i && i !== 'Review questions where marks were deducted').length > 0)
+      ) ?
+'      <div class="feedback-box keep-together">' +
+'        <div class="feedback-header"><h4><span>✍️</span> Official Faculty Evaluation & Commentary</h4><span class="feedback-eval-meta">' + escapeHtml(feedback.evaluatedAt || ('Evaluated by ' + instructor)) + '</span></div>' +
+        (feedback.overall && feedback.overall.trim() !== '' && feedback.overall !== 'Good attempt on the paper.' ? '<p class="feedback-body">"' + escapeHtml(feedback.overall) + '"</p>' : '') +
+        ((Array.isArray(feedback.strengths) && feedback.strengths.filter((s: string) => s && s !== 'Demonstrated understanding of key concepts').length > 0) || (Array.isArray(feedback.improvements) && feedback.improvements.filter((i: string) => i && i !== 'Review questions where marks were deducted').length > 0) ?
+'        <div class="feedback-pillars">' +
+          (Array.isArray(feedback.strengths) && feedback.strengths.filter((s: string) => s && s !== 'Demonstrated understanding of key concepts').length > 0 ? '<div class="pillar-col strengths"><h5>Key Strengths</h5><ul>' + feedback.strengths.filter((s: string) => s && s !== 'Demonstrated understanding of key concepts').map((s: string) => '<li>' + escapeHtml(s) + '</li>').join('') + '</ul></div>' : '') +
+          (Array.isArray(feedback.improvements) && feedback.improvements.filter((i: string) => i && i !== 'Review questions where marks were deducted').length > 0 ? '<div class="pillar-col improvements"><h5>Areas for Growth</h5><ul>' + feedback.improvements.filter((i: string) => i && i !== 'Review questions where marks were deducted').map((i: string) => '<li>' + escapeHtml(i) + '</li>').join('') + '</ul></div>' : '') +
+'        </div>' : '') +
+'      </div>' : '') +
+'      <h3 class="section-title">Itemized Assessment Details</h3>' +
+'      <div class="question-list">' +
+        answersList.map((ans, idx) => {
+          const isMcq = ans.type === 'mcq';
+          const marksAwarded = ans.marksAwarded !== undefined ? Number(ans.marksAwarded) : (isMcq && ans.isCorrect ? ans.marks : 0);
+          const studentAnsText = stripHtmlTags(ans.studentAnswer || '');
+          return '<div class="q-card keep-together">' +
+            '<div class="q-card-head">' +
+              '<div class="q-badge-row"><span class="q-num">Q' + (ans.questionNumber || idx + 1) + '</span><span class="q-type">' + (isMcq ? 'Multiple Choice' : 'Descriptive Response') + '</span></div>' +
+              '<div class="q-marks"><span style="color: ' + (marksAwarded >= ans.marks ? '#059669' : marksAwarded > 0 ? '#d97706' : '#dc2626') + '">' + marksAwarded + '</span> / ' + ans.marks + ' Marks</div>' +
+            '</div>' +
+            '<div class="q-text">' + escapeHtml(ans.question) + '</div>' +
+            '<div class="q-answer-box"><strong>Candidate Response:</strong> ' +
+              (isMcq ? 'Option ' + escapeHtml(ans.studentAnswer || 'Unanswered') + (ans.isCorrect ? ' <span style="color:#059669; font-weight:800;">(Correct)</span>' : ' <span style="color:#dc2626; font-weight:800;">(Incorrect)</span>') : escapeHtml(studentAnsText || '(No response recorded)')) +
+              (isMcq && ans.correctAnswer ? '<div style="margin-top: 4px; color: #475569;"><strong>Correct Key:</strong> Option ' + escapeHtml(ans.correctAnswer) + '</div>' : '') +
+            '</div>' +
+            (ans.teacherComment ? '<div class="q-teacher-remark"><strong>Feedback:</strong> "' + escapeHtml(ans.teacherComment) + '"</div>' : '') +
+          '</div>';
+        }).join('') +
+'      </div>' +
+'      <footer class="auth-footer keep-together">' +
+'        <div class="auth-seal-block">' +
+'          <div class="seal-badge">' +
+'            <span class="seal-text-top">DE-ECO</span>' +
+'            <span class="seal-icon">★</span>' +
+'            <span class="seal-text-bot">VERIFIED</span>' +
+'          </div>' +
+'          <div class="auth-meta-text">' +
+'            <strong>Certified Academic Document</strong><br>' +
+'            Digitally authenticated via DE-ECO Assessment Engine.<br>' +
+'            Verify certificate at <span style="color:#0284c7;">https://deeco.in</span>' +
+'          </div>' +
+'        </div>' +
+'        <div class="sig-block">' +
+'          <div class="sig-name">Rishika</div>' +
+'          <div class="sig-line"></div>' +
+'          <div class="sig-title">Instructor Rishika</div>' +
+'          <div class="sig-org">Lead Faculty, DE-ECO Academy</div>' +
+'        </div>' +
+'      </footer>' +
+'      <div class="doc-legal-note">© ' + new Date().getFullYear() + ' DE-ECO. All rights reserved. Official examination transcript.</div>' +
+'    </div>' +
+'  </div>' +
+'  <script>' +
+'    function triggerReportPrint() {' +
+'      try {' +
+'        window.focus();' +
+'        window.print();' +
+'      } catch(e) { console.warn(e); }' +
+'    }' +
+'    if (document.readyState === "complete" || document.readyState === "interactive") {' +
+'      setTimeout(triggerReportPrint, 350);' +
+'    } else {' +
+'      window.addEventListener("DOMContentLoaded", function() { setTimeout(triggerReportPrint, 350); });' +
+'      window.addEventListener("load", function() { setTimeout(triggerReportPrint, 350); });' +
+'      setTimeout(triggerReportPrint, 1000);' +
+'    }' +
+'  <\/script>' +
+'</body>' +
+'</html>';
+
+  // 1. Create a Blob URL so the report opens as a legitimate document
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const blobUrl = URL.createObjectURL(blob);
+
+  // 2. Open in a new tab without restrictive window dimensions (prevents popup blocker)
+  let printWindow: Window | null = null;
+  try {
+    printWindow = window.open(blobUrl, '_blank');
+  } catch (err) {
+    console.warn('Window open error:', err);
+  }
+
+  // 3. Robust fallback if popup is blocked: use visible-dimension transparent iframe
+  if (!printWindow || printWindow.closed || typeof printWindow.closed === 'undefined') {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.top = '0';
+    iframe.style.left = '0';
+    iframe.style.width = '100vw';
+    iframe.style.height = '100vh';
+    iframe.style.opacity = '0.01';
+    iframe.style.pointerEvents = 'none';
+    iframe.style.zIndex = '-9999';
+    iframe.src = blobUrl;
+    document.body.appendChild(iframe);
+
+    iframe.onload = () => {
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (e) {
+          console.warn('Iframe print failed', e);
+        }
+        setTimeout(() => {
+          try {
+            document.body.removeChild(iframe);
+            URL.revokeObjectURL(blobUrl);
+          } catch (e) {}
+        }, 3000);
+      }, 400);
+    };
+  }
+};
+
+/* ========================================================================= */
 /* ========================== MAIN COMPONENT =============================== */
 /* ========================================================================= */
 
@@ -262,6 +1022,71 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
   const [currentUserName, setCurrentUserName] = useState<string>("");
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
   const [enrolledCourseTitles, setEnrolledCourseTitles] = useState<Set<string>>(new Set());
+
+  // Helper to format course name: converts "1-on-1: Name" to "Assessment #X: Name"
+  const getFormattedCourseTitle = (
+    courseName: string | undefined,
+    targetId?: string,
+    studentName?: string
+  ): { label: string; title: string } => {
+    const raw = (courseName || "").trim();
+    const is1on1 = /^1-on-1/i.test(raw) || raw.toLowerCase().includes("1-on-1");
+
+    if (!is1on1) {
+      return {
+        label: raw.startsWith("Assessment #") ? "Assessment" : "Course",
+        title: raw || "General Examination"
+      };
+    }
+
+    // Determine chronological assessment number X for this student
+    const allAssessments: { id: string; date: number }[] = [];
+
+    // Submitted results
+    resultsList.forEach((r, idx) => {
+      const d = r.submittedAt ? new Date(r.submittedAt).getTime() : 0;
+      const t = isNaN(d) || d === 0 ? idx : d;
+      allAssessments.push({ id: r.id, date: t });
+      if (r.examId && r.examId !== r.id) {
+        allAssessments.push({ id: r.examId, date: t });
+      }
+    });
+
+    // Active exams
+    examsList.forEach((e, idx) => {
+      allAssessments.push({ id: e.id, date: Date.now() + idx });
+    });
+
+    allAssessments.sort((a, b) => a.date - b.date);
+
+    let assessmentNum = 1;
+    if (targetId) {
+      const matchIdx = allAssessments.findIndex((item) => item.id === targetId);
+      if (matchIdx >= 0) {
+        assessmentNum = matchIdx + 1;
+      }
+    }
+
+    // Extract student name from "1-on-1: Name"
+    let studentPortion = "";
+    const match = raw.match(/^1-on-1\s*[:\-–]?\s*(.*)$/i);
+    if (match && match[1] && match[1].trim()) {
+      studentPortion = match[1].trim();
+    } else if (studentName && studentName.trim()) {
+      studentPortion = studentName.trim();
+    } else if (currentUserName && currentUserName.trim()) {
+      studentPortion = currentUserName.trim();
+    }
+
+    const formatted = studentPortion
+      ? `Assessment #${assessmentNum}: ${studentPortion}`
+      : `Assessment #${assessmentNum}`;
+
+    return {
+      label: "Assessment",
+      title: formatted
+    };
+  };
 
   useEffect(() => {
     const fetchUserAndEnrollments = async () => {
@@ -546,11 +1371,9 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
               : Math.round((totalAwarded / (newResult.totalMarks || 1)) * 100),
             grade: hasDescriptive
               ? null
-              : totalAwarded >= (newResult.totalMarks * 0.4)
-              ? "Pass"
-              : "Fail",
-            is_passed: hasDescriptive ? null : totalAwarded >= (newResult.totalMarks * 0.4),
-            time_spent_minutes: newResult.timeSpentMinutes || 1,
+              : (Math.round((totalAwarded / (newResult.totalMarks || 1)) * 100) >= 80 ? "A Distinction" : "Completed"),
+            is_passed: true,
+            time_spent_minutes: newResult.timeSpentMinutes !== undefined ? newResult.timeSpentMinutes : 0,
             answers: newResult.answers,
             teacher_feedback: newResult.teacherFeedback || null
           };
@@ -603,7 +1426,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
         grade: "A+ Distinction",
         isPassed: true,
         teacherFeedback: {
-          evaluatedAt: "Just now by Instructor Rishika",
+          evaluatedAt: "Just now",
           overall: "Magnificent work! Your analysis of the Keynesian liquidity trap and macroeconomic shifters was structured with immense clarity. Great improvement on addressing open-economy nuances!",
           strengths: [
             "Flawless conceptual clarity on monetary transmission",
@@ -864,13 +1687,15 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                       {/* Top Header Row */}
                       <div>
                         <div className="flex items-center justify-between gap-3 mb-3">
-                          {exam.course && !exam.course.startsWith("1-on-1") && !exam.course.toLowerCase().includes("all students") ? (
-                            <span className="text-xs font-semibold text-gray-500 dark:text-neutral-400 truncate">
-                              {exam.course}
-                            </span>
-                          ) : (
-                            <span />
-                          )}
+                          {(() => {
+                            const info = getFormattedCourseTitle(exam.course, exam.id, exam.assignedStudentName);
+                            if (!info.title || info.title.toLowerCase().includes("all students")) return <span />;
+                            return (
+                              <span className="text-xs font-semibold text-gray-500 dark:text-neutral-400 truncate">
+                                {info.title}
+                              </span>
+                            );
+                          })()}
 
                           <div className="flex items-center gap-2">
                             {/* Status Badge */}
@@ -1022,10 +1847,12 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                 <div className="text-center py-16 rounded-2xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-black p-8">
                   <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-400" />
                   <h3 className="text-xl font-bold mb-1" style={{ color: themeColors.text.primary }}>
-                    No assessments match your filter
+                    {examsList.length === 0 ? "No Exams Scheduled Yet" : "No Exams Match Your Filter"}
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Try switching filters or search keywords to view other examinations.
+                    {examsList.length === 0
+                      ? "There are no upcoming or active examinations scheduled for you right now. Please check back later."
+                      : "Try switching filters or search keywords to view other examinations."}
                   </p>
                 </div>
               )}
@@ -1093,7 +1920,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                                 <Clock className="w-3.5 h-3.5" /> Waiting for Teacher's Feedback
                               </span>
                               <span className="text-xs font-bold text-gray-500">
-                                Instructor Rishika is evaluating your descriptive responses
+                                {res.instructor || 'Teacher'} is evaluating your descriptive responses
                               </span>
                             </div>
                           )}
@@ -1125,12 +1952,15 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                             <>
                               <button
                                 type="button"
-                                onClick={() => downloadReportCard(res, { studentName: currentUserName, studentEmail: currentUserEmail })}
+                                onClick={() => {
+                                  const cInfo = getFormattedCourseTitle(res.course, res.id || res.examId, res.studentName || currentUserName);
+                                  downloadReportCard({ ...res, course: cInfo.title }, { studentName: currentUserName, studentEmail: currentUserEmail });
+                                }}
                                 className="w-full sm:w-auto px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer"
                                 title="Download Official DE-ECO Report Card"
                               >
                                 <Download className="w-3.5 h-3.5" />
-                                Download PDF
+                                Download Report
                               </button>
                               <button
                                 onClick={() => setSelectedResult(res)}
@@ -1182,7 +2012,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                   {preExamModal.title}
                 </h3>
                 <p className="text-xs font-bold mt-1" style={{ color: themeColors.text.secondary }}>
-                  {preExamModal.course} • Instructor {preExamModal.instructor}
+                  {getFormattedCourseTitle(preExamModal.course, preExamModal.id, preExamModal.assignedStudentName).title} • Instructor {preExamModal.instructor}
                 </p>
               </div>
               <button
@@ -1269,6 +2099,7 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
           isDark={isDark}
           studentName={currentUserName}
           studentEmail={currentUserEmail}
+          getFormattedCourseTitle={getFormattedCourseTitle}
         />
       )}
     </div>
@@ -2194,7 +3025,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
       submittedAt: "Just now",
       status: "under_evaluation",
       totalMarks: exam.totalMarks,
-      timeSpentMinutes: Math.round((exam.durationMinutes * 60 - secondsLeft) / 60) || 1,
+      timeSpentMinutes: Math.max(0, Math.round(((Number(exam.durationMinutes) || 0) * 60 - secondsLeft) / 60)),
       answers: compiledAnswers
     };
 
@@ -2771,6 +3602,7 @@ interface DetailedReportCardModalProps {
   isDark: boolean;
   studentName?: string;
   studentEmail?: string;
+  getFormattedCourseTitle?: (courseName?: string, targetId?: string, studentName?: string) => { label: string; title: string };
 }
 
 const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
@@ -2780,12 +3612,41 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
   themeColors,
   isDark,
   studentName,
-  studentEmail
+  studentEmail,
+  getFormattedCourseTitle
 }) => {
+  const courseInfo = getFormattedCourseTitle
+    ? getFormattedCourseTitle(result.course, result.id || result.examId, result.studentName || studentName)
+    : (() => {
+        const raw = (result.course || "").trim();
+        if (/^1-on-1/i.test(raw) || raw.toLowerCase().includes("1-on-1")) {
+          const match = raw.match(/^1-on-1\s*[:\-–]?\s*(.*)$/i);
+          const namePart = (match && match[1] ? match[1].trim() : "") || (result.studentName || studentName || "");
+          return { label: "Assessment", title: namePart ? `Assessment #1: ${namePart}` : "Assessment #1" };
+        }
+        return { label: raw.startsWith("Assessment #") ? "Assessment" : "Course", title: raw || "General Examination" };
+      })();
   const [filterType, setFilterType] = useState<"all" | "mcq" | "descriptive">("all");
   const isUnderEvaluation = result.status === "under_evaluation";
 
-  const displayedAnswers = result.answers.filter((a) => {
+  const answersList = result.answers || [];
+  const mcqQuestions = answersList.filter((a) => a.type === "mcq");
+  const descriptiveQuestions = answersList.filter((a) => a.type === "descriptive");
+
+  const hasMcqs = mcqQuestions.length > 0;
+  const hasDescriptive = descriptiveQuestions.length > 0;
+
+  const mcqTotal = mcqQuestions.reduce((acc, q) => acc + (Number(q.marks) || 0), 0);
+  const mcqAwarded = mcqQuestions.reduce((acc, q) => {
+    if (q.marksAwarded !== undefined) return acc + Number(q.marksAwarded);
+    return acc + (q.isCorrect ? (Number(q.marks) || 0) : 0);
+  }, 0);
+  const mcqAccuracy = mcqTotal > 0 ? Math.round((mcqAwarded / mcqTotal) * 100) : 0;
+
+  const descTotal = descriptiveQuestions.reduce((acc, q) => acc + (Number(q.marks) || 0), 0);
+  const descAwarded = descriptiveQuestions.reduce((acc, q) => acc + (Number(q.marksAwarded) || 0), 0);
+
+  const displayedAnswers = answersList.filter((a) => {
     if (filterType === "all") return true;
     return a.type === filterType;
   });
@@ -2819,13 +3680,13 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
             {!isUnderEvaluation && (
               <button
                 type="button"
-                onClick={() => downloadReportCard(result, { studentName: result.studentName || studentName, studentEmail: result.studentEmail || studentEmail })}
+                onClick={() => downloadReportCard({ ...result, course: courseInfo.title }, { studentName: result.studentName || studentName, studentEmail: result.studentEmail || studentEmail })}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer"
                 title="Download / Print Official DE-ECO Report Card"
               >
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Download Report Card (PDF)</span>
-                <span className="sm:hidden">Download</span>
+                <span className="hidden sm:inline">Download Report</span>
+                <span className="sm:hidden">Download Report</span>
               </button>
             )}
             <button
@@ -2856,7 +3717,7 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                     <span className="text-2xl font-black text-black">Awaiting Review</span>
                   </div>
                   <p className="text-xs text-gray-800 mt-2 font-medium leading-relaxed">
-                    Instructor Rishika is evaluating your descriptive responses.
+                    {result.instructor || 'Teacher'} is evaluating your descriptive responses.
                   </p>
                 </div>
 
@@ -2889,47 +3750,57 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
               </div>
             )}
 
-            {/* 6 Quick Metrics */}
+            {/* Quick Metrics */}
             <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
-                <span className="text-xs text-gray-500 font-bold block">Course</span>
+                <span className="text-xs text-gray-500 font-bold block">{courseInfo.label}</span>
                 <span className="font-bold text-sm block truncate" style={{ color: themeColors.text.primary }}>
-                  {result.course}
+                  {courseInfo.title}
                 </span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
                 <span className="text-xs text-gray-500 font-bold block">Evaluated By</span>
                 <span className="font-bold text-sm flex items-center gap-1.5" style={{ color: themeColors.text.primary }}>
-                  <UserCheck className="w-4 h-4 text-emerald-600" /> {result.instructor}
+                  <UserCheck className="w-4 h-4 text-emerald-600" /> {result.instructor || 'Faculty'}
                 </span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
                 <span className="text-xs text-gray-500 font-bold block">Time Taken</span>
                 <span className="font-bold text-sm flex items-center gap-1" style={{ color: themeColors.text.primary }}>
-                  <Clock className="w-4 h-4 text-indigo-500" /> {result.timeSpentMinutes} Mins
+                  <Clock className="w-4 h-4 text-indigo-500" /> {
+                    result.timeSpentMinutes > 1
+                      ? `${result.timeSpentMinutes} Mins`
+                      : result.timeSpentMinutes === 1
+                      ? '1 Min'
+                      : '< 1 Min'
+                  }
                 </span>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
-                <span className="text-xs text-gray-500 font-bold block">MCQ Section</span>
-                <span className="font-bold text-sm text-emerald-600">
-                  {isUnderEvaluation ? "Submitted & Logged" : "100% Accuracy"}
-                </span>
-              </div>
+              {hasMcqs && (
+                <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
+                  <span className="text-xs text-gray-500 font-bold block">MCQ Section</span>
+                  <span className="font-bold text-sm text-emerald-600">
+                    {isUnderEvaluation ? "Submitted" : `${mcqAccuracy}% Accuracy (${mcqAwarded}/${mcqTotal} Marks)`}
+                  </span>
+                </div>
+              )}
+
+              {hasDescriptive && (
+                <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
+                  <span className="text-xs text-gray-500 font-bold block">Descriptive Responses</span>
+                  <span className="font-bold text-sm text-indigo-600">
+                    {isUnderEvaluation ? "Under Review" : `${descAwarded} / ${descTotal} Marks`}
+                  </span>
+                </div>
+              )}
 
               <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
-                <span className="text-xs text-gray-500 font-bold block">Descriptive Responses</span>
-                <span className="font-bold text-sm text-indigo-600">
-                  {isUnderEvaluation ? "Under Review" : "18 / 20 Marks"}
-                </span>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60">
-                <span className="text-xs text-gray-500 font-bold block">Final Status</span>
-                <span className={`font-bold text-sm ${isUnderEvaluation ? "text-amber-600" : "text-emerald-600"}`}>
-                  {isUnderEvaluation ? "Pending Feedback" : (result.isPassed ? "PASSED" : "FAILED")}
+                <span className="text-xs text-gray-500 font-bold block">Total Questions</span>
+                <span className="font-bold text-sm" style={{ color: themeColors.text.primary }}>
+                  {answersList.length} Questions
                 </span>
               </div>
             </div>
@@ -2947,7 +3818,7 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                 </h4>
               </div>
               <p className="text-sm font-medium leading-relaxed text-gray-900">
-                Instructor Rishika evaluates descriptive responses with personalized annotations and feedback. Once grading completes, your full report card, marks breakdown, and personalized feedback will be published here.
+                Descriptive responses are evaluated with personalized feedback. Once grading completes, your full report card, marks breakdown, and personalized feedback will be published here.
               </p>
             </div>
           ) : (result.teacherFeedback && (
@@ -2962,7 +3833,7 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
               {/* Header */}
               <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-black/15">
                 <h4 className="font-bold text-lg flex items-center gap-2 text-black">
-                  <MessageSquare className="w-5 h-5 text-black" /> Personal Feedback from Instructor Rishika
+                  <MessageSquare className="w-5 h-5 text-black" /> Feedback
                 </h4>
                 {result.teacherFeedback.evaluatedAt && (
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white shadow-xs">
@@ -3027,33 +3898,35 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                 Question-by-Question Breakdown
               </h4>
 
-              {/* Filter Tabs */}
-              <div className="flex items-center gap-1.5 p-1 rounded-xl border border-gray-200 dark:border-neutral-700 text-xs font-bold bg-white dark:bg-black">
-                <button
-                  onClick={() => setFilterType("all")}
-                  className={`px-3 py-1 rounded-lg transition-all ${
-                    filterType === "all" ? "bg-black text-white dark:bg-white dark:text-black" : "text-gray-500"
-                  }`}
-                >
-                  All Questions
-                </button>
-                <button
-                  onClick={() => setFilterType("mcq")}
-                  className={`px-3 py-1 rounded-lg transition-all ${
-                    filterType === "mcq" ? "bg-black text-white dark:bg-white dark:text-black" : "text-gray-500"
-                  }`}
-                >
-                  MCQs
-                </button>
-                <button
-                  onClick={() => setFilterType("descriptive")}
-                  className={`px-3 py-1 rounded-lg transition-all ${
-                    filterType === "descriptive" ? "bg-black text-white dark:bg-white dark:text-black" : "text-gray-500"
-                  }`}
-                >
-                  Descriptive
-                </button>
-              </div>
+              {/* Filter Tabs - Only show when both types exist */}
+              {hasMcqs && hasDescriptive && (
+                <div className="flex items-center gap-1.5 p-1 rounded-xl border border-gray-200 dark:border-neutral-700 text-xs font-bold bg-white dark:bg-black">
+                  <button
+                    onClick={() => setFilterType("all")}
+                    className={`px-3 py-1 rounded-lg transition-all ${
+                      filterType === "all" ? "bg-black text-white dark:bg-white dark:text-black" : "text-gray-500"
+                    }`}
+                  >
+                    All ({answersList.length})
+                  </button>
+                  <button
+                    onClick={() => setFilterType("mcq")}
+                    className={`px-3 py-1 rounded-lg transition-all ${
+                      filterType === "mcq" ? "bg-black text-white dark:bg-white dark:text-black" : "text-gray-500"
+                    }`}
+                  >
+                    MCQs ({mcqQuestions.length})
+                  </button>
+                  <button
+                    onClick={() => setFilterType("descriptive")}
+                    className={`px-3 py-1 rounded-lg transition-all ${
+                      filterType === "descriptive" ? "bg-black text-white dark:bg-white dark:text-black" : "text-gray-500"
+                    }`}
+                  >
+                    Descriptive ({descriptiveQuestions.length})
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Answer List */}
@@ -3127,7 +4000,7 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                   <div className="space-y-3 text-xs sm:text-sm">
                     <div>
                       <span className="text-gray-500 text-xs font-bold block mb-1">
-                        Your Submitted Written Response:
+                        Your Submitted Response:
                       </span>
                       {ans.studentAnswer ? (
                         <div
@@ -3148,7 +4021,7 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                     {isUnderEvaluation ? (
                       <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-amber-900 dark:text-amber-300 text-xs font-medium flex items-center gap-2">
                         <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-                        <span>Instructor Rishika's annotation & marks will be published upon review.</span>
+                        <span>Feedback & marks will be published upon review.</span>
                       </div>
                     ) : ans.teacherComment && (
                       <div
@@ -3156,7 +4029,7 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                         style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
                       >
                         <strong className="block font-bold uppercase text-black flex items-center gap-1.5">
-                          <MessageSquare className="w-4 h-4 text-black" /> Instructor Rishika's Annotation:
+                          <MessageSquare className="w-4 h-4 text-black" /> Feedback:
                         </strong>
                         <p className="font-serif italic text-black leading-relaxed">
                           "{ans.teacherComment}"
@@ -3174,11 +4047,11 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
             {!isUnderEvaluation ? (
               <button
                 type="button"
-                onClick={() => downloadReportCard(result, { studentName: result.studentName || studentName, studentEmail: result.studentEmail || studentEmail })}
+                onClick={() => downloadReportCard({ ...result, course: courseInfo.title }, { studentName: result.studentName || studentName, studentEmail: result.studentEmail || studentEmail })}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white bg-emerald-600 hover:bg-emerald-700 shadow-md hover:scale-105 active:scale-95 transition cursor-pointer"
               >
                 <Download className="w-4 h-4" />
-                Download Report Card (PDF)
+                Download Report
               </button>
             ) : <div />}
             <button
