@@ -13,7 +13,6 @@ import {
   Check,
   X,
   RefreshCw,
-  GraduationCap,
   MessageSquare,
   Star,
   ThumbsUp,
@@ -23,8 +22,7 @@ import {
   FileText,
   Pause,
   Play,
-  Eye,
-  Sparkles
+  Eye
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getThemeColors } from "../../styles/colors";
@@ -105,6 +103,15 @@ export interface ExamResult {
     teacherComment?: string;
     isCorrect?: boolean;
   }[];
+}
+
+export interface ExamSessionState {
+  examId: string;
+  secondsLeft: number;
+  answers: Record<string, string>;
+  flagged: Record<string, boolean>;
+  currentIdx: number;
+  lastSavedAt: string;
 }
 
 /* ========================================================================= */
@@ -384,6 +391,12 @@ const MOCK_RESULTS: ExamResult[] = [
 /* ========================== MAIN COMPONENT =============================== */
 /* ========================================================================= */
 
+const formatExamDuration = (seconds: number) => {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+};
+
 interface ExamsPageProps {
   onPageChange?: (page: string) => void;
 }
@@ -400,6 +413,17 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 
   // Dynamic results list for Tab 2 (Results & Teacher Feedback)
   const [resultsList, setResultsList] = useState<ExamResult[]>(MOCK_RESULTS);
+
+  // Persistent paused/active exam sessions by examId (timer, answers, currentIdx preserved)
+  const [examSessions, setExamSessions] = useState<Record<string, ExamSessionState>>(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("de_eco_exam_sessions");
+        if (saved) return JSON.parse(saved);
+      }
+    } catch (e) {}
+    return {};
+  });
 
   // Active exam state (null when browsing, populated when taking test)
   const [activeExam, setActiveExam] = useState<Exam | null>(null);
@@ -423,11 +447,36 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
     return matchesSearch && matchesStatus;
   });
 
+  // Handler when student pauses and exits an exam
+  const handlePauseAndExit = (session: ExamSessionState) => {
+    setExamSessions((prev) => {
+      const updated = { ...prev, [session.examId]: session };
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("de_eco_exam_sessions", JSON.stringify(updated));
+        }
+      } catch (e) {}
+      return updated;
+    });
+    setActiveExam(null);
+  };
+
   // Handler when student completes an exam:
-  // 1. Remove exam from Tab 1 (Upcoming & Live)
-  // 2. Add to Tab 2 (Results & Teacher Feedback) with "under_evaluation"
-  // 3. Switch to Tab 2
+  // 1. Remove any paused session
+  // 2. Remove exam from Tab 1 (Upcoming & Live)
+  // 3. Add to Tab 2 (Results & Teacher Feedback) with "under_evaluation"
+  // 4. Switch to Tab 2
   const handleFinishExam = (newResult: ExamResult) => {
+    setExamSessions((prev) => {
+      const updated = { ...prev };
+      delete updated[newResult.examId];
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("de_eco_exam_sessions", JSON.stringify(updated));
+        }
+      } catch (e) {}
+      return updated;
+    });
     setExamsList((prev) => prev.filter((e) => e.id !== newResult.examId));
     setResultsList((prev) => [newResult, ...prev]);
     setActiveExam(null);
@@ -479,7 +528,9 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
       {activeExam ? (
         <ExamTakingPortal
           exam={activeExam}
+          initialSession={examSessions[activeExam.id] || null}
           onExit={() => setActiveExam(null)}
+          onPauseAndExit={handlePauseAndExit}
           onFinishExam={handleFinishExam}
           themeColors={themeColors}
           isDark={isDark}
@@ -488,24 +539,12 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
         <div className="container mx-auto px-4 sm:px-6">
           {/* ================= PAGE HEADER ================= */}
           <div className="text-center mb-10">
-            <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 shadow-sm"
-              style={{ backgroundColor: themeColors.accent.yellow, color: '#000000' }}
-            >
-              <GraduationCap className="w-4 h-4" /> Academic Examination System
-            </div>
             <h1
               className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 tracking-tight"
               style={{ color: themeColors.text.primary }}
             >
               Assessments & Examinations
             </h1>
-            <p
-              className="text-base sm:text-lg max-w-2xl mx-auto font-medium"
-              style={{ color: themeColors.text.secondary }}
-            >
-              Timed conceptual tests, rigorous essay examinations, and personalized evaluations by Instructor Rishika.
-            </p>
           </div>
 
           {/* ================= CLEAN PASTEL 4 STATS BAR (NO HARSH BORDERS) ================= */}
@@ -677,6 +716,8 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                 {filteredExams.map((exam) => {
                   const isLive = exam.status === "live";
                   const isExpired = exam.status === "expired";
+                  const savedSession = examSessions[exam.id];
+                  const isPausedSession = !!savedSession;
 
                   return (
                     <div
@@ -686,16 +727,16 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                     >
                       {/* Top Header Row */}
                       <div>
-                        <div className="flex items-center justify-between gap-3 mb-3">
-                          <span
-                            className="text-xs font-bold px-3 py-1 rounded-md bg-gray-100 dark:bg-neutral-800 uppercase tracking-wide"
-                            style={{ color: themeColors.text.secondary }}
-                          >
-                            {exam.course}
-                          </span>
-
+                        <div className="flex items-center justify-end gap-3 mb-3">
                           {/* Status Badge */}
-                          {isLive && (
+                          {isPausedSession ? (
+                            <span
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
+                            >
+                              <Pause className="w-3.5 h-3.5 fill-current" />
+                              PAUSED IN PROGRESS
+                            </span>
+                          ) : isLive ? (
                             <span
                               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs"
                               style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
@@ -703,16 +744,14 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                               <span className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
                               LIVE NOW
                             </span>
-                          )}
-                          {isExpired && (
+                          ) : isExpired ? (
                             <span
                               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/40"
                             >
                               <Clock className="w-3.5 h-3.5" />
                               EXPIRED TODAY
                             </span>
-                          )}
-                          {!isLive && !isExpired && (
+                          ) : (
                             <span
                               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase shadow-xs"
                               style={{ backgroundColor: themeColors.accent.blue, color: "#000000" }}
@@ -775,7 +814,11 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                       {/* Bottom Action Footer */}
                       <div className="pt-4 border-t border-gray-200 dark:border-neutral-800 flex items-center justify-between gap-4">
                         <div className="text-xs font-bold" style={{ color: themeColors.text.secondary }}>
-                          {isExpired ? (
+                          {isPausedSession ? (
+                            <span className="text-amber-700 dark:text-amber-400 flex items-center gap-1.5 font-bold">
+                              <Clock className="w-3.5 h-3.5" /> Paused ({formatExamDuration(savedSession.secondsLeft)} remaining • {Object.keys(savedSession.answers).filter((k) => savedSession.answers[k]?.trim()).length} answered)
+                            </span>
+                          ) : isExpired ? (
                             <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1 font-bold">
                               <AlertCircle className="w-3.5 h-3.5" /> Closed at {exam.expiredAt || "11:30 AM"} • Visible till midnight
                             </span>
@@ -789,7 +832,16 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                         </div>
 
                         {/* Action CTA */}
-                        {isExpired ? (
+                        {isPausedSession ? (
+                          <button
+                            onClick={() => setActiveExam(exam)}
+                            className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-md transition hover:scale-105 active:scale-95 cursor-pointer"
+                            style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
+                          >
+                            <Play className="w-4 h-4 fill-current" />
+                            Resume Exam <ArrowRight className="w-4 h-4" />
+                          </button>
+                        ) : isExpired ? (
                           <button
                             disabled
                             className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gray-100 dark:bg-neutral-800 text-gray-400 cursor-not-allowed flex items-center gap-1.5"
@@ -863,12 +915,6 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                         {/* Left: Info */}
                         <div className="space-y-2 flex-1">
                           <div className="flex items-center gap-3">
-                            <span
-                              className="text-xs font-bold uppercase px-2.5 py-0.5 rounded bg-gray-100 dark:bg-neutral-800"
-                              style={{ color: themeColors.text.secondary }}
-                            >
-                              {res.course}
-                            </span>
                             <span className="text-xs font-semibold text-gray-500">
                               Submitted: {res.submittedAt}
                             </span>
@@ -905,8 +951,8 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                           )}
                         </div>
 
-                        {/* Middle: Score Summary (if graded) or Evaluation Notice */}
-                        {isGraded ? (
+                        {/* Middle: Score Summary (if graded) */}
+                        {isGraded && (
                           <div className="flex items-center gap-4 px-6 py-3 rounded-xl bg-gray-50 dark:bg-neutral-800 shadow-xs shrink-0">
                             <div className="text-right">
                               <span className="text-xs text-gray-500 font-bold block uppercase">Score</span>
@@ -917,26 +963,9 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                             </div>
                             <div className="w-[1px] h-9 bg-gray-200 dark:bg-neutral-700" />
                             <div>
-                              <span className="text-xs font-black block" style={{ color: themeColors.text.primary }}>
+                              <span className="text-xs text-gray-500 font-bold block uppercase">Percentage</span>
+                              <span className="text-xl font-black block" style={{ color: themeColors.text.primary }}>
                                 {res.percentage}%
-                              </span>
-                              <span
-                                className="text-xs font-bold uppercase px-2 py-0.5 rounded shadow-xs inline-block"
-                                style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                              >
-                                {res.grade}
-                              </span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 shadow-xs shrink-0">
-                            <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
-                            <div>
-                              <span className="text-xs font-bold text-amber-900 dark:text-amber-200 block">
-                                Evaluation In Progress
-                              </span>
-                              <span className="text-xs text-amber-700 dark:text-amber-400">
-                                Marks & personalized remarks pending
                               </span>
                             </div>
                           </div>
@@ -954,25 +983,14 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                               View Full Report & Feedback
                             </button>
                           ) : (
-                            <>
-                              <button
-                                onClick={() => setSelectedResult(res)}
-                                className="w-full md:w-auto px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
-                                style={{ color: themeColors.text.primary }}
-                              >
-                                <Eye className="w-4 h-4" />
-                                View Submitted Test
-                              </button>
-                              <button
-                                onClick={() => handleSimulateTeacherReview(res.id)}
-                                className="w-full md:w-auto px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition hover:scale-105 active:scale-95 cursor-pointer"
-                                style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-                                title="Simulate Instructor Rishika releasing evaluation"
-                              >
-                                <Sparkles className="w-3.5 h-3.5 fill-black" />
-                                Simulate Teacher Review
-                              </button>
-                            </>
+                            <button
+                              onClick={() => setSelectedResult(res)}
+                              className="w-full md:w-auto px-5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                              style={{ color: themeColors.text.primary }}
+                            >
+                              <Eye className="w-4 h-4" />
+                              View Submitted Test
+                            </button>
                           )}
                         </div>
                       </div>
@@ -1102,7 +1120,9 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
 
 interface ExamTakingPortalProps {
   exam: Exam;
+  initialSession?: ExamSessionState | null;
   onExit: () => void;
+  onPauseAndExit: (session: ExamSessionState) => void;
   onFinishExam: (result: ExamResult) => void;
   themeColors: any;
   isDark: boolean;
@@ -1110,7 +1130,9 @@ interface ExamTakingPortalProps {
 
 const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   exam,
+  initialSession,
   onExit,
+  onPauseAndExit,
   onFinishExam,
   themeColors,
   isDark
@@ -1118,18 +1140,25 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   // Use questions from the exam, or fallback
   const questions = exam.questions.length > 0 ? exam.questions : MOCK_EXAMS[0].questions;
 
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [flagged, setFlagged] = useState<Record<string, boolean>>({});
+  const [currentIdx, setCurrentIdx] = useState(initialSession ? initialSession.currentIdx : 0);
+  const [answers, setAnswers] = useState<Record<string, string>>(initialSession ? initialSession.answers : {});
+  const [flagged, setFlagged] = useState<Record<string, boolean>>(initialSession ? initialSession.flagged : {});
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showBackModal, setShowBackModal] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [lastSaved, setLastSaved] = useState<string>("Draft auto-saved");
+  const [lastSaved, setLastSaved] = useState<string>(
+    initialSession ? `Resumed from draft (${initialSession.lastSavedAt})` : "Draft auto-saved"
+  );
 
-  // Timer countdown in seconds
-  const [secondsLeft, setSecondsLeft] = useState(exam.durationMinutes * 60);
+  // Timer countdown in seconds (from saved session or full duration)
+  const [secondsLeft, setSecondsLeft] = useState(
+    initialSession && initialSession.secondsLeft > 0
+      ? initialSession.secondsLeft
+      : exam.durationMinutes * 60
+  );
 
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || showBackModal || showSubmitModal) return;
 
     const timer = setInterval(() => {
       setSecondsLeft((prev) => {
@@ -1143,7 +1172,21 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isPaused]);
+  }, [isPaused, showBackModal, showSubmitModal]);
+
+  const handlePauseAndExit = () => {
+    setShowBackModal(false);
+    setIsPaused(false);
+    const sessionData: ExamSessionState = {
+      examId: exam.id,
+      secondsLeft,
+      answers,
+      flagged,
+      currentIdx,
+      lastSavedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    };
+    onPauseAndExit(sessionData);
+  };
 
   const formatTimer = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -1180,6 +1223,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   // Final submit handler
   const handleSubmitFinal = () => {
     setShowSubmitModal(false);
+    setShowBackModal(false);
 
     // Auto-grade MCQs
     let mcqScore = 0;
@@ -1229,40 +1273,52 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col overflow-hidden font-sans transition-colors duration-300"
-      style={{ backgroundColor: themeColors.primary.lightGray }}
+      style={{ backgroundColor: isDark ? "#0f0f0f" : "#f8f9fa" }}
     >
       {/* ================= TOP PERSISTENT EXAM NAVBAR ================= */}
       <header
-        className="border-b border-gray-200 dark:border-neutral-800 px-4 sm:px-8 py-3.5 flex items-center justify-between z-20 shadow-sm"
+        className="border-b border-gray-200 dark:border-neutral-800 px-4 sm:px-8 py-3 flex items-center justify-between z-20 shadow-xs"
         style={{ backgroundColor: themeColors.background.white }}
       >
-        {/* Left: Info */}
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-xs"
-            style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
+        {/* Left: Back Button + Info */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          <button
+            onClick={() => setShowBackModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-gray-200 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer shrink-0"
+            style={{ color: themeColors.text.primary }}
+            title="Leave examination (Pause or End Test)"
           >
-            Q{currentIdx + 1}
+            <ChevronLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs bg-neutral-900 text-white dark:bg-white dark:text-black shrink-0">
+            {currentIdx + 1}
           </div>
           <div>
-            <h1 className="text-base sm:text-lg font-bold leading-tight" style={{ color: themeColors.text.primary }}>
-              {exam.title}
-            </h1>
-            <p className="text-xs font-medium" style={{ color: themeColors.text.secondary }}>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm sm:text-base font-bold leading-tight" style={{ color: themeColors.text.primary }}>
+                {exam.title}
+              </h1>
+              <span className="hidden sm:inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-gray-100 dark:bg-neutral-800 text-gray-500">
+                Official Exam
+              </span>
+            </div>
+            <p className="text-xs font-medium text-gray-500 mt-0.5">
               {exam.course} • Question {currentIdx + 1} of {questions.length}
             </p>
           </div>
         </div>
 
-        {/* Center: Clean Countdown Timer */}
+        {/* Center: Sleek Monospace Countdown Timer */}
         <div
-          className="flex items-center gap-2 px-4 sm:px-6 py-2 rounded-xl shadow-xs font-mono font-bold text-lg sm:text-xl"
-          style={{
-            backgroundColor: isLowTime ? themeColors.accent.red : themeColors.accent.yellow,
-            color: "#000000"
-          }}
+          className={`flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full font-mono text-sm font-semibold border transition-colors ${
+            isLowTime
+              ? "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-900 text-rose-700 dark:text-rose-400"
+              : "bg-gray-50 dark:bg-neutral-800 border-gray-200 dark:border-neutral-700 text-gray-800 dark:text-gray-200"
+          }`}
         >
-          <Clock className={`w-5 h-5 ${isLowTime ? "animate-bounce text-red-700" : "text-black"}`} />
+          <Clock className={`w-3.5 h-3.5 ${isLowTime ? "text-rose-600 animate-pulse" : "text-gray-500 dark:text-gray-400"}`} />
           <span>{formatTimer(secondsLeft)}</span>
         </div>
 
@@ -1270,17 +1326,16 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => setIsPaused(true)}
-            className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-gray-200 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
-            style={{ color: themeColors.text.primary, backgroundColor: themeColors.primary.w }}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition flex items-center gap-1.5 cursor-pointer shadow-xs text-gray-700 dark:text-gray-300"
             title="Pause Exam & Freeze Timer"
           >
-            <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />
-            <span>Pause</span>
+            <Pause className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <span className="hidden sm:inline">Pause</span>
           </button>
 
           <button
             onClick={() => setShowSubmitModal(true)}
-            className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md hover:scale-105 active:scale-95 transition cursor-pointer"
+            className="px-4 py-1.5 rounded-lg font-bold text-xs sm:text-sm shadow-sm hover:opacity-90 active:scale-95 transition cursor-pointer"
             style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
           >
             Submit Exam
@@ -1305,55 +1360,60 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
         <div className="flex-1 flex flex-col justify-between overflow-y-auto pr-1">
           {/* Main Question Card */}
           <div
-            className="rounded-2xl p-6 sm:p-8 border border-gray-100 dark:border-neutral-800 shadow-md space-y-6"
+            className="rounded-2xl p-6 sm:p-8 border border-gray-200/80 dark:border-neutral-800 shadow-sm space-y-5"
             style={{ backgroundColor: themeColors.background.white }}
           >
             {/* Question Header Meta */}
-            <div className="flex items-center justify-between flex-wrap gap-2 pb-4 border-b border-gray-100 dark:border-neutral-800">
-              <div className="flex items-center gap-2">
-                <span
-                  className="text-xs font-bold uppercase px-3 py-1 rounded-full shadow-xs"
-                  style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-                >
+            <div className="flex items-center justify-between flex-wrap gap-2 pb-3.5 border-b border-gray-100 dark:border-neutral-800">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-bold uppercase tracking-wider text-gray-500">
                   Question {currentQ.number} of {questions.length}
                 </span>
 
-                <span
-                  className="text-xs font-bold uppercase px-3 py-1 rounded-full shadow-xs"
-                  style={{ backgroundColor: themeColors.accent.blue, color: "#000000" }}
-                >
-                  {currentQ.marks} Marks
+                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-neutral-600" />
+
+                <span className="font-semibold px-2 py-0.5 rounded bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300">
+                  {currentQ.marks} {currentQ.marks === 1 ? "Mark" : "Marks"}
                 </span>
 
-                <span className="text-xs font-medium uppercase px-3 py-1 rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300">
-                  {currentQ.type === "mcq" ? "Multiple Choice Question" : "Descriptive Essay Response"}
+                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-neutral-600" />
+
+                <span className="font-medium text-gray-500">
+                  {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive Essay"}
                 </span>
               </div>
 
-              {/* Flag for Review button */}
-              <button
-                onClick={toggleFlag}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer flex items-center gap-1.5 ${
-                  flagged[currentQ.id]
-                    ? "border-amber-300 shadow-xs scale-105"
-                    : "border-gray-200 dark:border-neutral-700 opacity-80 hover:opacity-100"
-                }`}
-                style={{
-                  backgroundColor: flagged[currentQ.id] ? themeColors.accent.yellow : themeColors.primary.w,
-                  color: "#000000"
-                }}
-              >
-                <Bookmark className="w-3.5 h-3.5" />
-                {flagged[currentQ.id] ? "Marked for Review" : "Mark for Review"}
-              </button>
+              {/* Right Controls: Clear & Flag */}
+              <div className="flex items-center gap-2">
+                {currentQ.type === "mcq" && answers[currentQ.id] && (
+                  <button
+                    onClick={() => handleAnswerChange("")}
+                    className="text-xs font-medium text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition cursor-pointer px-2 py-1"
+                  >
+                    Clear response
+                  </button>
+                )}
+
+                <button
+                  onClick={toggleFlag}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer flex items-center gap-1.5 ${
+                    flagged[currentQ.id]
+                      ? "border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-semibold shadow-xs"
+                      : "border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800 text-gray-600 dark:text-gray-400"
+                  }`}
+                >
+                  <Bookmark className={`w-3.5 h-3.5 ${flagged[currentQ.id] ? "fill-amber-500 text-amber-600" : ""}`} />
+                  {flagged[currentQ.id] ? "Marked for Review" : "Mark for Review"}
+                </button>
+              </div>
             </div>
 
             {/* Question Statement */}
-            <div className="text-lg sm:text-xl font-bold leading-relaxed" style={{ color: themeColors.text.primary }}>
+            <div className="text-base sm:text-lg font-semibold leading-relaxed pt-1" style={{ color: themeColors.text.primary }}>
               {currentQ.question}
             </div>
 
-            {/* ================= IF MCQ: 4 OPTION CARDS ================= */}
+            {/* ================= IF MCQ: CLEAN ACADEMIC RADIO OPTIONS ================= */}
             {currentQ.type === "mcq" && currentQ.options && (
               <div className="space-y-3 pt-2">
                 {currentQ.options.map((option) => {
@@ -1363,52 +1423,56 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                     <div
                       key={option.id}
                       onClick={() => handleAnswerChange(option.id)}
-                      className={`rounded-xl p-4 sm:p-5 border transition-all cursor-pointer flex items-center gap-4 select-none ${
+                      className={`rounded-xl p-4 sm:p-4.5 border transition-all cursor-pointer flex items-center gap-3.5 select-none ${
                         isSelected
-                          ? "border-amber-400 shadow-md scale-[1.01]"
-                          : "border-gray-200 dark:border-neutral-700 hover:border-gray-400 opacity-90"
+                          ? "border-neutral-900 dark:border-white bg-neutral-50/80 dark:bg-neutral-800/60 shadow-xs ring-1 ring-neutral-900/10 dark:ring-white/20"
+                          : "border-gray-200 dark:border-neutral-800 hover:border-gray-400 dark:hover:border-neutral-600 bg-white dark:bg-neutral-900"
                       }`}
-                      style={{
-                        backgroundColor: isSelected ? themeColors.accent.yellow : themeColors.background.white,
-                        color: isSelected ? "#000000" : themeColors.text.primary
-                      }}
                     >
+                      {/* Option Key (A, B, C, D) */}
                       <div
-                        className="w-10 h-10 rounded-xl font-bold flex items-center justify-center shrink-0 text-base"
-                        style={{
-                          backgroundColor: isSelected ? "#000000" : (isDark ? "#262626" : "#f0f0f0"),
-                          color: isSelected ? "#ffffff" : themeColors.text.primary
-                        }}
+                        className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 transition-colors ${
+                          isSelected
+                            ? "bg-neutral-900 text-white dark:bg-white dark:text-black"
+                            : "border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-600 dark:text-gray-400"
+                        }`}
                       >
                         {option.id}
                       </div>
 
-                      <div className="font-medium text-sm sm:text-base flex-1">
+                      {/* Option Text */}
+                      <div className="font-normal text-sm sm:text-base flex-1 leading-normal text-gray-800 dark:text-gray-200">
                         {option.text}
                       </div>
 
-                      {isSelected && (
-                        <CheckCircle2 className="w-5 h-5 text-black shrink-0 font-bold" />
-                      )}
+                      {/* Clean Radio Circle */}
+                      <div
+                        className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                          isSelected
+                            ? "border-2 border-neutral-900 dark:border-white"
+                            : "border border-gray-300 dark:border-neutral-600"
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="w-2 h-2 rounded-full bg-neutral-900 dark:bg-white" />
+                        )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
             )}
 
-            {/* ================= IF DESCRIPTIVE: RICH ESSAY TEXTAREA ================= */}
+            {/* ================= IF DESCRIPTIVE: CLEAN WRITING CANVAS ================= */}
             {currentQ.type === "descriptive" && (
               <div className="space-y-3 pt-2">
-                {/* Guidelines Banner */}
-                <div
-                  className="p-3.5 rounded-xl border border-amber-200/60 dark:border-neutral-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
-                  style={{ backgroundColor: themeColors.accent.orangeSection || "#fdf7ee" }}
-                >
-                  <span className="font-bold text-gray-800">
-                    ✍️ Suggested length: <strong>{currentQ.recommendedWords || "150 - 250 words"}</strong>
+                {/* Guidelines Bar */}
+                <div className="flex items-center justify-between text-xs text-gray-500 border-b border-gray-100 dark:border-neutral-800 pb-2">
+                  <span>
+                    Suggested Length: <strong className="text-gray-700 dark:text-gray-300">{currentQ.recommendedWords || "150 - 250 words"}</strong>
                   </span>
-                  <span className="font-medium text-gray-600">
-                    Define assumptions, illustrate mechanisms, and cite policy trade-offs.
+                  <span>
+                    Structured Academic Essay
                   </span>
                 </div>
 
@@ -1416,22 +1480,22 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                 <textarea
                   value={answers[currentQ.id] || ""}
                   onChange={(e) => handleAnswerChange(e.target.value)}
-                  placeholder="Type your structured economic analysis here. Use paragraphs or numbered points for conceptual clarity..."
-                  className="w-full min-h-[280px] p-5 rounded-2xl border border-gray-200 dark:border-neutral-700 text-base font-sans leading-relaxed outline-none focus:ring-2 focus:ring-black dark:focus:ring-white resize-y shadow-inner"
+                  placeholder="Type your essay response here. Formulate clear arguments, define theoretical assumptions, and use numbered points or paragraphs for structure..."
+                  className="w-full min-h-[300px] p-4.5 rounded-xl border border-gray-200 dark:border-neutral-700 text-sm sm:text-base font-sans leading-relaxed outline-none focus:border-black dark:focus:border-white focus:bg-white dark:focus:bg-black transition resize-y shadow-2xs"
                   style={{
                     backgroundColor: themeColors.primary.w,
                     color: themeColors.text.primary
                   }}
                 />
 
-                {/* Live Stats Bar */}
-                <div className="flex items-center justify-between text-xs font-semibold pt-1 text-gray-500">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                {/* Status Bar */}
+                <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     {lastSaved}
                   </span>
-                  <span className="px-3 py-1 rounded-md bg-gray-100 dark:bg-neutral-800">
-                    {wordCount} Words Written
+                  <span className="font-medium text-gray-600 dark:text-gray-400">
+                    {wordCount} {wordCount === 1 ? "word" : "words"}
                   </span>
                 </div>
               </div>
@@ -1443,14 +1507,14 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             <button
               onClick={() => setCurrentIdx((prev) => Math.max(0, prev - 1))}
               disabled={currentIdx === 0}
-              className="px-5 py-2.5 rounded-xl font-bold text-sm border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
+              className="px-4 sm:px-5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm border border-gray-200 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
               style={{ color: themeColors.text.primary }}
             >
               <ChevronLeft className="w-4 h-4" /> Previous
             </button>
 
             <div className="text-xs font-medium text-gray-500 hidden sm:block">
-              Auto-saved draft in browser memory
+              Question {currentIdx + 1} of {questions.length}
             </div>
 
             <button
@@ -1461,11 +1525,11 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
                   setShowSubmitModal(true);
                 }
               }}
-              className="px-6 py-2.5 rounded-xl font-bold text-sm shadow-md transition hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1.5"
+              className="px-5 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-sm transition hover:opacity-90 active:scale-95 cursor-pointer flex items-center gap-1.5"
               style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
             >
               {currentIdx === questions.length - 1 ? (
-                <>Finish & Review <Check className="w-4 h-4" /></>
+                <>Review & Submit <Check className="w-4 h-4" /></>
               ) : (
                 <>Next Question <ChevronRight className="w-4 h-4" /></>
               )}
@@ -1474,78 +1538,73 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
         </div>
 
         {/* RIGHT SIDEBAR: QUESTION PALETTE GRID */}
-        <div className="w-72 hidden lg:flex flex-col gap-5 shrink-0">
+        <div className="w-72 hidden lg:flex flex-col gap-4 shrink-0">
           <div
-            className="rounded-2xl p-5 border border-gray-100 dark:border-neutral-800 shadow-md space-y-5"
+            className="rounded-2xl p-5 border border-gray-200/80 dark:border-neutral-800 shadow-sm space-y-4"
             style={{ backgroundColor: themeColors.background.white }}
           >
             {/* Candidate Card */}
-            <div className="p-3 rounded-xl bg-gray-50 dark:bg-neutral-800 text-xs font-medium space-y-1">
-              <div className="text-gray-500 uppercase tracking-wider text-[10px]">Active Candidate</div>
-              <div className="text-sm font-bold truncate" style={{ color: themeColors.text.primary }}>
+            <div className="p-3 rounded-xl bg-gray-50 dark:bg-neutral-800/70 border border-gray-100 dark:border-neutral-700/60 text-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400 uppercase tracking-wider text-[10px] font-bold">Candidate</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <div className="font-bold text-sm truncate" style={{ color: themeColors.text.primary }}>
                 test@test.com
               </div>
-              <div className="text-emerald-600 font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Examination Session Active
+              <div className="text-gray-500 text-[11px] font-medium pt-0.5">
+                Passing Requirement: {exam.passingMarks}/{exam.totalMarks} Marks
               </div>
             </div>
 
-            {/* Stats Summary */}
-            <div className="grid grid-cols-2 gap-2 text-center text-xs">
-              <div
-                className="p-2.5 rounded-xl font-bold shadow-xs"
-                style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-              >
-                <span className="block text-lg font-black">{answeredCount}</span>
-                Answered
+            {/* Status Summary Strip */}
+            <div className="grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="p-2 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
+                <span className="block text-base font-bold" style={{ color: themeColors.text.primary }}>{answeredCount}</span>
+                <span className="text-[11px] text-gray-500">Answered</span>
               </div>
-              <div
-                className="p-2.5 rounded-xl font-bold shadow-xs"
-                style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-              >
-                <span className="block text-lg font-black">{Object.keys(flagged).filter(k => flagged[k]).length}</span>
-                Flagged
+              <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40">
+                <span className="block text-base font-bold text-amber-700 dark:text-amber-400">
+                  {Object.keys(flagged).filter((k) => flagged[k]).length}
+                </span>
+                <span className="text-[11px] text-amber-700 dark:text-amber-400">Review</span>
+              </div>
+              <div className="p-2 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
+                <span className="block text-base font-bold text-gray-400">{questions.length - answeredCount}</span>
+                <span className="text-[11px] text-gray-500">Remaining</span>
               </div>
             </div>
 
             {/* Question Palette Number Grid */}
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: themeColors.text.secondary }}>
-                Question Palette:
+              <div className="text-xs font-bold uppercase tracking-wider mb-2.5 text-gray-500">
+                Question Navigator
               </div>
 
-              <div className="grid grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-4 gap-2">
                 {questions.map((q, idx) => {
                   const isCurrent = idx === currentIdx;
                   const isAnswered = answers[q.id] && answers[q.id].trim() !== "";
                   const isFlagged = flagged[q.id];
 
-                  let bg = themeColors.background.white;
-                  let textColor = themeColors.text.primary;
-                  let borderStyle = "border border-gray-200 dark:border-neutral-700";
-
-                  if (isAnswered) {
-                    bg = themeColors.accent.green;
-                    textColor = "#000000";
-                    borderStyle = "border-none shadow-xs";
-                  } else if (isFlagged) {
-                    bg = themeColors.accent.yellow;
-                    textColor = "#000000";
-                    borderStyle = "border-none shadow-xs";
-                  }
+                  let itemStyle = "border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-300";
 
                   if (isCurrent) {
-                    borderStyle = "ring-2 ring-black dark:ring-white scale-105 shadow-md";
+                    itemStyle = "bg-neutral-900 text-white dark:bg-white dark:text-black font-bold ring-2 ring-neutral-900 dark:ring-white shadow-xs";
+                  } else if (isAnswered) {
+                    itemStyle = "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-semibold";
                   }
 
                   return (
                     <button
                       key={q.id}
                       onClick={() => setCurrentIdx(idx)}
-                      className={`h-11 rounded-xl font-bold text-sm flex items-center justify-center transition-all cursor-pointer ${borderStyle}`}
-                      style={{ backgroundColor: bg, color: textColor }}
+                      className={`relative h-10 rounded-lg text-xs font-semibold flex items-center justify-center transition cursor-pointer hover:scale-105 active:scale-95 ${itemStyle}`}
                     >
                       {idx + 1}
+                      {isFlagged && (
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-black" />
+                      )}
                     </button>
                   );
                 })}
@@ -1553,24 +1612,22 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             </div>
 
             {/* Palette Legend */}
-            <div className="pt-3 border-t border-gray-100 dark:border-neutral-800 space-y-2 text-xs font-medium text-gray-600 dark:text-gray-300">
-              <div className="flex items-center gap-2">
-                <span
-                  className="w-3.5 h-3.5 rounded-md"
-                  style={{ backgroundColor: themeColors.accent.green }}
-                />
+            <div className="pt-3 border-t border-gray-100 dark:border-neutral-800 grid grid-cols-2 gap-2 text-[11px] text-gray-500">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded bg-neutral-900 dark:bg-white" />
+                <span>Current</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded bg-emerald-500" />
                 <span>Answered</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span
-                  className="w-3.5 h-3.5 rounded-md"
-                  style={{ backgroundColor: themeColors.accent.yellow }}
-                />
-                <span>Marked for Review</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded bg-amber-500" />
+                <span>Marked</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 rounded-md border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900" />
-                <span>Not Attempted</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded border border-gray-300 dark:border-neutral-600" />
+                <span>Unattempted</span>
               </div>
             </div>
           </div>
@@ -1584,54 +1641,162 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             className="rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-gray-200 dark:border-neutral-800 space-y-5"
             style={{ backgroundColor: themeColors.background.white }}
           >
-            <h3 className="text-xl font-black" style={{ color: themeColors.text.primary }}>
-              Ready to Submit Your Exam?
-            </h3>
-
-            <p className="text-xs sm:text-sm font-medium" style={{ color: themeColors.text.secondary }}>
-              Please review your question attempts before final submission. After submitting, your answers will be sent for evaluation.
-            </p>
+            <div>
+              <h3 className="text-xl font-bold" style={{ color: themeColors.text.primary }}>
+                Submit Examination?
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                Please verify your responses before final submission. Once submitted, your examination will be locked and sent for evaluation.
+              </p>
+            </div>
 
             {/* Summary Grid */}
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div
-                className="p-3.5 rounded-xl font-bold shadow-xs"
-                style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-              >
-                <span className="block text-gray-700 font-medium">Answered Questions</span>
-                <span className="text-2xl font-black">{answeredCount} of {questions.length}</span>
+              <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200">
+                <span className="block font-medium text-emerald-700 dark:text-emerald-300">Answered</span>
+                <span className="text-2xl font-bold mt-0.5 block">{answeredCount} of {questions.length}</span>
               </div>
 
-              <div
-                className="p-3.5 rounded-xl font-bold shadow-xs"
-                style={{ backgroundColor: themeColors.accent.yellow, color: "#000000" }}
-              >
-                <span className="block text-gray-700 font-medium">Unanswered</span>
-                <span className="text-2xl font-black">{questions.length - answeredCount} Remaining</span>
+              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-800 dark:text-gray-200">
+                <span className="block font-medium text-gray-500">Unanswered</span>
+                <span className="text-2xl font-bold mt-0.5 block">{questions.length - answeredCount} Remaining</span>
               </div>
             </div>
 
             {questions.length - answeredCount > 0 && (
-              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-xs font-bold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>You have {questions.length - answeredCount} unanswered questions!</span>
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center gap-2 border border-amber-200 dark:border-amber-900/50">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                <span>You have {questions.length - answeredCount} unanswered questions remaining.</span>
               </div>
             )}
 
             <div className="flex gap-3 pt-2">
               <button
                 onClick={() => setShowSubmitModal(false)}
-                className="flex-1 py-3 rounded-xl font-bold text-sm border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl font-semibold text-sm border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
                 style={{ color: themeColors.text.primary }}
               >
-                Back to Test
+                Back to Exam
               </button>
               <button
                 onClick={handleSubmitFinal}
-                className="flex-1 py-3 rounded-xl font-bold text-sm shadow-md transition hover:scale-[1.02] active:scale-95 cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl font-bold text-sm shadow-sm transition hover:opacity-90 active:scale-95 cursor-pointer"
                 style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
               >
                 Confirm & Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= LEAVE EXAM (BACK BUTTON) MODAL ================= */}
+      {showBackModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+          <div
+            className="rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-gray-200 dark:border-neutral-800 space-y-6"
+            style={{ backgroundColor: themeColors.background.white }}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 shrink-0">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-black" style={{ color: themeColors.text.primary }}>
+                    Leave Examination?
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {exam.title}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBackModal(false)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer text-gray-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Current Exam State Info */}
+            <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800/80 border border-gray-100 dark:border-neutral-700/60 text-center">
+              <div>
+                <span className="text-xs text-gray-500 font-medium block">Time Remaining</span>
+                <span className="text-lg font-black font-mono" style={{ color: themeColors.text.primary }}>
+                  {formatTimer(secondsLeft)}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500 font-medium block">Questions Answered</span>
+                <span className="text-lg font-black" style={{ color: themeColors.text.primary }}>
+                  {answeredCount} of {questions.length}
+                </span>
+              </div>
+            </div>
+
+            {/* 2 Decision Cards: Pause vs End */}
+            <div className="space-y-3">
+              {/* Option 1: Pause and Exit */}
+              <button
+                type="button"
+                onClick={handlePauseAndExit}
+                className="w-full p-4 rounded-xl border-2 border-amber-300 dark:border-amber-800/80 bg-amber-50/60 dark:bg-amber-950/30 hover:bg-amber-100/70 dark:hover:bg-amber-900/40 text-left transition flex items-center gap-4 cursor-pointer group"
+              >
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-200/70 dark:bg-amber-800/60 text-amber-900 dark:text-amber-200 shrink-0 group-hover:scale-105 transition">
+                  <Pause className="w-5 h-5 fill-current" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-amber-950 dark:text-amber-100">
+                      Pause and Exit
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-200">
+                      Resume Later
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-800 dark:text-amber-300/90 mt-0.5">
+                    Freeze timer and save all responses. You can resume this exam anytime from the Upcoming & Live tab.
+                  </p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-amber-700 dark:text-amber-400 group-hover:translate-x-1 transition shrink-0" />
+              </button>
+
+              {/* Option 2: End & Submit Test */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBackModal(false);
+                  handleSubmitFinal();
+                }}
+                className="w-full p-4 rounded-xl border border-gray-200 dark:border-neutral-700 hover:border-red-300 dark:hover:border-red-800 hover:bg-red-50/40 dark:hover:bg-red-950/20 text-left transition flex items-center gap-4 cursor-pointer group"
+              >
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300 shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-900/40 group-hover:text-red-700 dark:group-hover:text-red-300 transition">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <span className="font-bold text-sm block" style={{ color: themeColors.text.primary }}>
+                    End and Submit Test
+                  </span>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Finalize responses now and submit for evaluation. You cannot resume after submitting.
+                  </p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition shrink-0" />
+              </button>
+            </div>
+
+            {/* Bottom: Stay in Exam */}
+            <div className="pt-2 border-t border-gray-100 dark:border-neutral-800">
+              <button
+                type="button"
+                onClick={() => setShowBackModal(false)}
+                className="w-full py-2.5 rounded-xl font-bold text-xs sm:text-sm border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer text-center"
+                style={{ color: themeColors.text.primary }}
+              >
+                Cancel and Stay in Exam
               </button>
             </div>
           </div>
@@ -1642,62 +1807,51 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
       {isPaused && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
           <div
-            className="rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-200 dark:border-neutral-800 text-center space-y-6"
+            className="rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-200 dark:border-neutral-800 text-center space-y-5"
             style={{ backgroundColor: themeColors.background.white }}
           >
-            <div
-              className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center shadow-xs"
-              style={{ backgroundColor: themeColors.accent.yellow }}
-            >
-              <Pause className="w-8 h-8 text-black fill-black" />
+            <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center bg-gray-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-800 dark:text-gray-200">
+              <Pause className="w-5 h-5 fill-current" />
             </div>
 
             <div>
-              <h3 className="text-2xl font-black mb-1.5" style={{ color: themeColors.text.primary }}>
-                Exam Paused
+              <h3 className="text-xl font-bold" style={{ color: themeColors.text.primary }}>
+                Examination Paused
               </h3>
-              <p className="text-xs sm:text-sm font-medium" style={{ color: themeColors.text.secondary }}>
-                Your timer is frozen and all your answers are safely preserved. Take a break and resume whenever you're ready.
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                Your timer is frozen and all responses are preserved in session memory.
               </p>
             </div>
 
             {/* Frozen Stats Cards */}
             <div className="grid grid-cols-2 gap-3 text-center">
               <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
-                <span className="text-xs text-gray-500 font-bold block">Frozen Time</span>
-                <span className="text-xl font-black font-mono text-amber-600 dark:text-amber-400">
+                <span className="text-xs text-gray-500 font-medium block">Frozen Timer</span>
+                <span className="text-xl font-bold font-mono text-gray-800 dark:text-gray-200">
                   {formatTimer(secondsLeft)}
                 </span>
               </div>
               <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-neutral-800 border border-gray-100 dark:border-neutral-700/60">
-                <span className="text-xs text-gray-500 font-bold block">Attempted</span>
-                <span className="text-xl font-black" style={{ color: themeColors.text.primary }}>
+                <span className="text-xs text-gray-500 font-medium block">Attempted</span>
+                <span className="text-xl font-bold" style={{ color: themeColors.text.primary }}>
                   {answeredCount} / {questions.length}
                 </span>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center justify-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>All progress & drafts auto-saved</span>
-            </div>
-
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
-                onClick={() => {
-                  setIsPaused(false);
-                  onExit();
-                }}
-                className="flex-1 py-3 rounded-xl font-bold text-sm border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                onClick={handlePauseAndExit}
+                className="flex-1 py-2.5 rounded-xl font-semibold text-sm border border-gray-300 dark:border-neutral-700 hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer"
                 style={{ color: themeColors.text.primary }}
               >
-                Exit to Dashboard
+                Pause & Exit to Catalog
               </button>
 
               <button
                 onClick={() => setIsPaused(false)}
-                className="flex-1 py-3 rounded-xl font-bold text-sm shadow-md transition hover:scale-[1.02] active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 rounded-xl font-bold text-sm shadow-sm transition hover:opacity-90 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
                 style={{ backgroundColor: themeColors.primary.w2, color: themeColors.primary.w }}
               >
                 <Play className="w-4 h-4 fill-current" />
@@ -1796,16 +1950,8 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
 
                 <div className="mt-4 pt-4 border-t border-black/15 flex items-center justify-between text-xs font-bold">
                   <span className="px-3 py-1 rounded-full bg-white shadow-xs text-black">
-                    {result.submittedAt}
+                    Submitted: {result.submittedAt}
                   </span>
-                  {onSimulateReview && (
-                    <button
-                      onClick={() => onSimulateReview(result.id)}
-                      className="px-3 py-1 rounded-full shadow-xs flex items-center gap-1 bg-black text-white hover:scale-105 active:scale-95 transition cursor-pointer"
-                    >
-                      <Sparkles className="w-3 h-3 text-yellow-400 fill-yellow-400" /> Simulate Review
-                    </button>
-                  )}
                 </div>
               </div>
             ) : (
@@ -1826,12 +1972,6 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
                 <div className="mt-4 pt-4 border-t border-black/15 flex items-center justify-between text-xs font-bold">
                   <span className="px-3 py-1 rounded-full bg-white shadow-xs">
                     {result.percentage}% Marks
-                  </span>
-                  <span
-                    className="px-3 py-1 rounded-full shadow-xs flex items-center gap-1"
-                    style={{ backgroundColor: themeColors.accent.green, color: "#000000" }}
-                  >
-                    <Award className="w-3.5 h-3.5" /> {result.grade}
                   </span>
                 </div>
               </div>
@@ -1891,11 +2031,8 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
             >
               <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-black/15">
                 <h4 className="font-bold text-lg flex items-center gap-2 text-black">
-                  <Clock className="w-5 h-5 text-black" /> Instructor Evaluation In Progress
+                  <Clock className="w-5 h-5 text-black" /> Waiting for Teacher's Feedback
                 </h4>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white shadow-xs text-black">
-                  Waiting for Teacher's Feedback
-                </span>
               </div>
               <p className="text-sm font-medium leading-relaxed text-gray-900">
                 Instructor Rishika evaluates descriptive essay responses with personalized annotations and feedback. Once grading completes, your full report card, marks breakdown, and personalized feedback will be published here.
