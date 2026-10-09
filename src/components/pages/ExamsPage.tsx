@@ -3586,137 +3586,239 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             </div>
           </div>
 
-          {/* Answering Canvas (Centered reading column, no dead space) */}
-          <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 sm:py-8 custom-scrollbar">
-            <div className="max-w-3xl mx-auto w-full space-y-7">
-              
-              {/* Question Statement */}
-              <div className="text-lg sm:text-[19px] font-medium leading-relaxed text-slate-900 dark:text-neutral-100 tracking-tight select-text">
-                {currentQ.question}
-              </div>
+          {/* Answering Canvas / Focus Stage */}
+          {viewMode === "questions_only" ? (
+            /* ========================================================================= */
+            /* QUESTIONS ONLY: CENTERED FLASHCARD PRESENTATION                           */
+            /* ========================================================================= */
+            <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 sm:py-10 custom-scrollbar flex flex-col items-center justify-center min-h-0 bg-slate-100/50 dark:bg-neutral-950/40">
+              <div className="w-full max-w-2xl my-auto animate-in fade-in zoom-in-95 duration-200">
+                {/* FLASHCARD CARD */}
+                <div className="relative rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200/90 dark:border-neutral-800 shadow-xl dark:shadow-2xl dark:shadow-black/60 overflow-hidden flex flex-col">
+                  
+                  {/* Top Ambient Bar */}
+                  <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-indigo-500 to-amber-500" />
 
-              {/* QUESTIONS ONLY MODE (Pen & Paper Mode) */}
-              {viewMode === "questions_only" ? (
-                <div className="space-y-5 pt-1">
-                  {/* For MCQ: Show options clearly as reference question content so student can read and solve on paper */}
-                  {currentQ.type === "mcq" && currentQ.options && currentQ.options.length > 0 && (
-                    <div className="space-y-3 p-5 rounded-2xl bg-slate-50/90 dark:bg-neutral-850/90 border border-slate-200/90 dark:border-neutral-800">
-                      <span className="text-[11px] font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider block">
-                        Multiple Choice Options (Pen & Paper Reference):
+                  {/* Card Header */}
+                  <div className="p-5 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 dark:border-neutral-800/80 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/80 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Question {currentIdx + 1} of {questions.length}</span>
                       </span>
-                      <div className="space-y-2">
-                        {currentQ.options.map((option) => (
-                          <div
-                            key={option.id}
-                            className="flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-750 text-sm font-medium text-slate-800 dark:text-neutral-200"
-                          >
-                            <span className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 font-bold text-xs flex items-center justify-center shrink-0 text-slate-700 dark:text-neutral-300">
-                              {option.id}
-                            </span>
-                            <span className="pt-0.5 leading-normal">{option.text}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Pen & Paper Banner */}
-                  <div className="p-4 rounded-2xl border border-dashed border-amber-300 dark:border-amber-800/80 bg-amber-50/60 dark:bg-amber-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 shrink-0">
-                        <PenTool className="w-4 h-4" />
+                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300">
+                        {currentQ.marks} {currentQ.marks === 1 ? "Mark" : "Marks"}
+                      </span>
+
+                      <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-50 dark:bg-neutral-850 text-slate-500 dark:text-neutral-400 border border-slate-200/60 dark:border-neutral-800 hidden sm:inline-block">
+                        {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={toggleFlag}
+                        className={`p-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                          flagged[currentQ.id]
+                            ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
+                            : "text-slate-400 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800"
+                        }`}
+                        title="Flag question for review (M)"
+                      >
+                        <Bookmark className={`w-4 h-4 ${flagged[currentQ.id] ? "fill-amber-500 text-amber-500" : ""}`} />
+                        <span className="hidden sm:inline text-xs">{flagged[currentQ.id] ? "Flagged" : "Flag"}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Card Body: Question Statement & Reference Options */}
+                  <div className="p-6 sm:p-8 space-y-6">
+                    <div className="space-y-2">
+                      <div className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500 flex items-center gap-1.5">
+                        <PenTool className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Pen & Paper Focus Statement</span>
                       </div>
-                      <div>
-                        <span className="font-bold text-amber-900 dark:text-amber-300 block">
-                          Questions Only Mode (Pen & Paper)
-                        </span>
-                        <span className="text-amber-800/80 dark:text-amber-400/80">
-                          The on-screen typing space is hidden. Solve and write your answer on your own paper.
-                        </span>
+                      <div className="text-lg sm:text-xl md:text-2xl font-semibold leading-relaxed text-slate-900 dark:text-neutral-100 tracking-tight select-text">
+                        {currentQ.question}
                       </div>
                     </div>
+
+                    {/* MCQ Options (Choice Reference Tiles) */}
+                    {currentQ.type === "mcq" && currentQ.options && currentQ.options.length > 0 && (
+                      <div className="space-y-3 pt-2">
+                        <div className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
+                          Options Reference:
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {currentQ.options.map((option) => (
+                            <div
+                              key={option.id}
+                              className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50/80 dark:bg-neutral-800/60 border border-slate-200/80 dark:border-neutral-750 transition-colors"
+                            >
+                              <span className="w-7 h-7 rounded-xl bg-white dark:bg-neutral-700 border border-slate-200 dark:border-neutral-600 font-bold text-xs flex items-center justify-center shrink-0 text-slate-800 dark:text-neutral-200 shadow-2xs">
+                                {option.id}
+                              </span>
+                              <span className="text-sm font-medium text-slate-800 dark:text-neutral-200 pt-0.5 leading-normal">
+                                {option.text}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Descriptive Paper Banner */}
+                    {currentQ.type === "descriptive" && (
+                      <div className="p-4 rounded-2xl border border-dashed border-amber-300 dark:border-amber-800/60 bg-amber-50/50 dark:bg-amber-950/20 flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800/60">
+                          <PenTool className="w-5 h-5" />
+                        </div>
+                        <div className="text-xs">
+                          <span className="font-bold text-amber-900 dark:text-amber-300 block">
+                            Pen & Paper Descriptive Answer
+                          </span>
+                          <span className="text-amber-800/80 dark:text-amber-400/80">
+                            Solve and write your detailed explanation on your own answer sheet.
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Footer: Flipping Controls & Typing Mode Switch */}
+                  <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-neutral-800/80 bg-slate-50/60 dark:bg-neutral-850/60 flex items-center justify-between gap-3 text-xs">
+                    {/* Quick Flip Buttons on Card */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentIdx((p) => Math.max(0, p - 1))}
+                        disabled={currentIdx === 0}
+                        className="p-2 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer flex items-center gap-1 font-semibold"
+                        title="Previous question (← Arrow)"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        <span className="hidden sm:inline">Prev Card</span>
+                      </button>
+
+                      <span className="text-[11px] font-bold text-slate-400 dark:text-neutral-500 px-1">
+                        {currentIdx + 1} / {questions.length}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (currentIdx < questions.length - 1) {
+                            setCurrentIdx((p) => p + 1);
+                          } else {
+                            setShowSubmitModal(true);
+                          }
+                        }}
+                        className="p-2 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 transition cursor-pointer flex items-center gap-1 font-semibold"
+                        title="Next question (→ Arrow)"
+                      >
+                        <span className="hidden sm:inline">{currentIdx === questions.length - 1 ? "Finish" : "Next Card"}</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Quick Switch to Full Typing Mode */}
                     <button
                       type="button"
                       onClick={() => setViewMode("full")}
-                      className="px-3 py-1.5 rounded-lg bg-white dark:bg-neutral-800 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 font-bold hover:bg-amber-100/50 transition cursor-pointer shrink-0 self-start sm:self-auto text-xs"
+                      className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                     >
-                      Enable Typing Mode →
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Switch to Typing Mode →</span>
                     </button>
                   </div>
-                </div>
-              ) : (
-                <>
-                  {/* MCQ Options with Tactile Key Badges & Keyboard Shortcuts */}
-                  {currentQ.type === "mcq" && currentQ.options && (
-                    <div className="space-y-3 pt-1">
-                      {currentQ.options.map((option) => {
-                        const isSelected = answers[currentQ.id] === option.id;
 
-                        return (
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* ========================================================================= */
+            /* FULL WORKSTATION MODE: QUESTION + TYPING / RADIO WORKSPACE                */
+            /* ========================================================================= */
+            <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-6 sm:py-8 custom-scrollbar">
+              <div className="max-w-3xl mx-auto w-full space-y-7">
+                
+                {/* Question Statement */}
+                <div className="text-lg sm:text-[19px] font-medium leading-relaxed text-slate-900 dark:text-neutral-100 tracking-tight select-text">
+                  {currentQ.question}
+                </div>
+
+                {/* MCQ Options with Tactile Key Badges & Keyboard Shortcuts */}
+                {currentQ.type === "mcq" && currentQ.options && (
+                  <div className="space-y-3 pt-1">
+                    {currentQ.options.map((option) => {
+                      const isSelected = answers[currentQ.id] === option.id;
+
+                      return (
+                        <div
+                          key={option.id}
+                          onClick={() => handleAnswerChange(option.id)}
+                          className={`group flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                            isSelected
+                              ? "border-slate-900 dark:border-white bg-slate-50/90 dark:bg-neutral-800/80 shadow-xs ring-1 ring-slate-900/10 dark:ring-white/20"
+                              : "border-slate-200/90 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 hover:bg-slate-50/40 dark:hover:bg-neutral-800/30 bg-white dark:bg-neutral-900"
+                          }`}
+                        >
+                          {/* Tactile Keyboard Key Badge */}
                           <div
-                            key={option.id}
-                            onClick={() => handleAnswerChange(option.id)}
-                            className={`group flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer select-none ${
+                            className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 border transition-all ${
                               isSelected
-                                ? "border-slate-900 dark:border-white bg-slate-50/90 dark:bg-neutral-800/80 shadow-xs ring-1 ring-slate-900/10 dark:ring-white/20"
-                                : "border-slate-200/90 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 hover:bg-slate-50/40 dark:hover:bg-neutral-800/30 bg-white dark:bg-neutral-900"
+                                ? "bg-slate-900 text-white dark:bg-white dark:text-neutral-900 border-slate-900 dark:border-white shadow-xs"
+                                : "border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 group-hover:bg-slate-100 dark:group-hover:bg-neutral-750"
                             }`}
                           >
-                            {/* Tactile Keyboard Key Badge */}
-                            <div
-                              className={`w-7 h-7 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 border transition-all ${
-                                isSelected
-                                  ? "bg-slate-900 text-white dark:bg-white dark:text-neutral-900 border-slate-900 dark:border-white shadow-xs"
-                                  : "border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 group-hover:bg-slate-100 dark:group-hover:bg-neutral-750"
-                              }`}
-                            >
-                              {option.id}
-                            </div>
-
-                            {/* Option Text */}
-                            <div className={`text-[15px] sm:text-base leading-normal flex-1 ${
-                              isSelected
-                                ? "font-semibold text-slate-900 dark:text-white"
-                                : "font-normal text-slate-800 dark:text-neutral-200"
-                            }`}>
-                              {option.text}
-                            </div>
-
-                            {/* Radio Selector */}
-                            <div
-                              className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                                isSelected
-                                  ? "border-2 border-slate-900 dark:border-white"
-                                  : "border border-slate-300 dark:border-neutral-600"
-                              }`}
-                            >
-                              {isSelected && (
-                                <div className="w-2 h-2 rounded-full bg-slate-900 dark:bg-white" />
-                              )}
-                            </div>
+                            {option.id}
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
 
-                  {/* Descriptive Answer Word Editor */}
-                  {currentQ.type === "descriptive" && (
-                    <div className="pt-1">
-                      <WordAnswerEditor
-                        key={currentQ.id}
-                        value={answers[currentQ.id] || ""}
-                        onChange={(newVal) => handleAnswerChange(newVal)}
-                        lastSavedText={lastSaved}
-                        isDark={isDark}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
+                          {/* Option Text */}
+                          <div className={`text-[15px] sm:text-base leading-normal flex-1 ${
+                            isSelected
+                              ? "font-semibold text-slate-900 dark:text-white"
+                              : "font-normal text-slate-800 dark:text-neutral-200"
+                          }`}>
+                            {option.text}
+                          </div>
 
+                          {/* Radio Selector */}
+                          <div
+                            className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                              isSelected
+                                ? "border-2 border-slate-900 dark:border-white"
+                                : "border border-slate-300 dark:border-neutral-600"
+                            }`}
+                          >
+                            {isSelected && (
+                              <div className="w-2 h-2 rounded-full bg-slate-900 dark:bg-white" />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Descriptive Answer Word Editor */}
+                {currentQ.type === "descriptive" && (
+                  <div className="pt-1">
+                    <WordAnswerEditor
+                      key={currentQ.id}
+                      value={answers[currentQ.id] || ""}
+                      onChange={(newVal) => handleAnswerChange(newVal)}
+                      lastSavedText={lastSaved}
+                      isDark={isDark}
+                    />
+                  </div>
+                )}
+
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Integrated Bottom Dock */}
           <div className="px-8 py-3.5 border-t border-slate-200/90 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-900/70 flex items-center justify-between shrink-0">
