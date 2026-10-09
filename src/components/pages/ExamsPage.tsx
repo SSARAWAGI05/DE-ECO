@@ -55,7 +55,10 @@ import {
   PenTool,
   Edit3,
   SlidersHorizontal,
-  LayoutGrid
+  LayoutGrid,
+  Upload,
+  Paperclip,
+  ExternalLink
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { getThemeColors } from "../../styles/colors";
@@ -141,6 +144,9 @@ export interface ExamResult {
     teacherComment?: string;
     isCorrect?: boolean;
   }[];
+  submissionFileUrl?: string;
+  submissionFileName?: string;
+  submissionFileSize?: string;
 }
 
 export interface ExamSessionState {
@@ -1277,7 +1283,27 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
               if (!cleanOverall && cleanStrengths.length === 0 && cleanImprovements.length === 0) return undefined;
               return { ...tf, overall: cleanOverall, strengths: cleanStrengths, improvements: cleanImprovements };
             })(),
-            answers: Array.isArray(d.answers) ? d.answers : []
+            answers: Array.isArray(d.answers) ? d.answers.filter((a: any) => a.questionId !== "__attachment__") : [],
+            submissionFileUrl: (() => {
+              if (d.submission_file_url) return d.submission_file_url;
+              if (d.file_url) return d.file_url;
+              if (d.attachment_url) return d.attachment_url;
+              if (Array.isArray(d.answers)) {
+                const att = d.answers.find((a: any) => a.questionId === "__attachment__" || a._meta?.fileUrl);
+                return att?._meta?.fileUrl || (att?.questionId === "__attachment__" ? att.studentAnswer : undefined);
+              }
+              return undefined;
+            })(),
+            submissionFileName: (() => {
+              if (d.submission_file_name) return d.submission_file_name;
+              if (d.file_name) return d.file_name;
+              if (Array.isArray(d.answers)) {
+                const att = d.answers.find((a: any) => a.questionId === "__attachment__" || a._meta?.fileName);
+                return att?._meta?.fileName;
+              }
+              return undefined;
+            })(),
+            submissionFileSize: d.submission_file_size || undefined
           }));
           setResultsList(mappedResults);
           try {
@@ -1573,7 +1599,24 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
         const examId = isValidUUID(newResult.examId) ? newResult.examId : null;
 
         if (examId) {
-          const submissionPayload = {
+          const compiledAnswersWithAttachment = [...newResult.answers];
+          if (newResult.submissionFileUrl) {
+            compiledAnswersWithAttachment.push({
+              questionId: "__attachment__",
+              questionNumber: 0,
+              type: "descriptive" as any,
+              question: "Handwritten Answer Sheet Attachment",
+              marks: 0,
+              studentAnswer: newResult.submissionFileUrl,
+              _meta: {
+                fileUrl: newResult.submissionFileUrl,
+                fileName: newResult.submissionFileName || "Handwritten_Answer_Sheet.pdf",
+                fileSize: newResult.submissionFileSize || ""
+              }
+            } as any);
+          }
+
+          const submissionPayload: any = {
             id: submissionId,
             exam_id: examId,
             user_id: user.id,
@@ -1598,13 +1641,25 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
               : (Math.round((totalAwarded / (newResult.totalMarks || 1)) * 100) >= 80 ? "A Distinction" : "Completed"),
             is_passed: true,
             time_spent_minutes: newResult.timeSpentMinutes !== undefined ? newResult.timeSpentMinutes : 0,
-            answers: newResult.answers,
-            teacher_feedback: newResult.teacherFeedback || null
+            answers: compiledAnswersWithAttachment,
+            teacher_feedback: newResult.teacherFeedback || null,
+            submission_file_url: newResult.submissionFileUrl || null,
+            submission_file_name: newResult.submissionFileName || null,
+            submission_file_size: newResult.submissionFileSize || null
           };
 
-          const { error: insertError } = await supabase
+          let { error: insertError } = await supabase
             .from("exam_submissions")
             .upsert(submissionPayload);
+
+          if (insertError && (insertError.message?.includes("submission_file") || (insertError as any).code === "42703")) {
+            const fallbackPayload = { ...submissionPayload };
+            delete fallbackPayload.submission_file_url;
+            delete fallbackPayload.submission_file_name;
+            delete fallbackPayload.submission_file_size;
+            const res = await supabase.from("exam_submissions").upsert(fallbackPayload);
+            insertError = res.error;
+          }
 
           if (insertError) {
             console.error("Error inserting exam submission into Supabase:", insertError);
@@ -3147,6 +3202,10 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
   const [saveButtonState, setSaveButtonState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [viewMode, setViewMode] = useState<"full" | "questions_only">("full");
   const [showMobilePalette, setShowMobilePalette] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Explicit Save Handler (User tapped 'Save Progress')
   const handleExplicitSave = async () => {
@@ -3331,8 +3390,55 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [currentIdx, currentQ, showSubmitModal, showBackModal, isPaused, questions.length, viewMode]);
 
-  // Final submit handler
-  const handleSubmitFinal = () => {
+  // Final submit handler with handwritten PDF upload support
+  const handleSubmitFinal = async () => {
+    setIsUploadingFile(true);
+    setUploadError(null);
+
+    let fileUrl: string | undefined = undefined;
+    let fileName: string | undefined = undefined;
+    let fileSize: string | undefined = undefined;
+
+    if (attachedFile) {
+      try {
+        const cleanName = attachedFile.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const filePath = `submissions/${exam.id}/${Date.now()}_${cleanName}`;
+        let bucketName = "exam-submissions";
+
+        let uploadRes = await supabase.storage
+          .from(bucketName)
+          .upload(filePath, attachedFile, { upsert: true });
+
+        if (uploadRes.error) {
+          bucketName = "documents";
+          uploadRes = await supabase.storage
+            .from(bucketName)
+            .upload(filePath, attachedFile, { upsert: true });
+        }
+
+        if (uploadRes.error) {
+          bucketName = "class-notes";
+          uploadRes = await supabase.storage
+            .from(bucketName)
+            .upload(filePath, attachedFile, { upsert: true });
+        }
+
+        if (!uploadRes.error) {
+          const { data: publicData } = supabase.storage
+            .from(bucketName)
+            .getPublicUrl(filePath);
+          fileUrl = publicData.publicUrl;
+          fileName = attachedFile.name;
+          fileSize = `${(attachedFile.size / (1024 * 1024)).toFixed(2)} MB`;
+        } else {
+          console.warn("Storage upload failed:", uploadRes.error.message);
+        }
+      } catch (uploadErr) {
+        console.warn("Error uploading PDF:", uploadErr);
+      }
+    }
+
+    setIsUploadingFile(false);
     setShowSubmitModal(false);
     setShowBackModal(false);
 
@@ -3368,7 +3474,10 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
       status: "under_evaluation",
       totalMarks: exam.totalMarks,
       timeSpentMinutes: Math.max(0, Math.round(((Number(exam.durationMinutes) || 0) * 60 - secondsLeft) / 60)),
-      answers: compiledAnswers
+      answers: compiledAnswers,
+      submissionFileUrl: fileUrl,
+      submissionFileName: fileName,
+      submissionFileSize: fileSize
     };
 
     onFinishExam(newResult);
@@ -4210,20 +4319,126 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
               </div>
             )}
 
+            {/* Handwritten Answer Sheet PDF Attachment (Optional) */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-neutral-850 border border-slate-200/80 dark:border-neutral-750 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                      Handwritten Paper Attachment
+                    </span>
+                    <span className="text-[11px] text-slate-400 dark:text-neutral-500 block">
+                      Optional • Upload scanned or exported PDF
+                    </span>
+                  </div>
+                </div>
+                {attachedFile && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                    Ready
+                  </span>
+                )}
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+                      alert("Please upload a PDF file (.pdf)");
+                      return;
+                    }
+                    if (file.size > 25 * 1024 * 1024) {
+                      alert("File size exceeds 25MB. Please upload a smaller PDF.");
+                      return;
+                    }
+                    setAttachedFile(file);
+                    setUploadError(null);
+                  }
+                }}
+              />
+
+              {!attachedFile ? (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-2.5 px-3 rounded-xl border border-dashed border-slate-300 dark:border-neutral-700 hover:border-indigo-500 dark:hover:border-indigo-400 bg-white/70 dark:bg-neutral-900/60 hover:bg-indigo-50/30 dark:hover:bg-indigo-950/20 text-slate-600 dark:text-neutral-400 transition cursor-pointer flex items-center justify-center gap-2 text-xs font-semibold"
+                >
+                  <Upload className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Attach Handwritten PDF</span>
+                </button>
+              ) : (
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700">
+                  <div className="flex items-center gap-2 min-w-0 pr-2">
+                    <FileText className="w-4 h-4 text-rose-500 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 block truncate">
+                        {attachedFile.name}
+                      </span>
+                      <span className="text-[10px] text-slate-400 dark:text-neutral-500 block">
+                        {(attachedFile.size / (1024 * 1024)).toFixed(2)} MB • PDF attached
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline px-1.5 py-0.5 cursor-pointer"
+                    >
+                      Change
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAttachedFile(null);
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                      }}
+                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer"
+                      title="Remove attached PDF"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {uploadError && (
+                <div className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">
+                  {uploadError}
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
+                disabled={isUploadingFile}
                 onClick={() => setShowSubmitModal(false)}
-                className="flex-1 py-2.5 rounded-xl font-semibold text-xs border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl font-semibold text-xs border border-slate-200 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-700 dark:text-neutral-300 transition cursor-pointer disabled:opacity-50"
               >
                 Return to Exam
               </button>
               <button
                 type="button"
+                disabled={isUploadingFile}
                 onClick={handleSubmitFinal}
-                className="flex-1 py-2.5 rounded-xl font-bold text-xs bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-md transition active:scale-95 cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl font-bold text-xs bg-slate-900 hover:bg-black text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 shadow-md transition active:scale-95 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
               >
-                Confirm & Submit
+                {isUploadingFile ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Uploading Paper...</span>
+                  </>
+                ) : (
+                  <span>Confirm & Submit</span>
+                )}
               </button>
             </div>
           </div>
@@ -4460,6 +4675,45 @@ const DetailedReportCardModal: React.FC<DetailedReportCardModalProps> = ({
         </div>
 
         <div className="p-5 sm:p-8 space-y-8 relative z-10">
+          {/* Attached Handwritten Paper Banner */}
+          {result.submissionFileUrl && (
+            <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200 block truncate">
+                    Attached Handwritten Answer Sheet
+                  </span>
+                  <span className="text-[11px] text-indigo-600 dark:text-indigo-400 block truncate">
+                    {result.submissionFileName || 'Handwritten_Answer_Sheet.pdf'} {result.submissionFileSize ? `• ${result.submissionFileSize}` : ''}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={result.submissionFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>View PDF</span>
+                </a>
+                <a
+                  href={result.submissionFileUrl}
+                  download={result.submissionFileName || 'Handwritten_Answer_Sheet.pdf'}
+                  className="px-3 py-1.5 rounded-xl bg-white dark:bg-neutral-800 hover:bg-slate-50 text-slate-700 dark:text-neutral-200 border border-slate-200 dark:border-neutral-700 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download</span>
+                </a>
+              </div>
+            </div>
+          )}
+
           {/* ================= HERO SCORE BANNER ================= */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Massive Score Block / Under Evaluation Block */}
