@@ -2281,7 +2281,14 @@ export const ExamsPage: React.FC<ExamsPageProps> = ({ onPageChange }) => {
                 Examination Protocol & Rules:
               </span>
               <ul className="space-y-1.5 font-medium" style={{ color: themeColors.text.secondary }}>
-                {preExamModal.instructions.map((inst, i) => (
+                {(preExamModal.instructions.length > 0
+                  ? preExamModal.instructions.map((inst) =>
+                      inst === 'Auto-saved in real time. Please submit before timer expires.'
+                        ? 'Please submit before timer expires, and keep saving your progress.'
+                        : inst
+                    )
+                  : ['Please submit before timer expires, and keep saving your progress.']
+                ).map((inst, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
                     <span>{inst}</span>
