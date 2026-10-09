@@ -234,6 +234,8 @@ export const LiveClassesPage: React.FC<LiveClassesPageProps> = ({ onPageChange }
             } else {
               setNextClass(null);
             }
+          } else {
+            setNextClass(null);
           }
       }
 
@@ -400,54 +402,64 @@ if (!statsError && stats) {
         </div>
       </div>
 
-      {/* Next Class Countdown */}
-      <div style={{ backgroundColor: themeColors.accent.blue }} className="p-3 sm:p-4 lg:p-6 xl:p-8 rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-lg">
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
-          <div>
+      {/* Next Class Countdown or No Classes Scheduled */}
+      <div style={{ backgroundColor: themeColors.accent.blue }} className="p-4 sm:p-6 lg:p-8 xl:p-10 rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-lg transition-colors">
+        {nextClass && countdown.phase !== 'ended' ? (
+          <>
+            <div className="flex flex-col sm:flex-row items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
+              <div>
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {countdown.phase === 'upcoming' && 'Next Class Starting In'}
+                  {countdown.phase === 'in_progress' && 'Class In Progress'}
+                </h3>
+                <p className="text-gray-700 dark:text-gray-200 text-xs sm:text-sm lg:text-base font-medium mt-0.5">
+                  {nextClass.title}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  window.open(nextClass.meeting_link || "#", "_blank");
+                }}
+                className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold shadow-md transition cursor-pointer ${
+                  countdown.phase === 'in_progress'
+                    ? 'bg-green-600 text-white animate-pulse'
+                    : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
+                }`}
+              >
+                {countdown.phase === 'upcoming' && 'Join Class'}
+                {countdown.phase === 'in_progress' && 'Join fast'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:flex sm:justify-center gap-3 sm:gap-6">
+              {[
+                { label: 'Days', value: countdown.days },
+                { label: 'Hours', value: countdown.hours },
+                { label: 'Minutes', value: countdown.minutes },
+                { label: 'Seconds', value: countdown.seconds },
+              ].map((item, idx) => (
+                <div key={idx} className="bg-white dark:bg-black rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-md text-center">
+                  <div className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 dark:text-gray-100">
+                    {item.value.toString().padStart(2, '0')}
+                  </div>
+                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">{item.label}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="py-6 sm:py-8 lg:py-10 text-center flex flex-col items-center justify-center">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/40 dark:bg-black/30 backdrop-blur-xs flex items-center justify-center mb-3 sm:mb-4 text-gray-900 dark:text-gray-100 shadow-xs">
+              <Calendar className="w-6 h-6 sm:w-7 sm:h-7" />
+            </div>
             <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {countdown.phase === 'upcoming' && 'Next Class Starting In'}
-              {countdown.phase === 'in_progress' && 'Class In Progress'}
-              {countdown.phase === 'ended' && 'Last Class Ended'}
+              No Classes Scheduled Yet!
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm lg:text-base">
-              {nextClass?.title || 'No upcoming classes'}
+            <p className="text-gray-700 dark:text-gray-200 text-xs sm:text-sm lg:text-base mt-1.5 max-w-md mx-auto font-medium">
+              There are currently no live sessions scheduled. Check back soon for upcoming classes!
             </p>
           </div>
-          <button
-  onClick={() => {
-    if (countdown.phase !== 'ended') {
-      window.open(nextClass?.meeting_link || "#", "_blank");
-    }
-  }}
-  className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold shadow-md transition ${
-    countdown.phase === 'in_progress'
-      ? 'bg-green-600 text-white animate-pulse'
-      : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
-  }`}
->
-  {countdown.phase === 'upcoming' && 'Join Class'}
-  {countdown.phase === 'in_progress' && 'Join fast'}
-  {countdown.phase === 'ended' && 'Class Ended'}
-</button>
-
-        </div>
-
-
-        <div className="grid grid-cols-2 sm:flex sm:justify-center gap-3 sm:gap-6">
-          {[
-            { label: 'Days', value: countdown.days },
-            { label: 'Hours', value: countdown.hours },
-            { label: 'Minutes', value: countdown.minutes },
-            { label: 'Seconds', value: countdown.seconds },
-          ].map((item, idx) => (
-            <div key={idx} className="bg-white dark:bg-black rounded-xl px-3 sm:px-5 py-3 sm:py-4 shadow-md text-center">
-              <div className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 dark:text-gray-100">
-                {item.value.toString().padStart(2, '0')}
-              </div>
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{item.label}</div>
-            </div>
-          ))}
-        </div>
+        )}
       </div>
 
       {/* Announcements & Reminders */}
@@ -496,23 +508,29 @@ if (!statsError && stats) {
             Recent Classes
           </h3>
           <div className="space-y-2 sm:space-y-3">
-            {upcomingClasses.slice(0, 3).map((cls) => (
-              <div key={cls.id} className="p-3 rounded-xl shadow-sm" style={{ backgroundColor: themeColors.background.white }}>
-                <div className="flex justify-between items-start mb-1">
-                  <h4 className="font-medium text-sm" style={{ color: themeColors.text.primary }}>{cls.title}</h4>
-                  <span 
-                    className="px-2 py-1 text-xs rounded-full"
-                    style={{ 
-                      backgroundColor: getStatusColor(cls.status, isDark), 
-                      color: themeColors.text.primary 
-                    }}
-                  >
-                    {cls.status}
-                  </span>
-                </div>
-                <p className="text-xs" style={{ color: themeColors.text.tertiary }}>{cls.date} • {cls.time}</p>
+            {upcomingClasses.length === 0 ? (
+              <div className="p-3 rounded-xl shadow-sm text-center text-xs" style={{ backgroundColor: themeColors.background.white, color: themeColors.text.tertiary }}>
+                No classes scheduled yet.
               </div>
-            ))}
+            ) : (
+              upcomingClasses.slice(0, 3).map((cls) => (
+                <div key={cls.id} className="p-3 rounded-xl shadow-sm" style={{ backgroundColor: themeColors.background.white }}>
+                  <div className="flex justify-between items-start mb-1">
+                    <h4 className="font-medium text-sm" style={{ color: themeColors.text.primary }}>{cls.title}</h4>
+                    <span 
+                      className="px-2 py-1 text-xs rounded-full"
+                      style={{ 
+                        backgroundColor: getStatusColor(cls.status, isDark), 
+                        color: themeColors.text.primary 
+                      }}
+                    >
+                      {cls.status}
+                    </span>
+                  </div>
+                  <p className="text-xs" style={{ color: themeColors.text.tertiary }}>{cls.date} • {cls.time}</p>
+                </div>
+              ))
+            )}
           </div>
           <button 
             onClick={() => setCurrentSection('upcoming')}
@@ -568,66 +586,76 @@ if (!statsError && stats) {
         <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 lg:mb-6">Classes</h2>
         
         <div className="space-y-4">
-          {upcomingClasses.map((cls) => (
-            <div key={cls.id} style={{ backgroundColor: themeColors.accent.blue }} className="p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl shadow-md">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
-                <div>
-                  <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 dark:text-gray-100">{cls.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">with {cls.instructor}</p>
-                </div>
-                <div className="flex gap-2">
-                  <span 
-                    className="px-3 py-1 text-xs rounded-full font-medium"
-                    style={{ 
-                      backgroundColor: getStatusColor(cls.status, isDark), 
-                      color: themeColors.text.primary 
-                    }}
-                  >
-                    {cls.status}
-                  </span>
-                  <button
-                    onClick={() => {
-                      if (countdown.phase !== 'ended') {
-                        window.open(nextClass?.meeting_link || "#", "_blank");
-                      }
-                    }}
-                    className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold shadow-md transition ${
-                      countdown.phase === 'in_progress'
-                        ? 'bg-green-600 text-white animate-pulse'
-                        : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
-                    }`}
-                  >
-                    {countdown.phase === 'upcoming' && 'Join Class'}
-                    {countdown.phase === 'in_progress' && 'Join fast'}
-                    {countdown.phase === 'ended' && 'Class Ended'}
-                  </button>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                <div className="bg-white dark:bg-gray-700 p-3 rounded-lg text-center">
-                  <Calendar className="w-4 h-4 mx-auto mb-1 text-gray-900 dark:text-gray-100" />
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Date</div>
-                  <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{cls.date}</div>
-                </div>
-                <div className="bg-white dark:bg-gray-700 p-3 rounded-lg text-center">
-                  <Clock className="w-4 h-4 mx-auto mb-1 text-gray-900 dark:text-gray-100" />
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Time</div>
-                  <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{cls.time}</div>
-                </div>
-                <div className="bg-white dark:bg-gray-700 p-3 rounded-lg text-center">
-                  <Users className="w-4 h-4 mx-auto mb-1 text-gray-900 dark:text-gray-100" />
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Participants</div>
-                  <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{cls.participants}</div>
-                </div>
-                <div className="bg-white dark:bg-gray-700 p-3 rounded-lg text-center">
-                  <Clock className="w-4 h-4 mx-auto mb-1 text-gray-900 dark:text-gray-100" />
-                  <div className="text-xs text-gray-600 dark:text-gray-400">Duration</div>
-                  <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{cls.duration}</div>
-                </div>
-              </div>
+          {upcomingClasses.length === 0 ? (
+            <div className="py-12 text-center flex flex-col items-center justify-center">
+              <Calendar className="w-10 h-10 mb-3 opacity-40 text-gray-900 dark:text-gray-100" />
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">No Classes Scheduled Yet</h3>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
+                There are currently no classes scheduled. Please check back later.
+              </p>
             </div>
-          ))}
+          ) : (
+            upcomingClasses.map((cls) => (
+              <div key={cls.id} style={{ backgroundColor: themeColors.accent.blue }} className="p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl shadow-md">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
+                  <div>
+                    <h3 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 dark:text-gray-100">{cls.title}</h3>
+                    <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">with {cls.instructor}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <span 
+                      className="px-3 py-1 text-xs rounded-full font-medium"
+                      style={{ 
+                        backgroundColor: getStatusColor(cls.status, isDark), 
+                        color: themeColors.text.primary 
+                      }}
+                    >
+                      {cls.status}
+                    </span>
+                    <button
+                      onClick={() => {
+                        if (countdown.phase !== 'ended') {
+                          window.open(nextClass?.meeting_link || "#", "_blank");
+                        }
+                      }}
+                      className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold shadow-md transition ${
+                        countdown.phase === 'in_progress'
+                          ? 'bg-green-600 text-white animate-pulse'
+                          : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
+                      }`}
+                    >
+                      {countdown.phase === 'upcoming' && 'Join Class'}
+                      {countdown.phase === 'in_progress' && 'Join fast'}
+                      {countdown.phase === 'ended' && 'Class Ended'}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                  <div className="bg-white dark:bg-gray-700 p-3 rounded-lg text-center">
+                    <Calendar className="w-4 h-4 mx-auto mb-1 text-gray-900 dark:text-gray-100" />
+                    <div className="text-xs text-gray-600 dark:text-gray-400">Date</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{cls.date}</div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-700 p-3 rounded-lg text-center">
+                    <Clock className="w-4 h-4 mx-auto mb-1 text-gray-900 dark:text-gray-100" />
+                    <div className="text-xs text-gray-600 dark:text-gray-400">Time</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{cls.time}</div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-700 p-3 rounded-lg text-center">
+                    <Users className="w-4 h-4 mx-auto mb-1 text-gray-900 dark:text-gray-100" />
+                    <div className="text-xs text-gray-600 dark:text-gray-400">Participants</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{cls.participants}</div>
+                  </div>
+                  <div className="bg-white dark:bg-gray-700 p-3 rounded-lg text-center">
+                    <Clock className="w-4 h-4 mx-auto mb-1 text-gray-900 dark:text-gray-100" />
+                    <div className="text-xs text-gray-600 dark:text-gray-400">Duration</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{cls.duration}</div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
