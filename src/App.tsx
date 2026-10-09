@@ -3,6 +3,7 @@ import { AboutSlides } from "./components/AboutSlides";
 import { AuthenticatedApp } from "./components/AuthenticatedApp";
 import LoginModal from "./components/LoginModal";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import { ThemeControls } from "./components/ThemeControls";
 import { supabase } from "./lib/supabaseClient";
 import { SplashScreen } from "./components/SplashScreen";
@@ -50,20 +51,22 @@ function App() {
 
   return (
     <ThemeProvider>
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
-      <ThemeControls />
-      {session ? (
-        <AuthenticatedApp onLogout={handleLogout} />
-      ) : (
-        <>
-          <AboutSlides onLogin={() => setShowLogin(true)} />
-          <LoginModal
-            isOpen={showLogin}
-            onClose={() => setShowLogin(false)}
-            onLoginSuccess={() => setSession(true)}
-          />
-        </>
-      )}
+      <LanguageProvider>
+        {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+        <ThemeControls />
+        {session ? (
+          <AuthenticatedApp onLogout={handleLogout} />
+        ) : (
+          <>
+            <AboutSlides onLogin={() => setShowLogin(true)} />
+            <LoginModal
+              isOpen={showLogin}
+              onClose={() => setShowLogin(false)}
+              onLoginSuccess={() => setSession(true)}
+            />
+          </>
+        )}
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

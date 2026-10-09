@@ -1176,14 +1176,50 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
   isDark = false
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const lastHtmlRef = useRef<string>(value || "");
+  const savedRangeRef = useRef<Range | null>(null);
+
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showStyleMenu, setShowStyleMenu] = useState(false);
   const [showTableMenu, setShowTableMenu] = useState(false);
   const [showEquationMenu, setShowEquationMenu] = useState(false);
 
-  // Sync value into contentEditable
+  // Active formatting state for live button indicators
+  const [activeFormats, setActiveFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+    strikeThrough: false,
+    subscript: false,
+    superscript: false,
+    unorderedList: false,
+    orderedList: false,
+    justifyLeft: false,
+    justifyCenter: false,
+    justifyRight: false,
+    justifyFull: false
+  });
+  const [currentBlockStyle, setCurrentBlockStyle] = useState("Normal");
+
+  // Initial load
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== (value || "")) {
+    if (editorRef.current) {
+      if (editorRef.current.innerHTML !== (value || "")) {
+        editorRef.current.innerHTML = value || "";
+        lastHtmlRef.current = value || "";
+      }
+    }
+  }, []);
+
+  // Update only if value changes externally (not from user typing inside)
+  useEffect(() => {
+    if (
+      editorRef.current &&
+      value !== lastHtmlRef.current &&
+      document.activeElement !== editorRef.current
+    ) {
       editorRef.current.innerHTML = value || "";
+      lastHtmlRef.current = value || "";
     }
   }, [value]);
 
@@ -1198,17 +1234,85 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
 
   const { words, chars } = getCounts(value);
 
+  // Save selection before clicking dropdown menus or on mouseup/keyup
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editorRef.current && editorRef.current.contains(sel.anchorNode)) {
+      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  };
+
+  const restoreSelection = () => {
+    if (savedRangeRef.current) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedRangeRef.current);
+      }
+    } else if (editorRef.current) {
+      editorRef.current.focus();
+    }
+  };
+
+  const updateActiveFormats = () => {
+    saveSelection();
+    try {
+      setActiveFormats({
+        bold: document.queryCommandState("bold"),
+        italic: document.queryCommandState("italic"),
+        underline: document.queryCommandState("underline"),
+        strikeThrough: document.queryCommandState("strikeThrough"),
+        subscript: document.queryCommandState("subscript"),
+        superscript: document.queryCommandState("superscript"),
+        unorderedList: document.queryCommandState("insertUnorderedList"),
+        orderedList: document.queryCommandState("insertOrderedList"),
+        justifyLeft: document.queryCommandState("justifyLeft"),
+        justifyCenter: document.queryCommandState("justifyCenter"),
+        justifyRight: document.queryCommandState("justifyRight"),
+        justifyFull: document.queryCommandState("justifyFull")
+      });
+
+      const blockVal = document.queryCommandValue("formatBlock");
+      const tag = (blockVal || "").toLowerCase();
+      if (tag === "h2") setCurrentBlockStyle("Heading 1");
+      else if (tag === "h3") setCurrentBlockStyle("Heading 2");
+      else if (tag === "blockquote") setCurrentBlockStyle("Quote");
+      else setCurrentBlockStyle("Normal");
+    } catch (e) {
+      // ignore
+    }
+  };
+
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      const html = editorRef.current.innerHTML;
+      lastHtmlRef.current = html;
+      onChange(html);
+      updateActiveFormats();
     }
   };
 
   const execCmd = (cmd: string, val: string | undefined = undefined) => {
+    restoreSelection();
     if (editorRef.current) {
       editorRef.current.focus();
     }
     document.execCommand(cmd, false, val);
+    handleInput();
+  };
+
+  const applyFormatBlock = (tag: string, label: string) => {
+    setShowStyleMenu(false);
+    restoreSelection();
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    try {
+      document.execCommand("formatBlock", false, tag);
+    } catch (e) {
+      document.execCommand("formatBlock", false, `<${tag}>`);
+    }
+    setCurrentBlockStyle(label);
     handleInput();
   };
 
@@ -1221,23 +1325,74 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
 
   const insertTable = (rows: number, cols: number) => {
     setShowTableMenu(false);
-    let html = '<table style="width:100%; border-collapse:collapse; margin:12px 0; border:1px solid #e2e8f0; font-size:13px;"><thead><tr style="background:#f8fafc;">';
-    for (let c = 0; c < cols; c++) html += `<th style="border:1px solid #e2e8f0; padding:6px 10px; text-align:left; font-weight:600;">Col ${c + 1}</th>`;
-    html += '</tr></thead><tbody>';
-    for (let r = 0; r < rows - 1; r++) {
-      html += '<tr>';
-      for (let c = 0; c < cols; c++) html += '<td style="border:1px solid #e2e8f0; padding:6px 10px;">&nbsp;</td>';
-      html += '</tr>';
+    restoreSelection();
+    if (editorRef.current) {
+      editorRef.current.focus();
     }
-    html += '</tbody></table><p><br></p>';
-    execCmd('insertHTML', html);
+
+    const borderColor = isDark ? "#404040" : "#cbd5e1";
+    const headerBg = isDark ? "#262626" : "#f8fafc";
+    const textColor = isDark ? "#f5f5f5" : "#0f172a";
+    const cellColor = isDark ? "#d4d4d4" : "#334155";
+
+    let html = `<table style="width:100%; border-collapse:collapse; margin:14px 0; border:1px solid ${borderColor}; font-size:13px; text-align:left;">`;
+    html += `<thead><tr style="background:${headerBg};">`;
+    for (let c = 0; c < cols; c++) {
+      html += `<th style="border:1px solid ${borderColor}; padding:8px 12px; font-weight:600; color:${textColor};">Column ${c + 1}</th>`;
+    }
+    html += `</tr></thead><tbody>`;
+    for (let r = 0; r < rows - 1; r++) {
+      html += `<tr>`;
+      for (let c = 0; c < cols; c++) {
+        html += `<td style="border:1px solid ${borderColor}; padding:8px 12px; color:${cellColor};">&nbsp;</td>`;
+      }
+      html += `</tr>`;
+    }
+    html += `</tbody></table><p><br></p>`;
+
+    document.execCommand("insertHTML", false, html);
+    handleInput();
   };
 
   const insertFormula = (formula: string, label: string) => {
     setShowEquationMenu(false);
-    const html = `<div style="background:#f8fafc; border-left:3px solid #0f172a; padding:8px 12px; margin:10px 0; border-radius:4px; font-family:monospace; font-size:13px; color:#0f172a;"><span style="font-size:10px; font-weight:bold; color:#64748b; text-transform:uppercase; display:block; margin-bottom:2px;">${label}</span><strong>${formula}</strong></div><p><br></p>`;
-    execCmd('insertHTML', html);
+    restoreSelection();
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+
+    const bg = isDark ? "#1e1e2e" : "#f0f4ff";
+    const border = isDark ? "#818cf8" : "#4f46e5";
+    const labelColor = isDark ? "#a5b4fc" : "#4338ca";
+    const formulaColor = isDark ? "#ffffff" : "#0f172a";
+
+    const html = `<div style="background:${bg}; border-left:3px solid ${border}; padding:10px 14px; margin:12px 0; border-radius:6px; font-family:monospace; font-size:14px;"><span style="font-size:10px; font-weight:bold; color:${labelColor}; text-transform:uppercase; display:block; margin-bottom:4px; letter-spacing:0.05em;">${label}</span><strong style="color:${formulaColor};">${formula}</strong></div><p><br></p>`;
+
+    document.execCommand("insertHTML", false, html);
+    handleInput();
   };
+
+  const toggleHighlight = () => {
+    restoreSelection();
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    const color = isDark ? "#854d0e" : "#fef08a";
+    try {
+      document.execCommand("hiliteColor", false, color);
+    } catch (e) {
+      document.execCommand("backColor", false, color);
+    }
+    handleInput();
+  };
+
+  // Helper for button classes with active highlights
+  const btnClass = (isActive: boolean) =>
+    `p-1.5 rounded-lg transition cursor-pointer shrink-0 ${
+      isActive
+        ? "bg-gray-200 dark:bg-neutral-700 text-gray-900 dark:text-white font-bold shadow-xs"
+        : "text-gray-600 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-neutral-800"
+    }`;
 
   return (
     <div
@@ -1249,7 +1404,7 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
           : "rounded-2xl border border-gray-200 bg-white shadow-xs"
       }`}
     >
-      {/* ================= MINIMALIST SINGLE-LINE TOOLBAR ================= */}
+      {/* ================= FUNCTIONAL MINIMALIST TOOLBAR ================= */}
       <div
         className={`px-3 sm:px-4 py-2 border-b flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar select-none text-xs rounded-t-2xl ${
           isDark
@@ -1264,7 +1419,7 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
             e.preventDefault();
             execCmd("undo");
           }}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-500 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-white cursor-pointer"
+          className={btnClass(false)}
           title="Undo (Ctrl+Z)"
         >
           <Undo className="w-3.5 h-3.5" />
@@ -1275,7 +1430,7 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
             e.preventDefault();
             execCmd("redo");
           }}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-500 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-white cursor-pointer"
+          className={btnClass(false)}
           title="Redo (Ctrl+Y)"
         >
           <Redo className="w-3.5 h-3.5" />
@@ -1283,34 +1438,80 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
 
         <div className="w-px h-4 bg-gray-200 dark:bg-neutral-800 mx-0.5 shrink-0" />
 
-        {/* Style Dropdown */}
-        <select
-          onChange={(e) => {
-            if (e.target.value) {
-              execCmd("formatBlock", e.target.value);
-              e.target.value = "";
-            }
-          }}
-          defaultValue=""
-          className="text-xs font-medium px-2 py-1 rounded-lg bg-transparent hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 cursor-pointer border border-transparent hover:border-gray-200 dark:hover:border-neutral-700 outline-none transition"
-        >
-          <option value="" disabled className="bg-white dark:bg-neutral-900 text-gray-400">Style</option>
-          <option value="<p>" className="bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100">Normal text</option>
-          <option value="<h2>" className="bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100">Heading 1</option>
-          <option value="<h3>" className="bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100">Heading 2</option>
-          <option value="<blockquote>" className="bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100">Quote</option>
-        </select>
+        {/* Style Dropdown (Selection Preserved) */}
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              saveSelection();
+              setShowStyleMenu(!showStyleMenu);
+              setShowTableMenu(false);
+              setShowEquationMenu(false);
+            }}
+            className="px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 flex items-center gap-1 font-medium transition cursor-pointer border border-gray-200 dark:border-neutral-700 text-xs"
+            title="Paragraph Style"
+          >
+            <span>{currentBlockStyle}</span>
+            <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+          </button>
+
+          {showStyleMenu && (
+            <div className="absolute top-8 left-0 z-50 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl shadow-xl p-1.5 w-36 space-y-0.5 animate-in fade-in slide-in-from-top-1">
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  applyFormatBlock("p", "Normal");
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 cursor-pointer"
+              >
+                Normal text
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  applyFormatBlock("h2", "Heading 1");
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-900 dark:text-neutral-100 cursor-pointer"
+              >
+                Heading 1
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  applyFormatBlock("h3", "Heading 2");
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-800 dark:text-neutral-200 cursor-pointer"
+              >
+                Heading 2
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  applyFormatBlock("blockquote", "Quote");
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs italic hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 cursor-pointer"
+              >
+                Quote Block
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="w-px h-4 bg-gray-200 dark:bg-neutral-800 mx-0.5 shrink-0" />
 
-        {/* Text Formats: Bold, Italic, Underline, Strikethrough */}
+        {/* Text Formatting: Bold, Italic, Underline, Strike */}
         <button
           type="button"
           onMouseDown={(e) => {
             e.preventDefault();
             execCmd("bold");
           }}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-600 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer font-bold"
+          className={btnClass(activeFormats.bold)}
           title="Bold (Ctrl+B)"
         >
           <Bold className="w-3.5 h-3.5" />
@@ -1321,7 +1522,7 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
             e.preventDefault();
             execCmd("italic");
           }}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-600 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
+          className={btnClass(activeFormats.italic)}
           title="Italic (Ctrl+I)"
         >
           <Italic className="w-3.5 h-3.5" />
@@ -1332,7 +1533,7 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
             e.preventDefault();
             execCmd("underline");
           }}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-600 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
+          className={btnClass(activeFormats.underline)}
           title="Underline (Ctrl+U)"
         >
           <Underline className="w-3.5 h-3.5" />
@@ -1343,23 +1544,108 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
             e.preventDefault();
             execCmd("strikeThrough");
           }}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-600 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
+          className={btnClass(activeFormats.strikeThrough)}
           title="Strikethrough"
         >
           <Strikethrough className="w-3.5 h-3.5" />
         </button>
 
+        {/* Subscript & Superscript (Crucial for Economics!) */}
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            execCmd("subscript");
+          }}
+          className={btnClass(activeFormats.subscript)}
+          title="Subscript (e.g. Qd, P1)"
+        >
+          <Subscript className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            execCmd("superscript");
+          }}
+          className={btnClass(activeFormats.superscript)}
+          title="Superscript (e.g. R², K^α)"
+        >
+          <Superscript className="w-3.5 h-3.5" />
+        </button>
+
+        {/* Highlighter Tool */}
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            toggleHighlight();
+          }}
+          className={btnClass(false)}
+          title="Highlight Key Points"
+        >
+          <Highlighter className="w-3.5 h-3.5 text-amber-500" />
+        </button>
+
         <div className="w-px h-4 bg-gray-200 dark:bg-neutral-800 mx-0.5 shrink-0" />
 
-        {/* Lists & Alignment */}
+        {/* Alignment Controls */}
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            execCmd("justifyLeft");
+          }}
+          className={btnClass(activeFormats.justifyLeft)}
+          title="Align Left"
+        >
+          <AlignLeft className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            execCmd("justifyCenter");
+          }}
+          className={btnClass(activeFormats.justifyCenter)}
+          title="Align Center"
+        >
+          <AlignCenter className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            execCmd("justifyRight");
+          }}
+          className={btnClass(activeFormats.justifyRight)}
+          title="Align Right"
+        >
+          <AlignRight className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            execCmd("justifyFull");
+          }}
+          className={btnClass(activeFormats.justifyFull)}
+          title="Justify Text"
+        >
+          <AlignJustify className="w-3.5 h-3.5" />
+        </button>
+
+        <div className="w-px h-4 bg-gray-200 dark:bg-neutral-800 mx-0.5 shrink-0" />
+
+        {/* Bullet and Numbered Lists */}
         <button
           type="button"
           onMouseDown={(e) => {
             e.preventDefault();
             execCmd("insertUnorderedList");
           }}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-600 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
-          title="Bullet List"
+          className={btnClass(activeFormats.unorderedList)}
+          title="Bulleted List"
         >
           <List className="w-3.5 h-3.5" />
         </button>
@@ -1369,32 +1655,24 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
             e.preventDefault();
             execCmd("insertOrderedList");
           }}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-600 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
+          className={btnClass(activeFormats.orderedList)}
           title="Numbered List"
         >
           <ListOrdered className="w-3.5 h-3.5" />
-        </button>
-        <button
-          type="button"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            execCmd("formatBlock", "<blockquote>");
-          }}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-600 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
-          title="Quote"
-        >
-          <Quote className="w-3.5 h-3.5" />
         </button>
 
         <div className="w-px h-4 bg-gray-200 dark:bg-neutral-800 mx-0.5 shrink-0" />
 
         {/* Insert Table Menu */}
-        <div className="relative">
+        <div className="relative shrink-0">
           <button
             type="button"
-            onClick={() => {
+            onMouseDown={(e) => {
+              e.preventDefault();
+              saveSelection();
               setShowTableMenu(!showTableMenu);
               setShowEquationMenu(false);
+              setShowStyleMenu(false);
             }}
             className="px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
             title="Insert Table"
@@ -1405,7 +1683,7 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
           </button>
 
           {showTableMenu && (
-            <div className="absolute top-8 left-0 z-50 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl shadow-lg p-1.5 w-44 space-y-0.5 animate-in fade-in slide-in-from-top-1">
+            <div className="absolute top-8 left-0 z-50 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl shadow-xl p-1.5 w-44 space-y-0.5 animate-in fade-in slide-in-from-top-1">
               <div className="text-[10px] font-semibold text-gray-400 dark:text-neutral-500 uppercase px-2 py-1">Grid Size</div>
               <button
                 type="button"
@@ -1425,7 +1703,7 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
                 }}
                 className="w-full text-left px-2 py-1.5 rounded-lg text-xs hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 cursor-pointer"
               >
-                3 × 3 Matrix
+                3 × 3 Data Matrix
               </button>
               <button
                 type="button"
@@ -1442,12 +1720,15 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
         </div>
 
         {/* Insert Formula Menu */}
-        <div className="relative">
+        <div className="relative shrink-0">
           <button
             type="button"
-            onClick={() => {
+            onMouseDown={(e) => {
+              e.preventDefault();
+              saveSelection();
               setShowEquationMenu(!showEquationMenu);
               setShowTableMenu(false);
+              setShowStyleMenu(false);
             }}
             className="px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition flex items-center gap-1 text-gray-600 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer"
             title="Insert Economic Formula"
@@ -1458,8 +1739,8 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
           </button>
 
           {showEquationMenu && (
-            <div className="absolute top-8 left-0 z-50 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl shadow-lg p-1.5 w-60 space-y-0.5 animate-in fade-in slide-in-from-top-1">
-              <div className="text-[10px] font-semibold text-gray-400 dark:text-neutral-500 uppercase px-2 py-1">Formulas</div>
+            <div className="absolute top-8 left-0 z-50 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl shadow-xl p-1.5 w-64 space-y-0.5 animate-in fade-in slide-in-from-top-1">
+              <div className="text-[10px] font-semibold text-gray-400 dark:text-neutral-500 uppercase px-2 py-1">Economic Models</div>
               <button
                 type="button"
                 onMouseDown={(e) => {
@@ -1484,24 +1765,34 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
                 type="button"
                 onMouseDown={(e) => {
                   e.preventDefault();
-                  insertFormula("Ed = (%ΔQd) / (%ΔP)", "Price Elasticity");
+                  insertFormula("Ed = (%ΔQd) / (%ΔP) = (dQ/dP) · (P/Q)", "Price Elasticity");
                 }}
                 className="w-full text-left px-2 py-1.5 rounded-lg text-xs hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 cursor-pointer"
               >
-                Micro: Price Elasticity
+                Micro: Elasticity of Demand
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  insertFormula("MUx / Px = MUy / Py", "Consumer Optimum");
+                }}
+                className="w-full text-left px-2 py-1.5 rounded-lg text-xs hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 cursor-pointer"
+              >
+                Micro: Consumer Equilibrium
               </button>
             </div>
           )}
         </div>
 
-        {/* Divider */}
+        {/* Divider Rule */}
         <button
           type="button"
           onMouseDown={(e) => {
             e.preventDefault();
             execCmd("insertHorizontalRule");
           }}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-600 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer hidden md:flex"
+          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-600 hover:text-gray-900 dark:text-neutral-300 dark:hover:text-white cursor-pointer hidden md:flex shrink-0"
           title="Insert Horizontal Divider"
         >
           <Minus className="w-3.5 h-3.5" />
@@ -1513,7 +1804,7 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
         <button
           type="button"
           onClick={() => setIsFullscreen(!isFullscreen)}
-          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-500 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-white cursor-pointer"
+          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 transition text-gray-500 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-white cursor-pointer shrink-0"
           title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
         >
           {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -1529,6 +1820,10 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
         spellCheck={true}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        onKeyUp={updateActiveFormats}
+        onMouseUp={updateActiveFormats}
+        onSelect={updateActiveFormats}
+        onBlur={saveSelection}
         className={`p-5 sm:p-7 flex-1 outline-none text-sm sm:text-base leading-relaxed focus:outline-none overflow-y-auto prose dark:prose-invert max-w-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 dark:empty:before:text-neutral-500 empty:before:pointer-events-none ${
           isFullscreen ? "min-h-[75vh]" : "min-h-[260px]"
         }`}
@@ -1556,7 +1851,6 @@ const WordAnswerEditor: React.FC<WordAnswerEditorProps> = ({
     </div>
   );
 };
-
 /* ========================================================================= */
 /* ================= VIEW: INTERACTIVE EXAM TAKING PORTAL ================== */
 /* ========================================================================= */
@@ -1806,53 +2100,23 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             className="rounded-2xl p-6 sm:p-8 border border-gray-200/80 dark:border-neutral-800 shadow-sm space-y-5"
             style={{ backgroundColor: themeColors.background.white }}
           >
-            {/* Question Header Meta */}
-            <div className="flex items-center justify-between flex-wrap gap-2 pb-3.5 border-b border-gray-100 dark:border-neutral-800">
-              <div className="flex items-center gap-2 text-xs">
-                <span className="font-bold uppercase tracking-wider text-gray-500">
-                  Question {currentQ.number} of {questions.length}
-                </span>
-
-                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-neutral-600" />
-
-                <span className="font-semibold px-2 py-0.5 rounded bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300">
-                  {currentQ.marks} {currentQ.marks === 1 ? "Mark" : "Marks"}
-                </span>
-
-                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-neutral-600" />
-
-                <span className="font-medium text-gray-500">
-                  {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive Essay"}
-                </span>
-              </div>
-
-              {/* Right Controls: Clear & Flag */}
-              <div className="flex items-center gap-2">
-                {currentQ.type === "mcq" && answers[currentQ.id] && (
-                  <button
-                    onClick={() => handleAnswerChange("")}
-                    className="text-xs font-medium text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition cursor-pointer px-2 py-1"
-                  >
-                    Clear response
-                  </button>
-                )}
-
-                <button
-                  onClick={toggleFlag}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition cursor-pointer flex items-center gap-1.5 ${
-                    flagged[currentQ.id]
-                      ? "border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-semibold shadow-xs"
-                      : "border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800 text-gray-600 dark:text-gray-400"
-                  }`}
-                >
-                  <Bookmark className={`w-3.5 h-3.5 ${flagged[currentQ.id] ? "fill-amber-500 text-amber-600" : ""}`} />
-                  {flagged[currentQ.id] ? "Marked for Review" : "Mark for Review"}
-                </button>
-              </div>
+            {/* Mobile-only Quick Meta (hidden on desktop where it's on the right sidebar) */}
+            <div className="lg:hidden flex items-center justify-between pb-3 border-b border-gray-100 dark:border-neutral-800 text-xs">
+              <span className="font-bold uppercase tracking-wider text-gray-500">
+                Q{currentQ.number} of {questions.length} • {currentQ.marks} Marks
+              </span>
+              <button
+                type="button"
+                onClick={toggleFlag}
+                className="flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400 cursor-pointer"
+              >
+                <Bookmark className={`w-3.5 h-3.5 ${flagged[currentQ.id] ? "fill-amber-500" : ""}`} />
+                <span>{flagged[currentQ.id] ? "Marked" : "Mark"}</span>
+              </button>
             </div>
 
             {/* Question Statement */}
-            <div className="text-base sm:text-lg font-semibold leading-relaxed pt-1" style={{ color: themeColors.text.primary }}>
+            <div className="text-base sm:text-lg font-semibold leading-relaxed" style={{ color: themeColors.text.primary }}>
               {currentQ.question}
             </div>
 
@@ -1910,6 +2174,7 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
             {currentQ.type === "descriptive" && (
               <div className="pt-2">
                 <WordAnswerEditor
+                  key={currentQ.id}
                   value={answers[currentQ.id] || ""}
                   onChange={(newVal) => handleAnswerChange(newVal)}
                   lastSavedText={lastSaved}
@@ -1954,8 +2219,60 @@ const ExamTakingPortal: React.FC<ExamTakingPortalProps> = ({
           </div>
         </div>
 
-        {/* RIGHT SIDEBAR: QUESTION PALETTE GRID */}
+        {/* RIGHT SIDEBAR: QUESTION PALETTE GRID & META */}
         <div className="w-72 hidden lg:flex flex-col gap-4 shrink-0">
+          {/* Active Question Info & Actions Card */}
+          <div
+            className="rounded-2xl p-4 sm:p-5 border border-gray-200/80 dark:border-neutral-800 shadow-sm space-y-3.5"
+            style={{ backgroundColor: themeColors.background.white }}
+          >
+            {/* Question Number & Marks */}
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-xs uppercase tracking-wider text-gray-500 dark:text-neutral-400">
+                Question {currentQ.number} of {questions.length}
+              </span>
+              <span className="font-bold text-xs px-2.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-gray-800 dark:text-neutral-200 border border-gray-200/60 dark:border-neutral-700">
+                {currentQ.marks} {currentQ.marks === 1 ? "Mark" : "Marks"}
+              </span>
+            </div>
+
+            {/* Type Tag */}
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-400 dark:text-neutral-500">Format:</span>
+              <span className="font-semibold px-2 py-0.5 rounded text-[11px] bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300">
+                {currentQ.type === "mcq" ? "Multiple Choice" : "Descriptive Essay"}
+              </span>
+            </div>
+
+            <div className="w-full h-px bg-gray-100 dark:bg-neutral-800" />
+
+            {/* Actions: Mark for Review & Clear Response */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={toggleFlag}
+                className={`w-full py-2 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer flex items-center justify-center gap-2 ${
+                  flagged[currentQ.id]
+                    ? "border-amber-400 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 shadow-xs"
+                    : "border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300"
+                }`}
+              >
+                <Bookmark className={`w-3.5 h-3.5 ${flagged[currentQ.id] ? "fill-amber-500 text-amber-600" : ""}`} />
+                <span>{flagged[currentQ.id] ? "Marked for Review" : "Mark for Review"}</span>
+              </button>
+
+              {currentQ.type === "mcq" && answers[currentQ.id] && (
+                <button
+                  type="button"
+                  onClick={() => handleAnswerChange("")}
+                  className="w-full py-1.5 px-3 rounded-lg text-xs font-medium text-gray-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition cursor-pointer text-center"
+                >
+                  Clear response
+                </button>
+              )}
+            </div>
+          </div>
+
           <div
             className="rounded-2xl p-5 border border-gray-200/80 dark:border-neutral-800 shadow-sm space-y-4"
             style={{ backgroundColor: themeColors.background.white }}

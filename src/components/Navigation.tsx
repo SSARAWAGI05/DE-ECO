@@ -3,6 +3,7 @@ import { Menu, X, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors } from "../styles/colors";
+import { LanguageSelector } from "./LanguageSelector";
 
 interface NavigationProps {
   currentPage: string;
@@ -166,6 +167,9 @@ export const Navigation: React.FC<NavigationProps> = ({
                 </motion.button>
               ))}
 
+              {/* LANGUAGE SELECTOR */}
+              <LanguageSelector variant="navbar" />
+
               {/* LOGOUT */}
               <motion.button
                 whileHover={{ scale: 1.03 }}
@@ -268,6 +272,11 @@ export const Navigation: React.FC<NavigationProps> = ({
                   {item.label}
                 </button>
               ))}
+
+              {/* LANGUAGE SELECTOR */}
+              <div className="py-1">
+                <LanguageSelector isMobile />
+              </div>
 
               <button
                 onClick={onLogout}

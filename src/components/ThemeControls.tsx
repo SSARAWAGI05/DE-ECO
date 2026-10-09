@@ -1,8 +1,8 @@
-// src/components/ThemeControls.tsx
 import React from "react";
 import { Sun, Moon, Focus } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import { getThemeColors } from "../styles/colors";
+import { LanguageSelector } from "./LanguageSelector";
 
 export const ThemeControls: React.FC = () => {
   const { isDark, toggleTheme, isFocusMode, toggleFocusMode } = useTheme();
@@ -10,10 +10,13 @@ export const ThemeControls: React.FC = () => {
 
   return (
     <div
-      className="fixed right-4 bottom-8 z-[60] flex flex-col items-center gap-4 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border border-gray-200 dark:border-neutral-700 shadow-xl rounded-2xl p-3 transition-all duration-300 hover:shadow-2xl"
+      className="fixed right-4 bottom-8 z-[60] flex flex-col items-center gap-3 bg-white/85 dark:bg-neutral-900/85 backdrop-blur-md border border-gray-200 dark:border-neutral-700 shadow-xl rounded-2xl p-2.5 transition-all duration-300 hover:shadow-2xl"
     >
+      {/* Language Selector */}
+      <LanguageSelector variant="dock" />
+
       {/* Divider */}
-      <div className="w-6 h-[1px] bg-gray-300 dark:bg-neutral-700" />
+      <div className="w-6 h-[1px] bg-gray-200 dark:bg-neutral-700" />
 
       {/* Theme Toggle */}
       <button
