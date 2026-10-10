@@ -161,7 +161,7 @@ const MarketPulsePage: React.FC = () => {
           className="rounded-3xl p-8 sm:p-10 lg:p-12 mb-10 relative overflow-hidden"
           style={{
             backgroundColor: themeColors.background.white,
-            border: `1px solid ${themeColors.primary.lightGray}`,
+            border: isDark ? 'none' : `1px solid ${themeColors.primary.lightGray}`,
             boxShadow: `0 6px 18px ${hexToRgba(themeColors.primary.lightGray, 0.06)}`,
           }}
           aria-labelledby="market-pulse-hero"
@@ -226,10 +226,9 @@ const MarketPulsePage: React.FC = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search reels..."
-              className="w-full pl-12 pr-12 py-3 rounded-xl border"
+              className="w-full pl-12 pr-12 py-3 rounded-xl border-none shadow-sm focus:ring-2 focus:ring-blue-500/30 outline-none"
               style={{
                 backgroundColor: themeColors.background.white,
-                borderColor: themeColors.card.border,
                 color: themeColors.text.primary,
               }}
             />
@@ -246,10 +245,9 @@ const MarketPulsePage: React.FC = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as "recent" | "popular")}
-            className="px-6 py-3 rounded-xl border"
+            className="px-6 py-3 rounded-xl border-none shadow-sm outline-none cursor-pointer"
             style={{
               backgroundColor: themeColors.background.white,
-              borderColor: themeColors.card.border,
               color: themeColors.text.primary,
             }}
           >
@@ -271,7 +269,7 @@ const MarketPulsePage: React.FC = () => {
                     ? setActiveTag(null)
                     : setActiveTag(isActive ? null : tag)
                 }
-                className="px-4 py-2 rounded-full text-sm font-medium transition-all"
+                className="px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm"
                 style={{
                   backgroundColor: isActive
                     ? themeColors.accent.blue
@@ -279,9 +277,6 @@ const MarketPulsePage: React.FC = () => {
                   color: isActive
                     ? themeColors.text.white
                     : themeColors.text.primary,
-                  border: `1px solid ${
-                    isActive ? themeColors.accent.blue : themeColors.card.border
-                  }`,
                 }}
               >
                 {tag === "All" ? "All" : `#${tag}`}
