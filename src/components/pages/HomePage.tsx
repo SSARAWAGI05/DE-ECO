@@ -1017,7 +1017,8 @@ const resetFocusTimer = () => {
               <ChevronRight size={18} />
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 pt-4 overflow-visible">
+          {/* Courses Grid - Option 3 Horizontal 2x2 Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 pt-4 overflow-visible">
           {/* Loading */}
           {featuredCoursesLoading && (
             <p className="text-sm opacity-70 col-span-full text-center">
@@ -1028,7 +1029,7 @@ const resetFocusTimer = () => {
           {/* Empty state */}
           {!featuredCoursesLoading && featuredCourses.length === 0 && (
             <p className="text-sm opacity-70 col-span-full text-center">
-              
+              No featured courses available right now.
             </p>
           )}
 
@@ -1037,67 +1038,125 @@ const resetFocusTimer = () => {
             featuredCourses.map((course) => (
               <div
                 key={course.id}
-                className="rounded-2xl shadow-lg overflow-hidden transition-transform transform hover:scale-[1.03] hover:-translate-y-1"
-                style={{ backgroundColor: themeColors.background.white }}
+                onClick={() => {
+                  localStorage.setItem('selectedCourseId', course.id);
+                  onNavigate?.("courses");
+                }}
+                className="group relative rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 cursor-pointer overflow-hidden flex flex-col sm:flex-row border"
+                style={{ 
+                  backgroundColor: isDark ? '#141417' : themeColors.background.white,
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'
+                }}
               >
-                {/* Course Image */}
-                <div className="h-40 relative overflow-hidden bg-slate-100 flex items-center justify-center">
+                {/* Course Image / Visual Banner */}
+                <div 
+                  className="sm:w-2/5 min-h-[170px] sm:min-h-full relative overflow-hidden flex items-center justify-center p-4 flex-shrink-0"
+                  style={{
+                    background: isDark 
+                      ? 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%)' 
+                      : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
+                  }}
+                >
                   <img
-                    src={
-                      course.thumbnail_url ||
-                      "/logo/De-Eco-logo.png"
-                    }
+                    src={course.thumbnail_url || "/logo/De-Eco-logo.png"}
                     alt={course.title}
-                    className={course.thumbnail_url ? "w-full h-full object-cover" : "w-1/2 h-1/2 object-contain"}
+                    className={course.thumbnail_url 
+                      ? "w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                      : "w-20 h-20 object-contain drop-shadow transition-transform duration-300 group-hover:scale-110"
+                    }
                   />
-                </div>
 
-                {/* Course Content */}
-                <div className="p-4">
-                  <h3
-                    className="font-bold text-base mb-2 line-clamp-2"
-                    style={{ color: themeColors.text.primary }}
-                  >
-                    {course.title}
-                  </h3>
-
-                  <p
-                    className="text-xs mb-1"
-                    style={{ color: themeColors.text.secondary }}
-                  >
-                    by {course.instructor_name}
-                  </p>
-
-                  <div
-                    className="flex items-center gap-3 text-xs mb-3"
-                    style={{ color: themeColors.text.tertiary }}
-                  >
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {course.duration_weeks ? `${course.duration_weeks} weeks` : 'Flexible'}
-                    </span>
-
-                    <span
-                      className="px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                      style={{ backgroundColor: themeColors.accent.blueLight }}
+                  {/* Floating Level Badge */}
+                  {course.level && (
+                    <span 
+                      className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-sm backdrop-blur-md"
+                      style={{
+                        backgroundColor: isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.95)',
+                        color: isDark ? '#fbbf24' : '#b45309',
+                        border: isDark ? '1px solid rgba(251, 191, 36, 0.35)' : '1px solid rgba(180, 83, 9, 0.2)'
+                      }}
                     >
                       {course.level}
                     </span>
+                  )}
+                </div>
+
+                {/* Course Content */}
+                <div className="sm:w-3/5 p-5 sm:p-6 flex flex-col justify-between flex-1">
+                  <div>
+                    {/* Meta Info Row */}
+                    <div 
+                      className="flex items-center gap-2 mb-2 text-xs font-medium"
+                      style={{ color: isDark ? '#a1a1aa' : themeColors.text.tertiary }}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-amber-500" />
+                        {course.duration_weeks ? `${course.duration_weeks} Weeks` : 'Self-Paced'}
+                      </span>
+                      <span>•</span>
+                      <span>Online Program</span>
+                    </div>
+
+                    {/* Course Title */}
+                    <h3
+                      className="font-bold text-base sm:text-lg mb-2 line-clamp-2 leading-snug transition-colors group-hover:text-amber-500"
+                      style={{ color: isDark ? '#ffffff' : themeColors.text.primary }}
+                    >
+                      {course.title}
+                    </h3>
+
+                    {/* Description Snippet */}
+                    {course.description && (
+                      <p
+                        className="text-xs sm:text-sm mb-4 line-clamp-2 leading-relaxed"
+                        style={{ color: isDark ? '#9ca3af' : themeColors.text.secondary }}
+                      >
+                        {course.description}
+                      </p>
+                    )}
                   </div>
 
-                  <button
-                    onClick={() => {
-                      localStorage.setItem('selectedCourseId', course.id);
-                      onNavigate?.("courses");
-                    }}
-                    className="w-full py-2 rounded-lg font-bold text-sm transition-transform hover:scale-[1.03] hover:-translate-y-1"
-                    style={{
-                      backgroundColor: themeColors.accent.blue,
-                      color: themeColors.text.white,
-                    }}
+                  {/* Footer Row: Instructor & Action Button */}
+                  <div 
+                    className="pt-3 border-t flex items-center justify-between gap-3 mt-auto"
+                    style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' }}
                   >
-                    View Course
-                  </button>
+                    {/* Instructor Info */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div 
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold uppercase flex-shrink-0"
+                        style={{ 
+                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+                          color: isDark ? '#ffffff' : themeColors.text.primary 
+                        }}
+                      >
+                        {(course.instructor_name || 'D')[0]}
+                      </div>
+                      <span 
+                        className="text-xs truncate font-medium"
+                        style={{ color: isDark ? '#d4d4d8' : themeColors.text.secondary }}
+                      >
+                        {course.instructor_name || 'DE-ECO Faculty'}
+                      </span>
+                    </div>
+
+                    {/* Action Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        localStorage.setItem('selectedCourseId', course.id);
+                        onNavigate?.("courses");
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all duration-300 flex items-center gap-1.5 shadow-sm group-hover:scale-105 flex-shrink-0"
+                      style={{
+                        backgroundColor: isDark ? '#ffffff' : themeColors.primary.black,
+                        color: isDark ? '#000000' : themeColors.text.white,
+                      }}
+                    >
+                      <span>View Course</span>
+                      <ChevronRight size={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
