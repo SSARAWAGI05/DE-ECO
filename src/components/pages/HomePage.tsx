@@ -985,7 +985,10 @@ const resetFocusTimer = () => {
         </div>
               
         {/* Featured Courses Section */}
-        <div className="rounded-2xl sm:rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8" style={{ backgroundColor: themeColors.accent.yellow }}>
+        <div 
+          className="rounded-2xl sm:rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 border border-transparent dark:border-slate-800/80 transition-colors" 
+          style={{ backgroundColor: isDark ? '#0f172a' : themeColors.accent.yellow }}
+        >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
             <div>
               <h2
@@ -1038,8 +1041,7 @@ const resetFocusTimer = () => {
             featuredCourses.map((course) => (
               <div
                 key={course.id}
-                className="rounded-2xl shadow-lg overflow-hidden transition-transform transform hover:scale-[1.03] hover:-translate-y-1
-"
+                className="rounded-2xl shadow-lg overflow-hidden transition-transform transform hover:scale-[1.03] hover:-translate-y-1 border border-transparent dark:border-slate-800/80"
                 style={{ backgroundColor: themeColors.background.white }}
               >
                 {/* Course Image */}
