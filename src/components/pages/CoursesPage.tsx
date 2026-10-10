@@ -350,7 +350,9 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
             >
               {/* IMAGE (no fixed height - image defines height) */}
               <div
-                className="h-48 rounded-xl relative cursor-pointer overflow-hidden bg-slate-100 flex items-center justify-center"
+                className={`h-48 rounded-xl relative cursor-pointer overflow-hidden flex items-center justify-center ${
+                  isDark ? 'bg-slate-900 border border-white/10' : 'bg-slate-100'
+                }`}
                 onClick={() => viewCourseDetails(course.id)}
               >
                 <img
@@ -508,7 +510,9 @@ export const CoursesPage: React.FC<CoursesPageProps> = ({ onPageChange }) => {
                       style={{ backgroundColor: themeColors.background.white, borderColor: themeColors.accent.green }}
                     >
                       <div
-                        className="h-48 rounded-xl relative cursor-pointer overflow-hidden bg-slate-100 flex items-center justify-center"
+                        className={`h-48 rounded-xl relative cursor-pointer overflow-hidden flex items-center justify-center ${
+                          isDark ? 'bg-slate-900 border border-white/10' : 'bg-slate-100'
+                        }`}
                         onClick={() => viewCourseDetails(course.id)}
                       >
                         <img
@@ -723,7 +727,9 @@ const CourseDetailPage: React.FC<CourseDetailPageProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* LEFT - IMAGE */}
-            <div className="rounded-xl relative bg-slate-100 flex items-center justify-center aspect-video overflow-hidden">
+            <div className={`rounded-xl relative flex items-center justify-center aspect-video overflow-hidden ${
+              isDark ? 'bg-slate-900 border border-white/10' : 'bg-slate-100'
+            }`}>
               <img
                 src={course.thumbnail_url || "/logo/De-Eco-logo.png"}
                 alt={course.title}

@@ -1297,7 +1297,9 @@ const resetFocusTimer = () => {
                   <div
                     key={reel.id}
                     onClick={() => window.open(reel.reel_url, "_blank")}
-                    className="group relative flex-shrink-0 w-[210px] sm:w-[240px] h-[320px] sm:h-[350px] rounded-2xl sm:rounded-3xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 select-none border border-black/10 bg-white"
+                    className={`group relative flex-shrink-0 w-[210px] sm:w-[240px] h-[320px] sm:h-[350px] rounded-2xl sm:rounded-3xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 select-none border ${
+                      isDark ? 'border-white/10 bg-slate-900' : 'border-black/10 bg-white'
+                    }`}
                   >
                     {/* Media / Background Poster */}
                     {reel.thumbnail_url ? (
@@ -1307,7 +1309,7 @@ const resetFocusTimer = () => {
                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                       />
                     ) : (
-                      <div className="absolute inset-0 bg-white flex items-center justify-center pb-14">
+                      <div className={`absolute inset-0 ${isDark ? 'bg-slate-900' : 'bg-white'} flex items-center justify-center pb-14`}>
                         {/* DE-ECO Logo prominently featured as cover */}
                         <img
                           src="/logo/De-Eco-logo.png"

@@ -379,10 +379,9 @@ const MarketPulsePage: React.FC = () => {
 
                     {/* Thumbnail */}
                     <div
-                      className="relative h-64 overflow-hidden"
-                      style={{
-                        backgroundColor: themeColors.background.offWhite,
-                      }}
+                      className={`relative h-64 overflow-hidden flex items-center justify-center ${
+                        isDark ? 'bg-slate-900 border-b border-white/10' : 'bg-slate-100'
+                      }`}
                     >
                       <img
                         src={reel.thumbnail_url || "/logo/De-Eco-logo.png"}
@@ -394,7 +393,7 @@ const MarketPulsePage: React.FC = () => {
                         className={
                           reel.thumbnail_url
                             ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            : "w-full h-full object-contain bg-white p-6"
+                            : `w-full h-full object-contain p-6 ${isDark ? 'bg-slate-900' : 'bg-white'}`
                         }
                       />
 
