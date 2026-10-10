@@ -605,380 +605,376 @@ const resetFocusTimer = () => {
             >
 
 
-            {/* Stats Grid - Clean & Premium */}
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+            {/* 2-Column Dashboard Grid: 2x2 Stats on Left, Daily Planner on Right */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-start">
+              {/* Left Column: 4 Tabs in 2x2 Layout */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {/* Current Streak */}
+                <div
+                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-sm hover:shadow-md transition border border-black/5"
+                  style={{ backgroundColor: themeColors.accent.purple }}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
+                      <Activity className="w-4 h-4" style={{ color: themeColors.text.primary }} />
+                    </div>
 
-  {/* Current Streak */}
-  <div
-    className="flex items-center justify-between rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition border border-black/5"
-    style={{ backgroundColor: themeColors.accent.purple }}
-  >
-    <div className="flex items-center gap-3 min-w-0">
-      <div className="w-9 h-9 rounded-lg flex items-center justify-center"
-        style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
-        <Activity className="w-4 h-4" style={{ color: themeColors.text.primary }} />
-      </div>
+                    <span className="text-lg font-semibold tabular-nums"
+                      style={{ color: themeColors.text.primary }}>
+                      {dayStreak}
+                    </span>
 
-      <span className="text-lg font-semibold tabular-nums"
-        style={{ color: themeColors.text.primary }}>
-        {dayStreak}
-      </span>
-
-      <span className="text-sm truncate"
-        style={{ color: themeColors.text.primary, opacity: 0.7 }}>
-        Day Streak 
-      </span>
-    </div>
-  </div>
-
-  {/* Courses Registered */}
-  <div
-    className="flex items-center justify-between rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition border border-black/5 cursor-pointer hover:scale-105"
-    style={{ backgroundColor: themeColors.accent.blue }}
-    onClick={() => {
-      localStorage.setItem('coursesTab', 'my-learning');
-      onNavigate?.('courses');
-    }}
-  >
-    <div className="flex items-center gap-3 min-w-0">
-      <div className="w-9 h-9 rounded-lg flex items-center justify-center"
-        style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
-        <BookOpen className="w-4 h-4" style={{ color: themeColors.text.primary }} />
-      </div>
-
-      <span className="text-lg font-semibold"
-        style={{ color: themeColors.text.primary }}>
-        {activeCoursesCount}
-      </span>
-
-      <span className="text-sm truncate"
-        style={{ color: themeColors.text.primary, opacity: 0.7 }}>
-        Active Courses 
-      </span>
-    </div>
-  </div>
-
-  {/* Upcoming Classes */}
-  <div
-    className="flex items-center justify-between rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition border border-black/5"
-    style={{ backgroundColor: themeColors.accent.yellow }}
-  >
-    <div className="flex items-center gap-3 min-w-0">
-      <div className="w-9 h-9 rounded-lg flex items-center justify-center"
-        style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
-        <Calendar className="w-4 h-4" style={{ color: themeColors.text.primary }} />
-      </div>
-
-      <span className="text-lg font-semibold"
-        style={{ color: themeColors.text.primary }}>
-        {classesTodayCount}
-      </span>
-
-      <span className="text-sm truncate"
-        style={{ color: themeColors.text.primary, opacity: 0.7 }}>
-        Classes Today 
-      </span>
-    </div>
-  </div>
-
-  {/* Social Connect */}
-<div
-  className="flex items-center justify-between rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition border border-black/5"
-  style={{ backgroundColor: themeColors.accent.red }}
->
-  {/* Left side */}
-  <div className="flex items-center gap-3 min-w-0">
-    
-
-    <span
-      className="text-sm font-medium truncate"
-      style={{ color: themeColors.text.primary, opacity: 0.7 }}
-    >
-      Connect with us
-    </span>
-  </div>
-
-  {/* Social Icons */}
-<div className="flex items-center gap-2 ml-3">
-  <a
-    href="https://l.instagram.com/?u=https%3A%2F%2Fchat.whatsapp.com%2FFzCODHVaAnFEoYgKjMEgM7%3Fmode%3Dhqrt2%26utm_source%3Dig%26utm_medium%3Dsocial%26utm_content%3Dlink_in_bio%26fbclid%3DPAc3J0YwZhcHBfaWQMMjU2MjgxMDQwNTU4AAGnYU7QL0-s1szpbaUmSlZhg9ku4rwsK2G8lrXZ2yF--_dDsIvz3JFGmMq5Yxs%26brid%3D7sEOuXMEdYFIRsZvR0JMwg&e=AT1WfRorwFnqNiyNtX7vhCZRMtPUj-sZvsUOIsjEkVeocDxYrjLdsr5lX2iU16vyLFZgyeuB54ZCbb520VmV75NB6le-vjFwkhmVc6d9U4P-sbjoyKCQENAAdg"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="w-8 h-8 rounded-md flex items-center justify-center transition hover:scale-110"
-    style={{ backgroundColor: "rgba(0,0,0,0.15)" }}
-  >
-    <i
-      className="fa-brands fa-whatsapp"
-      style={{ color: themeColors.text.primary, fontSize: "14px" }}
-    />
-  </a>
-
-  <a
-    href="https://instagram.com/deeco.official"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="w-8 h-8 rounded-md flex items-center justify-center transition hover:scale-110"
-    style={{ backgroundColor: "rgba(0,0,0,0.15)" }}
-  >
-    <Instagram className="w-4 h-4" style={{ color: themeColors.text.primary }} />
-  </a>
-
-  <a
-    href="https://linkedin.com/company/yourcompany"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="w-8 h-8 rounded-md flex items-center justify-center transition hover:scale-110"
-    style={{ backgroundColor: "rgba(0,0,0,0.15)" }}
-  >
-    <Linkedin className="w-4 h-4" style={{ color: themeColors.text.primary }} />
-  </a>
-
-</div>
-</div>
-
-
-</div>
-
-
-            {/* Daily Planner Section */}
-            <div 
-              className="rounded-2xl p-6 sm:p-7 shadow-lg"
-              style={{
-                backgroundColor: themeColors.background.white,
-                borderColor: themeColors.primary.black
-              }}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ 
-                      background: `linear-gradient(135deg, ${themeColors.accent.orange}, ${themeColors.accent.yellowBright})`
-                    }}
-                  >
-                    <CheckCircle className="w-5 h-5" style={{ color: themeColors.text.primary }} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl sm:text-2xl font-bold" style={{ color: themeColors.text.primary }}>
-                      Daily Planner
-                    </h3>
-                    <p className="text-xs sm:text-sm" style={{ color: themeColors.text.secondary }}>
-                      {assignedPlannerItems.length} assigned · {dailyTasks.filter(t => t.status === 'done').length} completed
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsDailyPlannerOpen(!isDailyPlannerOpen);
-                    }}
-                    className="p-2 rounded-xl transition-all hover:scale-110"
-                    style={{ 
-                      backgroundColor: themeColors.primary.w2,
-                    }}
-                  >
-                    <ChevronRight 
-                      className={`w-6 h-6 transition-transform duration-300 ${isDailyPlannerOpen ? 'rotate-90' : ''}`}
-                      style={{ color: themeColors.primary.w }}
-                    />
-                  </button>
-                </div>
-                
-                <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl border-2" style={{ backgroundColor: themeColors.accent.green, borderColor: themeColors.primary.black }}>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.1)' }}>
-                    <span className="text-sm font-bold" style={{ color: themeColors.text.primary }}>
-                      {dailyTasks.length > 0 ? Math.round((dailyTasks.filter(t => t.status === 'done').length / dailyTasks.length) * 100) : 0}%
+                    <span className="text-sm truncate"
+                      style={{ color: themeColors.text.primary, opacity: 0.7 }}>
+                      Day Streak 
                     </span>
                   </div>
                 </div>
-              </div>
-              {isDailyPlannerOpen && (
-              <>
-              {/* Add Task Input */}
-              <div className="flex gap-3 mb-6">
-                <input
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') addDailyTask(); }}
-                  placeholder="✨ What's on your agenda today?"
-                  className="flex-1 px-5 py-3.5 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 border-2 transition-all shadow-sm"
-                  style={{
-                    backgroundColor: themeColors.background.white,
-                    borderColor: themeColors.primary.lightGray,
-                    color: themeColors.text.primary
-                  }}
-                />
-                <button
-                  onClick={async () => {
-                    if (!newTask.trim()) return;
-                    setIsAddingTask(true);
-                    await addDailyTask();
-                    setIsAddingTask(false);
-                  }}
-                  disabled={isAddingTask || !newTask.trim()}
-                  className="px-5 sm:px-7 py-3.5 rounded-xl font-bold transition-all hover:scale-[1.03] hover:-translate-y-1
- active:scale-95 shadow-lg flex items-center gap-2"
-                  style={{ 
-                    backgroundColor: themeColors.accent.yellowBright,
-                    color: themeColors.text.primary,
-                    opacity: (!newTask.trim() || isAddingTask) ? 0.5 : 1,
-                    borderWidth: '2px',
-                    borderColor: themeColors.primary.black
+
+                {/* Courses Registered */}
+                <div
+                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-sm hover:shadow-md transition border border-black/5 cursor-pointer hover:scale-[1.02]"
+                  style={{ backgroundColor: themeColors.accent.blue }}
+                  onClick={() => {
+                    localStorage.setItem('coursesTab', 'my-learning');
+                    onNavigate?.('courses');
                   }}
                 >
-                  <Plus size={18} />
-                  <span className="hidden sm:inline">Add Task</span>
-                </button>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
+                      <BookOpen className="w-4 h-4" style={{ color: themeColors.text.primary }} />
+                    </div>
+
+                    <span className="text-lg font-semibold"
+                      style={{ color: themeColors.text.primary }}>
+                      {activeCoursesCount}
+                    </span>
+
+                    <span className="text-sm truncate"
+                      style={{ color: themeColors.text.primary, opacity: 0.7 }}>
+                      Active Courses 
+                    </span>
+                  </div>
+                </div>
+
+                {/* Upcoming Classes */}
+                <div
+                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-sm hover:shadow-md transition border border-black/5"
+                  style={{ backgroundColor: themeColors.accent.yellow }}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: 'rgba(0,0,0,0.08)' }}>
+                      <Calendar className="w-4 h-4" style={{ color: themeColors.text.primary }} />
+                    </div>
+
+                    <span className="text-lg font-semibold"
+                      style={{ color: themeColors.text.primary }}>
+                      {classesTodayCount}
+                    </span>
+
+                    <span className="text-sm truncate"
+                      style={{ color: themeColors.text.primary, opacity: 0.7 }}>
+                      Classes Today 
+                    </span>
+                  </div>
+                </div>
+
+                {/* Social Connect */}
+                <div
+                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-sm hover:shadow-md transition border border-black/5"
+                  style={{ backgroundColor: themeColors.accent.red }}
+                >
+                  {/* Left side */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="text-sm font-medium truncate"
+                      style={{ color: themeColors.text.primary, opacity: 0.7 }}
+                    >
+                      Connect with us
+                    </span>
+                  </div>
+
+                  {/* Social Icons */}
+                  <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                    <a
+                      href="https://l.instagram.com/?u=https%3A%2F%2Fchat.whatsapp.com%2FFzCODHVaAnFEoYgKjMEgM7%3Fmode%3Dhqrt2%26utm_source%3Dig%26utm_medium%3Dsocial%26utm_content%3Dlink_in_bio%26fbclid%3DPAc3J0YwZhcHBfaWQMMjU2MjgxMDQwNTU4AAGnYU7QL0-s1szpbaUmSlZhg9ku4rwsK2G8lrXZ2yF--_dDsIvz3JFGmMq5Yxs%26brid%3D7sEOuXMEdYFIRsZvR0JMwg&e=AT1WfRorwFnqNiyNtX7vhCZRMtPUj-sZvsUOIsjEkVeocDxYrjLdsr5lX2iU16vyLFZgyeuB54ZCbb520VmV75NB6le-vjFwkhmVc6d9U4P-sbjoyKCQENAAdg"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-md flex items-center justify-center transition hover:scale-110"
+                      style={{ backgroundColor: "rgba(0,0,0,0.15)" }}
+                    >
+                      <i
+                        className="fa-brands fa-whatsapp"
+                        style={{ color: themeColors.text.primary, fontSize: "14px" }}
+                      />
+                    </a>
+
+                    <a
+                      href="https://instagram.com/deeco.official"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-md flex items-center justify-center transition hover:scale-110"
+                      style={{ backgroundColor: "rgba(0,0,0,0.15)" }}
+                    >
+                      <Instagram className="w-4 h-4" style={{ color: themeColors.text.primary }} />
+                    </a>
+
+                    <a
+                      href="https://linkedin.com/company/yourcompany"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-8 h-8 rounded-md flex items-center justify-center transition hover:scale-110"
+                      style={{ backgroundColor: "rgba(0,0,0,0.15)" }}
+                    >
+                      <Linkedin className="w-4 h-4" style={{ color: themeColors.text.primary }} />
+                    </a>
+                  </div>
+                </div>
               </div>
 
-              {/* Two Column Layout - NO FIXED HEIGHT */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                
-                {/* Assigned Tasks Column */}
-                <div 
-                  className="rounded-xl p-5"
-                  style={{
-                    backgroundColor: themeColors.accent.orange,
-                    borderColor: themeColors.primary.black
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-4">
-                    <Clock className="w-5 h-5" style={{ color: themeColors.text.primary }} />
-                    <h4 className="text-lg font-bold" style={{ color: themeColors.text.primary }}>
-                      Assigned ({assignedPlannerItems.length}) 
-                    </h4>
+              {/* Right Column: Daily Planner Section */}
+              <div 
+                className="rounded-2xl p-5 sm:p-7 shadow-lg"
+                style={{
+                  backgroundColor: themeColors.background.white,
+                  borderColor: themeColors.primary.black
+                }}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ 
+                        background: `linear-gradient(135deg, ${themeColors.accent.orange}, ${themeColors.accent.yellowBright})`
+                      }}
+                    >
+                      <CheckCircle className="w-5 h-5" style={{ color: themeColors.text.primary }} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl sm:text-2xl font-bold" style={{ color: themeColors.text.primary }}>
+                        Daily Planner
+                      </h3>
+                      <p className="text-xs sm:text-sm" style={{ color: themeColors.text.secondary }}>
+                        {assignedPlannerItems.length} assigned · {dailyTasks.filter(t => t.status === 'done').length} completed
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsDailyPlannerOpen(!isDailyPlannerOpen);
+                      }}
+                      className="p-2 rounded-xl transition-all hover:scale-110"
+                      style={{ 
+                        backgroundColor: themeColors.primary.w2,
+                      }}
+                    >
+                      <ChevronRight 
+                        className={`w-6 h-6 transition-transform duration-300 ${isDailyPlannerOpen ? 'rotate-90' : ''}`}
+                        style={{ color: themeColors.primary.w }}
+                      />
+                    </button>
                   </div>
                   
-                  {assignedPlannerItems.length === 0 ? (
-                    <div className="text-center py-0">
-                      <div className="w-14 h-14 mx-auto mb-3 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}>
-                        <CheckCircle className="w-7 h-7" style={{ color: themeColors.text.primary, opacity: 0.3 }} />
-                      </div>
+                  <div className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl border-2" style={{ backgroundColor: themeColors.accent.green, borderColor: themeColors.primary.black }}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.1)' }}>
+                      <span className="text-sm font-bold" style={{ color: themeColors.text.primary }}>
+                        {dailyTasks.length > 0 ? Math.round((dailyTasks.filter(t => t.status === 'done').length / dailyTasks.length) * 100) : 0}%
+                      </span>
                     </div>
-                  ) : (
-                    <div className="space-y-2.5">
-                      {assignedPlannerItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:shadow-md"
+                  </div>
+                </div>
+                {isDailyPlannerOpen && (
+                <>
+                {/* Add Task Input */}
+                <div className="flex gap-3 mb-6">
+                  <input
+                    value={newTask}
+                    onChange={(e) => setNewTask(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') addDailyTask(); }}
+                    placeholder="✨ What's on your agenda today?"
+                    className="flex-1 px-5 py-3.5 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 border-2 transition-all shadow-sm"
                     style={{
                       backgroundColor: themeColors.background.white,
+                      borderColor: themeColors.primary.lightGray,
+                      color: themeColors.text.primary
+                    }}
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!newTask.trim()) return;
+                      setIsAddingTask(true);
+                      await addDailyTask();
+                      setIsAddingTask(false);
+                    }}
+                    disabled={isAddingTask || !newTask.trim()}
+                    className="px-5 sm:px-7 py-3.5 rounded-xl font-bold transition-all hover:scale-[1.03] hover:-translate-y-1
+   active:scale-95 shadow-lg flex items-center gap-2"
+                    style={{ 
+                      backgroundColor: themeColors.accent.yellowBright,
+                      color: themeColors.text.primary,
+                      opacity: (!newTask.trim() || isAddingTask) ? 0.5 : 1,
+                      borderWidth: '2px',
                       borderColor: themeColors.primary.black
                     }}
                   >
-                    {item.type === 'task' ? (
-                      <>
-                        <button
-                          onClick={() => toggleTaskStatus(item.id, 'pending')}
-                          className="flex-shrink-0 w-5 h-5 rounded border-2"
-                          style={{ borderColor: themeColors.accent.blue }}
-                        />
-                        <span 
-                        className="flex-1 text-sm font-medium"
-                        style={{ color: themeColors.primary.w2 }}  // Add this style
-                      >
-                        {item.title}
-                      </span>
-                      </>
-                    ) : (
-                      <>
-                        <div
-                          className="w-5 h-5 rounded flex items-center justify-center"
-                          style={{ backgroundColor: themeColors.accent.yellow }}
-                        >
-                          <Calendar className="w-3 h-3" />
+                    <Plus size={18} />
+                    <span className="hidden sm:inline">Add Task</span>
+                  </button>
+                </div>
+
+                {/* Two Column Layout - NO FIXED HEIGHT */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  
+                  {/* Assigned Tasks Column */}
+                  <div 
+                    className="rounded-xl p-5"
+                    style={{
+                      backgroundColor: themeColors.accent.orange,
+                      borderColor: themeColors.primary.black
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <Clock className="w-5 h-5" style={{ color: themeColors.text.primary }} />
+                      <h4 className="text-lg font-bold" style={{ color: themeColors.text.primary }}>
+                        Assigned ({assignedPlannerItems.length}) 
+                      </h4>
+                    </div>
+                    
+                    {assignedPlannerItems.length === 0 ? (
+                      <div className="text-center py-0">
+                        <div className="w-14 h-14 mx-auto mb-3 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}>
+                          <CheckCircle className="w-7 h-7" style={{ color: themeColors.text.primary, opacity: 0.3 }} />
                         </div>
-
-                        <span 
-                        className="flex-1 text-sm font-medium"
-                        style={{ color: themeColors.primary.w2 }} >
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {assignedPlannerItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-3 p-3 rounded-lg border-2 transition-all hover:shadow-md"
+                      style={{
+                        backgroundColor: themeColors.background.white,
+                        borderColor: themeColors.primary.black
+                      }}
+                    >
+                      {item.type === 'task' ? (
+                        <>
+                          <button
+                            onClick={() => toggleTaskStatus(item.id, 'pending')}
+                            className="flex-shrink-0 w-5 h-5 rounded border-2"
+                            style={{ borderColor: themeColors.accent.blue }}
+                          />
+                          <span 
+                          className="flex-1 text-sm font-medium"
+                          style={{ color: themeColors.primary.w2 }}  // Add this style
+                        >
                           {item.title}
-                          {item.start_time && (
-                            <span className="ml-2 text-xs opacity-60">
-                              ({item.start_time.slice(0, 5)})
-                            </span>
-                          )}
                         </span>
+                        </>
+                      ) : (
+                        <>
+                          <div
+                            className="w-5 h-5 rounded flex items-center justify-center"
+                            style={{ backgroundColor: themeColors.accent.yellow }}
+                          >
+                            <Calendar className="w-3 h-3" />
+                          </div>
 
-                        <span className="text-xs px-2 py-1 rounded-full"
-                          style={{ backgroundColor: themeColors.accent.green }}>
-                          Live Class
-                        </span>
-                      </>
+                          <span 
+                          className="flex-1 text-sm font-medium"
+                          style={{ color: themeColors.primary.w2 }} >
+                            {item.title}
+                            {item.start_time && (
+                              <span className="ml-2 text-xs opacity-60">
+                                ({item.start_time.slice(0, 5)})
+                              </span>
+                            )}
+                          </span>
+
+                          <span className="text-xs px-2 py-1 rounded-full"
+                            style={{ backgroundColor: themeColors.accent.green }}>
+                            Live Class
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    ))}
+
+                      </div>
                     )}
                   </div>
-                  ))}
 
+                  {/* Completed Tasks Column */}
+                  <div 
+                    className="rounded-xl p-5"
+                    style={{
+                      backgroundColor: themeColors.accent.green,
+                      borderColor: themeColors.primary.black
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <CheckCircle className="w-5 h-5" style={{ color: themeColors.text.primary }} />
+                      <h4 className="text-lg font-bold" style={{ color: themeColors.text.primary }}>
+                        Completed ({dailyTasks.filter(t => t.status === 'done').length})
+                      </h4>
                     </div>
-                  )}
-                </div>
-
-                {/* Completed Tasks Column */}
-                <div 
-                  className="rounded-xl p-5"
-                  style={{
-                    backgroundColor: themeColors.accent.green,
-                    borderColor: themeColors.primary.black
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-4">
-                    <CheckCircle className="w-5 h-5" style={{ color: themeColors.text.primary }} />
-                    <h4 className="text-lg font-bold" style={{ color: themeColors.text.primary }}>
-                      Completed ({dailyTasks.filter(t => t.status === 'done').length})
-                    </h4>
-                  </div>
-                  
-                  {dailyTasks.filter(t => t.status === 'done').length === 0 ? (
-                    <div className="text-center py-0">
-                      <div className="w-14 h-14 mx-auto mb-3 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}>
-                        <Activity className="w-7 h-7" style={{ color: themeColors.text.primary, opacity: 0.3 }} />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2.5">
-                      {[
-                        // Completed classes (same day)
-                        ...todayClasses
-                          .filter(cls =>
-                            getClassStatus(cls.scheduled_datetime, cls.end_datetime) === 'completed'
-                          )
-                          .map(cls => ({
-                            id: `class-done-${cls.id}`,
-                            title: `📅 ${cls.title}`,
-                            type: 'class' as const,
-                          })),
-
-                        // Completed todos
-                        ...dailyTasks
-                          .filter(t => t.status === 'done')
-                          .map(t => ({
-                            id: t.id,
-                            title: t.title,
-                            type: 'task' as const,
-                          }))
-                      ].map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center gap-3 p-3 rounded-lg border-2"
-                          style={{
-                            backgroundColor: themeColors.background.white,
-                            borderColor: themeColors.primary.black
-                          }}
-                        >
-                          <CheckCircle size={14} />
-                          <span
-                            className="flex-1 text-sm font-medium opacity-70"
-                            style={{ color: themeColors.text.primary }}
-                          >
-                            {item.title}
-                          </span>
+                    
+                    {dailyTasks.filter(t => t.status === 'done').length === 0 ? (
+                      <div className="text-center py-0">
+                        <div className="w-14 h-14 mx-auto mb-3 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.05)' }}>
+                          <Activity className="w-7 h-7" style={{ color: themeColors.text.primary, opacity: 0.3 }} />
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {[
+                          // Completed classes (same day)
+                          ...todayClasses
+                            .filter(cls =>
+                              getClassStatus(cls.scheduled_datetime, cls.end_datetime) === 'completed'
+                            )
+                            .map(cls => ({
+                              id: `class-done-${cls.id}`,
+                              title: `📅 ${cls.title}`,
+                              type: 'class' as const,
+                            })),
 
+                          // Completed todos
+                          ...dailyTasks
+                            .filter(t => t.status === 'done')
+                            .map(t => ({
+                              id: t.id,
+                              title: t.title,
+                              type: 'task' as const,
+                            }))
+                        ].map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center gap-3 p-3 rounded-lg border-2"
+                            style={{
+                              backgroundColor: themeColors.background.white,
+                              borderColor: themeColors.primary.black
+                            }}
+                          >
+                            <CheckCircle size={14} />
+                            <span
+                              className="flex-1 text-sm font-medium opacity-70"
+                              style={{ color: themeColors.text.primary }}
+                            >
+                              {item.title}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+                </>)}
               </div>
-              </>)}
             </div>
 
           </div>
