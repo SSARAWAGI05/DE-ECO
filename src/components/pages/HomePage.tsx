@@ -987,7 +987,7 @@ const resetFocusTimer = () => {
         {/* Featured Courses Section */}
         <div 
           className="rounded-2xl sm:rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 transition-colors" 
-          style={{ backgroundColor: isDark ? themeColors.accent.purple : themeColors.accent.yellow }}
+          style={{ backgroundColor: isDark ? themeColors.accent.green : themeColors.accent.yellow }}
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
             <div>
