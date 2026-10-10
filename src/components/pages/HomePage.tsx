@@ -987,20 +987,20 @@ const resetFocusTimer = () => {
         {/* Featured Courses Section */}
         <div 
           className="rounded-2xl sm:rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 transition-colors" 
-          style={{ backgroundColor: isDark ? themeColors.accent.blue : themeColors.accent.yellow }}
+          style={{ backgroundColor: isDark ? '#facc15' : themeColors.accent.yellow }}
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
             <div>
               <h2
                 className="text-3xl sm:text-4xl font-bold mb-2 inline-block"
-                style={{ color: themeColors.text.primary }}
+                style={{ color: '#0f172a' }}
               >
                 Featured Courses
               </h2>
               <svg className="w-80 h-3 mt-1" viewBox="0 0 250 8" preserveAspectRatio="none">
                 <path
                   d="M0,4 Q60,2 120,5 T250,4"
-                  stroke={themeColors.text.primary}
+                  stroke="#0f172a"
                   strokeWidth="3"
                   fill="none"
                 />
@@ -1183,10 +1183,7 @@ const resetFocusTimer = () => {
           </div>
 
         {/* ================= MARKET PULSE SECTION ================= */}
-        <div 
-          className="rounded-2xl sm:rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 overflow-visible transition-colors" 
-          style={{ backgroundColor: isDark ? '#7c3aed' : themeColors.accent.blue }}
-        >
+        <div className="rounded-2xl sm:rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 overflow-visible" style={{ backgroundColor: themeColors.accent.blue }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
             <div>
               <h2
