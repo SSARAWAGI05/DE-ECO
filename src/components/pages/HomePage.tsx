@@ -597,10 +597,10 @@ const resetFocusTimer = () => {
           <div className="mb-6 sm:mb-8">
             {/* Main Container Card */}
             <div 
-              className="rounded-3xl shadow-xl border-0 p-4 sm:p-5 lg:p-6"
+              className="rounded-3xl shadow-xl border border-transparent dark:border-white/10 dark:backdrop-blur-md p-4 sm:p-5 lg:p-6 transition-colors"
               style={{
-                backgroundColor: themeColors.primary.lG,
-                borderColor: themeColors.primary.black
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : themeColors.primary.lG,
+                borderColor: isDark ? undefined : themeColors.primary.black
               }}
             >
 
@@ -985,10 +985,7 @@ const resetFocusTimer = () => {
         </div>
               
         {/* Featured Courses Section */}
-        <div 
-          className="rounded-2xl sm:rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 border border-transparent dark:border-white/10 dark:backdrop-blur-md shadow-sm transition-colors" 
-          style={{ backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : themeColors.accent.yellow }}
-        >
+        <div className="rounded-2xl sm:rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8" style={{ backgroundColor: themeColors.accent.yellow }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
             <div>
               <h2
@@ -1011,9 +1008,9 @@ const resetFocusTimer = () => {
             <button
               onClick={() => onNavigate?.("courses")}
               className="px-6 py-3 rounded-xl font-bold transition-transform hover:scale-[1.03] hover:-translate-y-1
-                flex items-center gap-2 border border-transparent dark:border-white/15"
+                flex items-center gap-2"
               style={{
-                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : themeColors.primary.black,
+                backgroundColor: themeColors.primary.black,
                 color: themeColors.text.white,
               }}
             >
@@ -1041,7 +1038,8 @@ const resetFocusTimer = () => {
             featuredCourses.map((course) => (
               <div
                 key={course.id}
-                className="rounded-2xl shadow-lg overflow-hidden transition-transform transform hover:scale-[1.03] hover:-translate-y-1 border border-transparent dark:border-white/10"
+                className="rounded-2xl shadow-lg overflow-hidden transition-transform transform hover:scale-[1.03] hover:-translate-y-1
+"
                 style={{ backgroundColor: themeColors.background.white }}
               >
                 {/* Course Image */}
