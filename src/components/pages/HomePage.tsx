@@ -44,15 +44,6 @@ interface LiveClass {
   status: string;
 }
 
-const getMarketPulseCover = (reel: { thumbnail_url?: string | null; tag?: string | null; title?: string }) => {
-  if (reel.thumbnail_url) return reel.thumbnail_url;
-  const content = `${reel.tag || ''} ${reel.title || ''}`.toLowerCase();
-  if (content.includes('payment') || content.includes('card') || content.includes('credit') || content.includes('upi')) {
-    return '/graphics/market_pulse_payments.jpg';
-  }
-  return '/graphics/market_pulse_general.jpg';
-};
-
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const [userName, setUserName] = useState<string | null>(null);
   const [jiggle, setJiggle] = useState(false);
@@ -1306,49 +1297,59 @@ const resetFocusTimer = () => {
                   <div
                     key={reel.id}
                     onClick={() => window.open(reel.reel_url, "_blank")}
-                    className="group relative flex-shrink-0 w-[210px] sm:w-[240px] h-[320px] sm:h-[350px] rounded-2xl sm:rounded-3xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 select-none border border-white/10"
-                    style={{ backgroundColor: '#090d16' }}
+                    className="group relative flex-shrink-0 w-[210px] sm:w-[240px] h-[320px] sm:h-[350px] rounded-2xl sm:rounded-3xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 select-none border border-black/10 bg-white"
                   >
                     {/* Media / Background Poster */}
-                    <img
-                      src={getMarketPulseCover(reel)}
-                      alt={reel.title}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                    />
+                    {reel.thumbnail_url ? (
+                      <img
+                        src={reel.thumbnail_url}
+                        alt={reel.title}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-white flex items-center justify-center pb-14">
+                        {/* DE-ECO Logo prominently featured as cover */}
+                        <img
+                          src="/logo/De-Eco-logo.png"
+                          alt="DE-ECO"
+                          className="w-32 sm:w-36 h-32 sm:h-36 object-contain drop-shadow-sm transition-transform duration-500 group-hover:scale-110"
+                        />
+                      </div>
+                    )}
 
-                    {/* Gradient Scrim Overlay for high contrast */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-black/25 pointer-events-none" />
+                    {/* Gradient Scrim Overlay for high readability at the bottom */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 via-40% to-transparent pointer-events-none" />
 
-                    {/* Top Row: Floating Tags, Brand & Duration */}
+                    {/* Top Row: Floating Topic Tag & Reel indicator */}
                     <div className="absolute top-3.5 inset-x-3.5 flex items-center justify-between gap-2 z-10 pointer-events-none">
                       {/* Left: Topic Tag */}
                       {reel.tag ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md bg-white/20 text-white border border-white/25 shadow-sm">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-black/80 text-white border border-white/20 shadow-md">
                           {reel.tag}
                         </span>
                       ) : (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md bg-blue-500/30 text-blue-200 border border-blue-400/30 shadow-sm flex items-center gap-1">
-                          <Activity className="w-3 h-3 text-blue-300" />
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-black/80 text-white border border-white/20 shadow-md flex items-center gap-1">
+                          <Activity className="w-3 h-3 text-emerald-400" />
                           Pulse
                         </span>
                       )}
 
-                      {/* Right: DE-ECO Brand Logo Pill */}
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 shadow-sm">
-                        <img 
-                          src="/logo/De-Eco-logo.png" 
-                          alt="DE-ECO" 
-                          className="w-3.5 h-3.5 rounded-full bg-white object-contain p-0.5" 
-                        />
-                        <span className="text-[9px] font-black tracking-widest text-white uppercase">
-                          DE-ECO
+                      {/* Right: Duration or Reel Pill */}
+                      {reel.duration_seconds ? (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/60 text-white/90 border border-white/10 backdrop-blur-sm shadow-sm">
+                          {Math.floor(reel.duration_seconds / 60)}:{(reel.duration_seconds % 60).toString().padStart(2, '0')}
                         </span>
-                      </div>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/60 text-white/90 border border-white/10 backdrop-blur-sm shadow-sm flex items-center gap-1">
+                          <Play className="w-2.5 h-2.5 fill-current" />
+                          Reel
+                        </span>
+                      )}
                     </div>
 
-                    {/* Centered Frosted Glass Play Button */}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full backdrop-blur-md bg-white/25 border border-white/35 flex items-center justify-center text-white shadow-xl transition-all duration-300 transform group-hover:scale-115 group-hover:bg-white group-hover:text-black">
+                    {/* Centered Frosted Glass Play Button - smooth hover reveal so it never covers the logo while browsing */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/75 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-2xl transition-all duration-300 transform group-hover:scale-110">
                         <Play className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5 fill-current" />
                       </div>
                     </div>

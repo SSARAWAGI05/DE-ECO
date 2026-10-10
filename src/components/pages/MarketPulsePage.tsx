@@ -30,15 +30,6 @@ interface MarketReel {
   tag: string | null;  // ✅ Single tag column
 }
 
-const getMarketPulseCover = (reel: { thumbnail_url?: string | null; tag?: string | null; title?: string }) => {
-  if (reel.thumbnail_url) return reel.thumbnail_url;
-  const content = `${reel.tag || ''} ${reel.title || ''}`.toLowerCase();
-  if (content.includes('payment') || content.includes('card') || content.includes('credit') || content.includes('upi')) {
-    return '/graphics/market_pulse_payments.jpg';
-  }
-  return '/graphics/market_pulse_general.jpg';
-};
-
 /* ================= COMPONENT ================= */
 const MarketPulsePage: React.FC = () => {
   const { isDark, isFocusMode } = useTheme();
@@ -394,13 +385,17 @@ const MarketPulsePage: React.FC = () => {
                       }}
                     >
                       <img
-                        src={getMarketPulseCover(reel)}
+                        src={reel.thumbnail_url || "/logo/De-Eco-logo.png"}
                         onError={(e) => {
-                          e.currentTarget.src = getMarketPulseCover(reel);
+                          e.currentTarget.src = "/logo/De-Eco-logo.png";
                         }}
                         alt={reel.title}
                         loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className={
+                          reel.thumbnail_url
+                            ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            : "w-full h-full object-contain bg-white p-6"
+                        }
                       />
 
                       {/* Play Overlay */}
