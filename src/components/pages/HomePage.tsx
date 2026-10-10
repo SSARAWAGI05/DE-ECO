@@ -1297,8 +1297,8 @@ const resetFocusTimer = () => {
                   <div
                     key={reel.id}
                     onClick={() => window.open(reel.reel_url, "_blank")}
-                    className={`group relative flex-shrink-0 w-[210px] sm:w-[240px] h-[320px] sm:h-[350px] rounded-2xl sm:rounded-3xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 select-none border ${
-                      isDark ? 'border-white/10 bg-slate-900' : 'border-black/10 bg-white'
+                    className={`group relative flex-shrink-0 w-[210px] sm:w-[240px] h-[320px] sm:h-[350px] rounded-2xl sm:rounded-3xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 select-none ${
+                      isDark ? 'bg-slate-900' : 'bg-white'
                     }`}
                   >
                     {/* Media / Background Poster */}
@@ -1326,11 +1326,11 @@ const resetFocusTimer = () => {
                     <div className="absolute top-3.5 inset-x-3.5 flex items-center justify-between gap-2 z-10 pointer-events-none">
                       {/* Left: Topic Tag */}
                       {reel.tag ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-black/80 text-white border border-white/20 shadow-md">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-black/80 text-white shadow-md">
                           {reel.tag}
                         </span>
                       ) : (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-black/80 text-white border border-white/20 shadow-md flex items-center gap-1">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-black/80 text-white shadow-md flex items-center gap-1">
                           <Activity className="w-3 h-3 text-emerald-400" />
                           Pulse
                         </span>
@@ -1338,11 +1338,11 @@ const resetFocusTimer = () => {
 
                       {/* Right: Duration or Reel Pill */}
                       {reel.duration_seconds ? (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/60 text-white/90 border border-white/10 backdrop-blur-sm shadow-sm">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/60 text-white/90 backdrop-blur-sm shadow-sm">
                           {Math.floor(reel.duration_seconds / 60)}:{(reel.duration_seconds % 60).toString().padStart(2, '0')}
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/60 text-white/90 border border-white/10 backdrop-blur-sm shadow-sm flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/60 text-white/90 backdrop-blur-sm shadow-sm flex items-center gap-1">
                           <Play className="w-2.5 h-2.5 fill-current" />
                           Reel
                         </span>
@@ -1351,7 +1351,7 @@ const resetFocusTimer = () => {
 
                     {/* Centered Frosted Glass Play Button - smooth hover reveal so it never covers the logo while browsing */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/75 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-2xl transition-all duration-300 transform group-hover:scale-110">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/75 backdrop-blur-md flex items-center justify-center text-white shadow-2xl transition-all duration-300 transform group-hover:scale-110">
                         <Play className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5 fill-current" />
                       </div>
                     </div>

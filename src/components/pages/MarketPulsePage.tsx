@@ -362,7 +362,7 @@ const MarketPulsePage: React.FC = () => {
                       href={reel.reel_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group rounded-2xl overflow-hidden transition hover:shadow-2xl hover:-translate-y-1 cursor-pointer border active:scale-95 block"
+                      className="group rounded-2xl overflow-hidden transition hover:shadow-2xl hover:-translate-y-1 cursor-pointer active:scale-95 block"
                       onClick={() => {
                         // fire-and-forget (DO NOT await)
                         supabase.rpc('increment_market_reel_views', {
@@ -370,7 +370,6 @@ const MarketPulsePage: React.FC = () => {
                         });
                       }}
                       style={{
-                        borderColor: themeColors.card.border,
                         backgroundColor: themeColors.card.bg,
                         WebkitTapHighlightColor: 'transparent',
                         touchAction: 'manipulation',
@@ -380,7 +379,7 @@ const MarketPulsePage: React.FC = () => {
                     {/* Thumbnail */}
                     <div
                       className={`relative h-64 overflow-hidden flex items-center justify-center ${
-                        isDark ? 'bg-slate-900 border-b border-white/10' : 'bg-slate-100'
+                        isDark ? 'bg-slate-900' : 'bg-slate-100'
                       }`}
                     >
                       <img
