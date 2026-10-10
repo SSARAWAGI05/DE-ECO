@@ -44,6 +44,15 @@ interface LiveClass {
   status: string;
 }
 
+const getMarketPulseCover = (reel: { thumbnail_url?: string | null; tag?: string | null; title?: string }) => {
+  if (reel.thumbnail_url) return reel.thumbnail_url;
+  const content = `${reel.tag || ''} ${reel.title || ''}`.toLowerCase();
+  if (content.includes('payment') || content.includes('card') || content.includes('credit') || content.includes('upi')) {
+    return '/graphics/market_pulse_payments.jpg';
+  }
+  return '/graphics/market_pulse_general.jpg';
+};
+
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const [userName, setUserName] = useState<string | null>(null);
   const [jiggle, setJiggle] = useState(false);
@@ -1301,40 +1310,18 @@ const resetFocusTimer = () => {
                     style={{ backgroundColor: '#090d16' }}
                   >
                     {/* Media / Background Poster */}
-                    {reel.thumbnail_url ? (
-                      <img
-                        src={reel.thumbnail_url}
-                        alt={reel.title}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                      />
-                    ) : (
-                      <div 
-                        className="absolute inset-0 w-full h-full transition-transform duration-700 ease-out group-hover:scale-105 flex flex-col items-center justify-center p-6 text-center"
-                        style={{
-                          background: 'radial-gradient(circle at 50% 25%, #1e3a8a 0%, #0c1527 60%, #030712 100%)'
-                        }}
-                      >
-                        {/* Decorative Pulse Wave */}
-                        <svg className="absolute inset-x-0 bottom-16 w-full h-24 opacity-25 text-blue-400" viewBox="0 0 100 40" preserveAspectRatio="none">
-                          <path d="M0,35 Q20,10 40,25 T80,8 T100,20 L100,40 L0,40 Z" fill="currentColor" />
-                        </svg>
-                        {/* Logo Mark */}
-                        <img 
-                          src="/logo/De-Eco-logo.png" 
-                          alt="DE-ECO" 
-                          className="w-14 h-14 object-contain opacity-80 filter brightness-110 drop-shadow-md mb-2" 
-                        />
-                        <span className="text-[10px] tracking-widest font-black uppercase text-blue-200/70">
-                          MARKET PULSE
-                        </span>
-                      </div>
-                    )}
+                    <img
+                      src={getMarketPulseCover(reel)}
+                      alt={reel.title}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                    />
 
                     {/* Gradient Scrim Overlay for high contrast */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/25 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-black/25 pointer-events-none" />
 
-                    {/* Top Row: Floating Tags & Duration */}
+                    {/* Top Row: Floating Tags, Brand & Duration */}
                     <div className="absolute top-3.5 inset-x-3.5 flex items-center justify-between gap-2 z-10 pointer-events-none">
+                      {/* Left: Topic Tag */}
                       {reel.tag ? (
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md bg-white/20 text-white border border-white/25 shadow-sm">
                           {reel.tag}
@@ -1346,16 +1333,17 @@ const resetFocusTimer = () => {
                         </span>
                       )}
 
-                      {reel.duration_seconds ? (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold backdrop-blur-md bg-black/60 text-white/90 border border-white/10">
-                          {Math.floor(reel.duration_seconds / 60)}:{(reel.duration_seconds % 60).toString().padStart(2, '0')}
+                      {/* Right: DE-ECO Brand Logo Pill */}
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 shadow-sm">
+                        <img 
+                          src="/logo/De-Eco-logo.png" 
+                          alt="DE-ECO" 
+                          className="w-3.5 h-3.5 rounded-full bg-white object-contain p-0.5" 
+                        />
+                        <span className="text-[9px] font-black tracking-widest text-white uppercase">
+                          DE-ECO
                         </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold backdrop-blur-md bg-black/50 text-white/80 border border-white/10 flex items-center gap-1">
-                          <Play className="w-2.5 h-2.5 fill-current" />
-                          Reel
-                        </span>
-                      )}
+                      </div>
                     </div>
 
                     {/* Centered Frosted Glass Play Button */}
@@ -1376,9 +1364,16 @@ const resetFocusTimer = () => {
                           <Eye className="w-3.5 h-3.5 text-white/70" />
                           {reel.view_count ? `${reel.view_count.toLocaleString()} views` : 'Watch insight'}
                         </span>
-                        <span>
-                          {reel.published_at ? new Date(reel.published_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {reel.duration_seconds && (
+                            <span className="text-white/60">
+                              {Math.floor(reel.duration_seconds / 60)}:{(reel.duration_seconds % 60).toString().padStart(2, '0')}
+                            </span>
+                          )}
+                          <span>
+                            {reel.published_at ? new Date(reel.published_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
