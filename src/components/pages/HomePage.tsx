@@ -986,12 +986,8 @@ const resetFocusTimer = () => {
               
         {/* Featured Courses Section */}
         <div 
-          className="rounded-2xl sm:rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 border border-transparent dark:border-amber-500/20 shadow-lg transition-colors" 
-          style={{ 
-            background: isDark 
-              ? 'linear-gradient(135deg, #241b0e 0%, #2f220d 50%, #22180c 100%)' 
-              : themeColors.accent.yellow 
-          }}
+          className="rounded-2xl sm:rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 transition-colors" 
+          style={{ backgroundColor: isDark ? themeColors.accent.purple : themeColors.accent.yellow }}
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
             <div>
@@ -1004,7 +1000,7 @@ const resetFocusTimer = () => {
               <svg className="w-80 h-3 mt-1" viewBox="0 0 250 8" preserveAspectRatio="none">
                 <path
                   d="M0,4 Q60,2 120,5 T250,4"
-                  stroke={isDark ? '#fbbf24' : themeColors.text.primary}
+                  stroke={themeColors.text.primary}
                   strokeWidth="3"
                   fill="none"
                 />
@@ -1015,9 +1011,9 @@ const resetFocusTimer = () => {
             <button
               onClick={() => onNavigate?.("courses")}
               className="px-6 py-3 rounded-xl font-bold transition-transform hover:scale-[1.03] hover:-translate-y-1
-                flex items-center gap-2 border border-transparent dark:border-amber-500/30"
+                flex items-center gap-2"
               style={{
-                backgroundColor: isDark ? '#140f07' : themeColors.primary.black,
+                backgroundColor: themeColors.primary.black,
                 color: themeColors.text.white,
               }}
             >
@@ -1045,7 +1041,7 @@ const resetFocusTimer = () => {
             featuredCourses.map((course) => (
               <div
                 key={course.id}
-                className="rounded-2xl shadow-lg overflow-hidden transition-transform transform hover:scale-[1.03] hover:-translate-y-1 border border-transparent dark:border-amber-500/15"
+                className="rounded-2xl shadow-lg overflow-hidden transition-transform transform hover:scale-[1.03] hover:-translate-y-1"
                 style={{ backgroundColor: themeColors.background.white }}
               >
                 {/* Course Image */}
