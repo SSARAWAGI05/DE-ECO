@@ -993,14 +993,14 @@ const resetFocusTimer = () => {
             <div>
               <h2
                 className="text-3xl sm:text-4xl font-bold mb-2 inline-block"
-                style={{ color: '#0f172a' }}
+                style={{ color: isDark ? '#ffffff' : themeColors.text.primary }}
               >
                 Featured Courses
               </h2>
               <svg className="w-80 h-3 mt-1" viewBox="0 0 250 8" preserveAspectRatio="none">
                 <path
                   d="M0,4 Q60,2 120,5 T250,4"
-                  stroke="#0f172a"
+                  stroke={isDark ? '#ffffff' : themeColors.text.primary}
                   strokeWidth="3"
                   fill="none"
                 />
