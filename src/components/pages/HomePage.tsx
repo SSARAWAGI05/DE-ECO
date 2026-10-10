@@ -982,18 +982,18 @@ const resetFocusTimer = () => {
               
         {/* Featured Courses Section */}
         <div 
-          className="rounded-2xl sm:rounded-3xl p-6 sm:p-8 mb-6 sm:mb-8 transition-colors" 
+          className="rounded-2xl sm:rounded-3xl p-4 sm:p-6 mb-6 sm:mb-8 transition-colors" 
           style={{ backgroundColor: isDark ? '#f59e0c' : themeColors.accent.yellow }}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
             <div>
               <h2
-                className="text-3xl sm:text-4xl font-bold mb-2 inline-block"
+                className="text-2xl sm:text-3xl font-bold mb-1 inline-block"
                 style={{ color: isDark ? '#ffffff' : themeColors.text.primary }}
               >
                 Featured Courses
               </h2>
-              <svg className="w-80 h-3 mt-1" viewBox="0 0 250 8" preserveAspectRatio="none">
+              <svg className="w-64 h-2.5 mt-0.5" viewBox="0 0 250 8" preserveAspectRatio="none">
                 <path
                   d="M0,4 Q60,2 120,5 T250,4"
                   stroke={isDark ? '#ffffff' : themeColors.text.primary}
@@ -1006,29 +1006,28 @@ const resetFocusTimer = () => {
             {/* 🔹 Explore More Courses Button */}
             <button
               onClick={() => onNavigate?.("courses")}
-              className="px-6 py-3 rounded-xl font-bold transition-transform hover:scale-[1.03] hover:-translate-y-1
-                flex items-center gap-2"
+              className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-transform hover:scale-[1.03] hover:-translate-y-0.5 flex items-center gap-2"
               style={{
                 backgroundColor: themeColors.primary.black,
                 color: themeColors.text.white,
               }}
             >
               Explore More Courses
-              <ChevronRight size={18} />
+              <ChevronRight size={16} />
             </button>
           </div>
-          {/* Courses Grid - Option 3 Horizontal 2x2 Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 pt-4 overflow-visible">
+          {/* Courses Grid - Compact Option 3 Horizontal 2x2 Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 pt-1 overflow-visible">
           {/* Loading */}
           {featuredCoursesLoading && (
-            <p className="text-sm opacity-70 col-span-full text-center">
+            <p className="text-sm opacity-70 col-span-full text-center py-4">
               Loading featured courses…
             </p>
           )}
 
           {/* Empty state */}
           {!featuredCoursesLoading && featuredCourses.length === 0 && (
-            <p className="text-sm opacity-70 col-span-full text-center">
+            <p className="text-sm opacity-70 col-span-full text-center py-4">
               No featured courses available right now.
             </p>
           )}
@@ -1042,7 +1041,7 @@ const resetFocusTimer = () => {
                   localStorage.setItem('selectedCourseId', course.id);
                   onNavigate?.("courses");
                 }}
-                className="group relative rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 cursor-pointer overflow-hidden flex flex-col sm:flex-row border"
+                className="group relative rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer overflow-hidden flex flex-col sm:flex-row border"
                 style={{ 
                   backgroundColor: isDark ? '#141417' : themeColors.background.white,
                   borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'
@@ -1050,7 +1049,7 @@ const resetFocusTimer = () => {
               >
                 {/* Course Image / Visual Banner */}
                 <div 
-                  className="sm:w-2/5 min-h-[170px] sm:min-h-full relative overflow-hidden flex items-center justify-center p-4 flex-shrink-0"
+                  className="w-full sm:w-36 md:w-44 min-h-[110px] sm:min-h-[120px] relative overflow-hidden flex items-center justify-center p-3 flex-shrink-0"
                   style={{
                     background: isDark 
                       ? 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%)' 
@@ -1062,14 +1061,14 @@ const resetFocusTimer = () => {
                     alt={course.title}
                     className={course.thumbnail_url 
                       ? "w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                      : "w-20 h-20 object-contain drop-shadow transition-transform duration-300 group-hover:scale-110"
+                      : "w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow transition-transform duration-300 group-hover:scale-110"
                     }
                   />
 
                   {/* Floating Level Badge */}
                   {course.level && (
                     <span 
-                      className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-sm backdrop-blur-md"
+                      className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase shadow-sm backdrop-blur-md"
                       style={{
                         backgroundColor: isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.95)',
                         color: isDark ? '#fbbf24' : '#b45309',
@@ -1082,16 +1081,16 @@ const resetFocusTimer = () => {
                 </div>
 
                 {/* Course Content */}
-                <div className="sm:w-3/5 p-5 sm:p-6 flex flex-col justify-between flex-1">
+                <div className="p-3.5 sm:p-4 flex flex-col justify-between flex-1 min-w-0">
                   <div>
                     {/* Meta Info Row */}
                     <div 
-                      className="flex items-center gap-2 mb-2 text-xs font-medium"
+                      className="flex items-center gap-2 mb-1 text-[11px] font-medium"
                       style={{ color: isDark ? '#a1a1aa' : themeColors.text.tertiary }}
                     >
                       <span className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-amber-500" />
-                        {course.duration_weeks ? `${course.duration_weeks} Weeks` : 'Self-Paced'}
+                        <Clock className="w-3 h-3 text-amber-500" />
+                        {course.duration_weeks ? `${course.duration_weeks} W` : 'Self-Paced'}
                       </span>
                       <span>•</span>
                       <span>Online Program</span>
@@ -1099,7 +1098,7 @@ const resetFocusTimer = () => {
 
                     {/* Course Title */}
                     <h3
-                      className="font-bold text-base sm:text-lg mb-2 line-clamp-2 leading-snug transition-colors group-hover:text-amber-500"
+                      className="font-bold text-sm sm:text-base mb-1 line-clamp-1 leading-snug transition-colors group-hover:text-amber-500"
                       style={{ color: isDark ? '#ffffff' : themeColors.text.primary }}
                     >
                       {course.title}
@@ -1108,7 +1107,7 @@ const resetFocusTimer = () => {
                     {/* Description Snippet */}
                     {course.description && (
                       <p
-                        className="text-xs sm:text-sm mb-4 line-clamp-2 leading-relaxed"
+                        className="text-xs mb-2.5 line-clamp-2 leading-relaxed"
                         style={{ color: isDark ? '#9ca3af' : themeColors.text.secondary }}
                       >
                         {course.description}
@@ -1118,13 +1117,13 @@ const resetFocusTimer = () => {
 
                   {/* Footer Row: Instructor & Action Button */}
                   <div 
-                    className="pt-3 border-t flex items-center justify-between gap-3 mt-auto"
+                    className="pt-2 border-t flex items-center justify-between gap-2 mt-auto"
                     style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' }}
                   >
                     {/* Instructor Info */}
                     <div className="flex items-center gap-2 min-w-0">
                       <div 
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold uppercase flex-shrink-0"
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold uppercase flex-shrink-0"
                         style={{ 
                           backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
                           color: isDark ? '#ffffff' : themeColors.text.primary 
@@ -1147,14 +1146,14 @@ const resetFocusTimer = () => {
                         localStorage.setItem('selectedCourseId', course.id);
                         onNavigate?.("courses");
                       }}
-                      className="px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all duration-300 flex items-center gap-1.5 shadow-sm group-hover:scale-105 flex-shrink-0"
+                      className="px-3 py-1 rounded-lg font-bold text-xs transition-all duration-300 flex items-center gap-1 shadow-sm group-hover:scale-105 flex-shrink-0"
                       style={{
                         backgroundColor: isDark ? '#ffffff' : themeColors.primary.black,
                         color: isDark ? '#000000' : themeColors.text.white,
                       }}
                     >
                       <span>View Course</span>
-                      <ChevronRight size={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                      <ChevronRight size={13} className="transition-transform duration-300 group-hover:translate-x-0.5" />
                     </button>
                   </div>
                 </div>
