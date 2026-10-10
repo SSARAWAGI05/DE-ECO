@@ -25,7 +25,8 @@ import {
   PenTool,
   Map,
   ListChecks,
-  FileText
+  FileText,
+  Eye
 } from 'lucide-react';
 import { supabase } from "../../lib/supabaseClient";
 import { colors, getActivityIconColor, getEventColorClasses, getThemeColors } from '../../styles/colors';
@@ -252,7 +253,7 @@ const [todayClasses, setTodayClasses] = useState<{
       )
       .eq("is_active", true)
       .order("published_at", { ascending: false })
-      .limit(5);
+      .limit(8);
 
     if (!error && data) {
       setMarketPulseReels(data);
@@ -982,10 +983,10 @@ const resetFocusTimer = () => {
               
         {/* Featured Courses Section */}
         <div 
-          className="rounded-2xl sm:rounded-3xl p-4 sm:p-6 mb-6 sm:mb-8 transition-colors" 
+          className="rounded-2xl sm:rounded-3xl p-5 sm:p-7 mb-6 sm:mb-8 transition-colors" 
           style={{ backgroundColor: isDark ? '#f59e0c' : themeColors.accent.yellow }}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-5 gap-3">
             <div>
               <h2
                 className="text-2xl sm:text-3xl font-bold mb-1 inline-block"
@@ -1006,7 +1007,7 @@ const resetFocusTimer = () => {
             {/* 🔹 Explore More Courses Button */}
             <button
               onClick={() => onNavigate?.("courses")}
-              className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-transform hover:scale-[1.03] hover:-translate-y-0.5 flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-transform hover:scale-[1.03] hover:-translate-y-0.5 flex items-center gap-2"
               style={{
                 backgroundColor: themeColors.primary.black,
                 color: themeColors.text.white,
@@ -1016,19 +1017,19 @@ const resetFocusTimer = () => {
               <ChevronRight size={16} />
             </button>
           </div>
-          {/* Horizontally Scrollable Courses Row */}
-          <div className="overflow-x-auto overflow-y-visible px-1 pb-2 pt-1">
-            <div className="flex gap-3 sm:gap-4" style={{ minWidth: "max-content" }}>
+          {/* Horizontally Scrollable Courses Row - More Free & Spacious */}
+          <div className="overflow-x-auto overflow-y-visible px-1 pb-3 pt-1">
+            <div className="flex gap-4 sm:gap-5" style={{ minWidth: "max-content" }}>
               {/* Loading */}
               {featuredCoursesLoading && (
-                <p className="text-sm opacity-70 py-6 px-4">
+                <p className="text-sm opacity-70 py-8 px-4">
                   Loading featured courses…
                 </p>
               )}
 
               {/* Empty state */}
               {!featuredCoursesLoading && featuredCourses.length === 0 && (
-                <p className="text-sm opacity-70 py-6 px-4">
+                <p className="text-sm opacity-70 py-8 px-4">
                   No featured courses available right now.
                 </p>
               )}
@@ -1042,7 +1043,7 @@ const resetFocusTimer = () => {
                       localStorage.setItem('selectedCourseId', course.id);
                       onNavigate?.("courses");
                     }}
-                    className="group relative rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer overflow-hidden flex flex-row border flex-shrink-0 w-[340px] sm:w-[380px]"
+                    className="group relative rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 cursor-pointer overflow-hidden flex flex-row border flex-shrink-0 w-[390px] sm:w-[450px]"
                     style={{ 
                       backgroundColor: isDark ? '#141417' : themeColors.background.white,
                       borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'
@@ -1050,7 +1051,7 @@ const resetFocusTimer = () => {
                   >
                     {/* Course Image / Visual Banner */}
                     <div 
-                      className="w-32 sm:w-36 min-h-[110px] sm:min-h-[120px] relative overflow-hidden flex items-center justify-center p-3 flex-shrink-0"
+                      className="w-36 sm:w-44 min-h-[130px] sm:min-h-[140px] relative overflow-hidden flex items-center justify-center p-3.5 flex-shrink-0"
                       style={{
                         background: isDark 
                           ? 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%)' 
@@ -1062,14 +1063,14 @@ const resetFocusTimer = () => {
                         alt={course.title}
                         className={course.thumbnail_url 
                           ? "w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                          : "w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow transition-transform duration-300 group-hover:scale-110"
+                          : "w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow transition-transform duration-300 group-hover:scale-110"
                         }
                       />
 
                       {/* Floating Level Badge */}
                       {course.level && (
                         <span 
-                          className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase shadow-sm backdrop-blur-md"
+                          className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase shadow-sm backdrop-blur-md"
                           style={{
                             backgroundColor: isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(255, 255, 255, 0.95)',
                             color: isDark ? '#fbbf24' : '#b45309',
@@ -1082,24 +1083,24 @@ const resetFocusTimer = () => {
                     </div>
 
                     {/* Course Content */}
-                    <div className="p-3.5 sm:p-4 flex flex-col justify-between flex-1 min-w-0">
+                    <div className="p-4 sm:p-5 flex flex-col justify-between flex-1 min-w-0">
                       <div>
                         {/* Meta Info Row */}
                         <div 
-                          className="flex items-center gap-2 mb-1 text-[11px] font-medium"
+                          className="flex items-center gap-2 mb-1.5 text-xs font-medium"
                           style={{ color: isDark ? '#a1a1aa' : themeColors.text.tertiary }}
                         >
                           <span className="flex items-center gap-1.5">
-                            <Clock className="w-3 h-3 text-amber-500" />
-                            {course.duration_weeks ? `${course.duration_weeks} W` : 'Self-Paced'}
+                            <Clock className="w-3.5 h-3.5 text-amber-500" />
+                            {course.duration_weeks ? `${course.duration_weeks} Weeks` : 'Self-Paced'}
                           </span>
                           <span>•</span>
                           <span>Online Program</span>
                         </div>
 
-                        {/* Course Title */}
+                        {/* Course Title - 2 lines to never truncate */}
                         <h3
-                          className="font-bold text-sm sm:text-base mb-1 line-clamp-1 leading-snug transition-colors group-hover:text-amber-500"
+                          className="font-bold text-base sm:text-lg mb-1.5 line-clamp-2 leading-snug transition-colors group-hover:text-amber-500"
                           style={{ color: isDark ? '#ffffff' : themeColors.text.primary }}
                         >
                           {course.title}
@@ -1108,7 +1109,7 @@ const resetFocusTimer = () => {
                         {/* Description Snippet */}
                         {course.description && (
                           <p
-                            className="text-xs mb-2.5 line-clamp-2 leading-relaxed"
+                            className="text-xs sm:text-sm mb-3 line-clamp-2 leading-relaxed"
                             style={{ color: isDark ? '#9ca3af' : themeColors.text.secondary }}
                           >
                             {course.description}
@@ -1118,13 +1119,13 @@ const resetFocusTimer = () => {
 
                       {/* Footer Row: Instructor & Action Button */}
                       <div 
-                        className="pt-2 border-t flex items-center justify-between gap-2 mt-auto"
+                        className="pt-2.5 border-t flex items-center justify-between gap-3 mt-auto"
                         style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' }}
                       >
                         {/* Instructor Info */}
                         <div className="flex items-center gap-2 min-w-0">
                           <div 
-                            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold uppercase flex-shrink-0"
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold uppercase flex-shrink-0"
                             style={{ 
                               backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
                               color: isDark ? '#ffffff' : themeColors.text.primary 
@@ -1133,7 +1134,7 @@ const resetFocusTimer = () => {
                             {(course.instructor_name || 'D')[0]}
                           </div>
                           <span 
-                            className="text-xs truncate font-medium"
+                            className="text-xs sm:text-sm truncate font-medium"
                             style={{ color: isDark ? '#d4d4d8' : themeColors.text.secondary }}
                           >
                             {course.instructor_name || 'DE-ECO Faculty'}
@@ -1147,14 +1148,14 @@ const resetFocusTimer = () => {
                             localStorage.setItem('selectedCourseId', course.id);
                             onNavigate?.("courses");
                           }}
-                          className="px-3 py-1 rounded-lg font-bold text-xs transition-all duration-300 flex items-center gap-1 shadow-sm group-hover:scale-105 flex-shrink-0"
+                          className="px-3.5 py-1.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 flex items-center gap-1.5 shadow-sm group-hover:scale-105 flex-shrink-0"
                           style={{
                             backgroundColor: isDark ? '#ffffff' : themeColors.primary.black,
                             color: isDark ? '#000000' : themeColors.text.white,
                           }}
                         >
                           <span>View Course</span>
-                          <ChevronRight size={13} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                          <ChevronRight size={14} className="transition-transform duration-300 group-hover:translate-x-0.5" />
                         </button>
                       </div>
                     </div>
@@ -1274,79 +1275,124 @@ const resetFocusTimer = () => {
           </div>
 
           {/* Reels Preview – Horizontal Scroll */}
-        <div className="overflow-x-auto overflow-y-visible px-4">
+          <div className="overflow-x-auto overflow-y-visible px-1 pb-3 pt-2">
+            <div
+              className="flex gap-4 sm:gap-5"
+              style={{ minWidth: "max-content" }}
+            >
+              {marketPulseLoading && (
+                <div className="px-6 py-10 text-sm opacity-70">
+                  Loading Market Pulse…
+                </div>
+              )}
 
-          <div
-            className="flex gap-4 sm:gap-6 pt-4"
-            style={{ minWidth: "max-content" }}
-          >
+              {!marketPulseLoading && marketPulseReels.length === 0 && (
+                <div className="px-6 py-10 text-sm opacity-70">
+                  No market pulses available right now.
+                </div>
+              )}
 
-            {marketPulseLoading && (
-              <div className="px-6 py-10 text-sm opacity-70">
-                Loading Market Pulse…
-              </div>
-            )}
-
-            {!marketPulseLoading &&
-              marketPulseReels.map((reel) => (
-                <div
-                  key={reel.id}
-                  className="w-[280px] sm:w-[320px] rounded-2xl overflow-hidden shadow-lg transition-transform hover:scale-[1.03] hover:-translate-y-1
- cursor-pointer flex-shrink-0"
-                  style={{ backgroundColor: themeColors.background.white }}
-                  onClick={() => window.open(reel.reel_url, "_blank")}
-                >
-                  {/* Thumbnail */}
-                  <div className="relative h-44 sm:h-48 bg-slate-100 flex items-center justify-center">
-                    <img
-                      src={
-                        reel.thumbnail_url ||
-                        "/logo/De-Eco-logo.png"
-                      }
-                      alt={reel.title}
-                      className={reel.thumbnail_url ? "w-full h-full object-cover" : "w-1/2 h-1/2 object-contain"}
-                    />
-
-                    {/* Play Overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition">
-                      <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center">
-                        <Play className="w-6 h-6 text-black" />
-                      </div>
-                    </div>
-
-                    {/* Tag */}
-                    {reel.tag && (
-                      <div className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold bg-black/70 text-white">
-                        {reel.tag}
+              {!marketPulseLoading &&
+                marketPulseReels.map((reel) => (
+                  <div
+                    key={reel.id}
+                    onClick={() => window.open(reel.reel_url, "_blank")}
+                    className="group relative flex-shrink-0 w-[210px] sm:w-[240px] h-[320px] sm:h-[350px] rounded-2xl sm:rounded-3xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 select-none border border-white/10"
+                    style={{ backgroundColor: '#090d16' }}
+                  >
+                    {/* Media / Background Poster */}
+                    {reel.thumbnail_url ? (
+                      <img
+                        src={reel.thumbnail_url}
+                        alt={reel.title}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                      />
+                    ) : (
+                      <div 
+                        className="absolute inset-0 w-full h-full transition-transform duration-700 ease-out group-hover:scale-105 flex flex-col items-center justify-center p-6 text-center"
+                        style={{
+                          background: 'radial-gradient(circle at 50% 25%, #1e3a8a 0%, #0c1527 60%, #030712 100%)'
+                        }}
+                      >
+                        {/* Decorative Pulse Wave */}
+                        <svg className="absolute inset-x-0 bottom-16 w-full h-24 opacity-25 text-blue-400" viewBox="0 0 100 40" preserveAspectRatio="none">
+                          <path d="M0,35 Q20,10 40,25 T80,8 T100,20 L100,40 L0,40 Z" fill="currentColor" />
+                        </svg>
+                        {/* Logo Mark */}
+                        <img 
+                          src="/logo/De-Eco-logo.png" 
+                          alt="DE-ECO" 
+                          className="w-14 h-14 object-contain opacity-80 filter brightness-110 drop-shadow-md mb-2" 
+                        />
+                        <span className="text-[10px] tracking-widest font-black uppercase text-blue-200/70">
+                          MARKET PULSE
+                        </span>
                       </div>
                     )}
-                  </div>
 
-                  {/* Content */}
-                  <div className="p-4">
-                    <h3
-                      className="font-bold text-sm sm:text-base line-clamp-2"
-                      style={{ color: themeColors.text.primary }}
-                    >
-                      {reel.title}
-                    </h3>
+                    {/* Gradient Scrim Overlay for high contrast */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/25 pointer-events-none" />
 
-                    <div
-                      className="mt-2 text-xs flex justify-between"
-                      style={{ color: themeColors.text.secondary }}
-                    >
-                      <span>
-                        {new Date(reel.published_at).toLocaleDateString()}
-                      </span>
+                    {/* Top Row: Floating Tags & Duration */}
+                    <div className="absolute top-3.5 inset-x-3.5 flex items-center justify-between gap-2 z-10 pointer-events-none">
+                      {reel.tag ? (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md bg-white/20 text-white border border-white/25 shadow-sm">
+                          {reel.tag}
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md bg-blue-500/30 text-blue-200 border border-blue-400/30 shadow-sm flex items-center gap-1">
+                          <Activity className="w-3 h-3 text-blue-300" />
+                          Pulse
+                        </span>
+                      )}
+
+                      {reel.duration_seconds ? (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold backdrop-blur-md bg-black/60 text-white/90 border border-white/10">
+                          {Math.floor(reel.duration_seconds / 60)}:{(reel.duration_seconds % 60).toString().padStart(2, '0')}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold backdrop-blur-md bg-black/50 text-white/80 border border-white/10 flex items-center gap-1">
+                          <Play className="w-2.5 h-2.5 fill-current" />
+                          Reel
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Centered Frosted Glass Play Button */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full backdrop-blur-md bg-white/25 border border-white/35 flex items-center justify-center text-white shadow-xl transition-all duration-300 transform group-hover:scale-115 group-hover:bg-white group-hover:text-black">
+                        <Play className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5 fill-current" />
+                      </div>
+                    </div>
+
+                    {/* Bottom Content Scrim */}
+                    <div className="absolute bottom-0 inset-x-0 p-4 z-10 flex flex-col justify-end">
+                      <h3 className="font-bold text-sm sm:text-base text-white leading-snug line-clamp-2 drop-shadow-md mb-2 group-hover:text-blue-200 transition-colors">
+                        {reel.title}
+                      </h3>
+
+                      <div className="flex items-center justify-between text-[11px] text-white/75 font-medium">
+                        <span className="flex items-center gap-1.5">
+                          <Eye className="w-3.5 h-3.5 text-white/70" />
+                          {reel.view_count ? `${reel.view_count.toLocaleString()} views` : 'Watch insight'}
+                        </span>
+                        <span>
+                          {reel.published_at ? new Date(reel.published_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-          </div>
+                ))}
+            </div>
 
-          {/* Scroll Indicator */}
-          <p className="text-center text-sm mt-4 text-gray-400">← Scroll to see more pulses →</p>
-        </div>
+            {/* Scroll Indicator */}
+            <p
+              className="text-center text-xs sm:text-sm mt-4 opacity-75 font-medium"
+              style={{ color: themeColors.text.primary }}
+            >
+              ← Scroll to explore more pulses →
+            </p>
+          </div>
 
         </div>
 
