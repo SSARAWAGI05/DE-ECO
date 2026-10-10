@@ -606,12 +606,12 @@ const resetFocusTimer = () => {
 
 
             {/* 2-Column Dashboard Grid: 2x2 Stats on Left, Daily Planner on Right */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-start">
+            <div className={`grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 ${isDailyPlannerOpen ? 'items-start' : 'items-stretch'}`}>
               {/* Left Column: 4 Tabs in 2x2 Layout */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 h-full">
                 {/* Current Streak */}
                 <div
-                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-sm hover:shadow-md transition border border-black/5"
+                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-sm hover:shadow-md transition border border-black/5 h-full"
                   style={{ backgroundColor: themeColors.accent.purple }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -634,7 +634,7 @@ const resetFocusTimer = () => {
 
                 {/* Courses Registered */}
                 <div
-                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-sm hover:shadow-md transition border border-black/5 cursor-pointer hover:scale-[1.02]"
+                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-sm hover:shadow-md transition border border-black/5 cursor-pointer hover:scale-[1.02] h-full"
                   style={{ backgroundColor: themeColors.accent.blue }}
                   onClick={() => {
                     localStorage.setItem('coursesTab', 'my-learning');
@@ -661,7 +661,7 @@ const resetFocusTimer = () => {
 
                 {/* Upcoming Classes */}
                 <div
-                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-sm hover:shadow-md transition border border-black/5"
+                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-sm hover:shadow-md transition border border-black/5 h-full"
                   style={{ backgroundColor: themeColors.accent.yellow }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -684,7 +684,7 @@ const resetFocusTimer = () => {
 
                 {/* Social Connect */}
                 <div
-                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-sm hover:shadow-md transition border border-black/5"
+                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-sm hover:shadow-md transition border border-black/5 h-full"
                   style={{ backgroundColor: themeColors.accent.red }}
                 >
                   {/* Left side */}
@@ -737,13 +737,13 @@ const resetFocusTimer = () => {
 
               {/* Right Column: Daily Planner Section */}
               <div 
-                className="rounded-2xl p-5 sm:p-7 shadow-lg"
+                className={`rounded-2xl p-5 sm:p-7 shadow-lg transition-all ${!isDailyPlannerOpen ? 'h-full flex flex-col justify-center' : ''}`}
                 style={{
                   backgroundColor: themeColors.background.white,
                   borderColor: themeColors.primary.black
                 }}
               >
-                <div className="flex items-center justify-between mb-6">
+                <div className={`flex items-center justify-between ${isDailyPlannerOpen ? 'mb-6' : 'mb-0'}`}>
                   <div className="flex items-center gap-3">
                     <div 
                       className="w-10 h-10 rounded-xl flex items-center justify-center"
